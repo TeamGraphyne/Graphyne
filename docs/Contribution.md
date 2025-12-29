@@ -751,14 +751,14 @@ are not updating correctly
 
 | Module | Owner | Backup |
 |--------|-------|--------|
-| Editor Core & Architecture | Dilhara | Anudhi |
-| Editor UI (Panels, Toolbar) | Anudhi | Milsha |
-| Canvas & Animations | Milsha | Dilhara |
-| Data Configuration | Milsha | Parami |
-| Backend API & Database | Parami | Sharon |
-| Preview & Playback | Sharon | Dilhara |
-| WebSockets & Real-time | Sharon | Parami |
-| CI/CD & DevOps | Sharon | Dilhara |
+| Editor Core & Architecture | Dilhara | Nikini |
+| Editor UI (Panels, Toolbar) | Parami | Anudhi |
+| Canvas & Animations | Nishika | Anudhi |
+| Data Configuration | Nikini | Nishika |
+| Backend API & Database | Dilhara | Anudhi |
+| Preview & Playback | Anudhi | Nikini |
+| WebSockets & Real-time | Parami | Dilhara |
+| CI/CD & DevOps | Nishika | Dilhara |
 
 ### Responsibilities
 
