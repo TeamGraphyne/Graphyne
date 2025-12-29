@@ -1,0 +1,70 @@
+name: PR Checks
+
+on:
+  pull_request: 
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  # Validate PR title follows conventional commits
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            ci
+          scopes: |
+            editor
+            canvas
+            layers
+            toolbar
+            properties
+            data
+            preview
+            playback
+            api
+            db
+            sockets
+            ui
+            store
+            deps
+            config
+          requireScope: false
+          subjectPattern: ^[a-z]. +$
+          subjectPatternError: |
+            The subject "{subject}" must start with a lowercase letter. 
+
+  # Check PR size
+  pr-size: 
+    name: Check PR Size
+    runs-on: ubuntu-latest
+    steps: 
+      - name:  Check PR size
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_label: 'size/XS'
+          xs_max_size: 50
+          s_label: 'size/S'
+          s_max_size: 200
+          m_label: 'size/M'
+          m_max_size: 400
+          l_label: 'size/L'
+          l_max_size:  800
+          xl_label: 'size/XL'
+          fail_if_xl: false
+          message_if_xl: >
+            This PR is quite large. Consider breaking it into smaller PRs
+            for easier review. 
