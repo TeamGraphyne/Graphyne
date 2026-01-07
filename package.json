@@ -1,21 +1,21 @@
 {
   "name": "graphyne",
   "version": "0.1.0",
-  "private":  true,
+  "private": true,
   "scripts": {
     "dev": "pnpm --filter \"./apps/**\" dev",
     "build": "pnpm --filter \"./apps/**\" build",
     "lint": "pnpm --recursive lint",
     "type-check": "pnpm --recursive type-check",
-    "test":  "pnpm --recursive test"
+    "test": "pnpm --recursive test"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "eslint": "^8.56.0",
-    "prettier": "^3.2.4",
-    "typescript": "^5.3.3",
-    "concurrently": "^8.2.2"
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.1",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20.0.0",
