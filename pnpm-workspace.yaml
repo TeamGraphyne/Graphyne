@@ -4,4 +4,6 @@ packages:
 
 ignoredBuiltDependencies:
   - '@parcel/watcher'
+  - '@prisma/engines'
   - esbuild
+  - prisma
