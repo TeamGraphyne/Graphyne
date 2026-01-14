@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useAppSelector } from '../../../stores/hooks';
-import { useSocket } from '@/hooks/useSocket';
+import { useSocket } from '../../../hooks/useSocket';
 import { Toolbar } from '../components/Toolbar';
 import { CanvasArea } from '../components/CanvasArea';
 import { PropertiesPanel } from '../components/PropertiesPanel';
+import { EditorSocketSync } from '../components/EditorSocketSync';
 
 export function EditorPage() {
   const { socket } = useSocket();
@@ -27,6 +28,7 @@ export function EditorPage() {
 
   return (
     <div className="flex h-full w-full">
+      <EditorSocketSync />
       <Toolbar />
       <CanvasArea />
       <PropertiesPanel />
