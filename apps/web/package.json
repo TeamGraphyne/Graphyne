@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
+    "@types/uuid": "^11.0.0",
     "axios": "^1.13.2",
     "gsap": "^3.14.2",
     "konva": "^10.0.12",
@@ -19,7 +20,8 @@
     "react-konva": "^19.2.1",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.11.0",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
