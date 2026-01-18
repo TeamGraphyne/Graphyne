@@ -12,12 +12,17 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@reduxjs/toolkit": "^2.11.2",
+    "clsx": "^2.1.1",
     "gsap": "^3.14.2",
     "konva": "^10.2.0",
+    "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-dropzone": "^14.3.8",
     "react-konva": "^19.2.1",
     "react-redux": "^9.2.0",
+    "redux-undo": "^1.1.0",
+    "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
