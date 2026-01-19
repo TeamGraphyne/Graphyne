@@ -4,7 +4,8 @@ import canvasReducer from './canvasSlice';
 
 export const store = configureStore({
   reducer: {
-    canvas: undoable(canvasReducer) // Wrap reducer with Undo/Redo logic
+    // Limit history to 50 steps
+    canvas: undoable(canvasReducer, { limit: 50 }) 
   }
 });
 
