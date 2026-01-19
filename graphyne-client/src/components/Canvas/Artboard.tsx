@@ -82,7 +82,6 @@ export const Artboard = () => {
           
           {elements.map((el) => {
             const props = {
-              key: el.id,
               ...el,
               draggable: !el.isLocked,
               onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -119,9 +118,9 @@ export const Artboard = () => {
 
             if (!el.isVisible) return null;
 
-            if (el.type === 'rect') return <Rect {...props} />;
-            if (el.type === 'circle') return <Circle {...props} />;
-            if (el.type === 'text') return <Text {...props} />;
+            if (el.type === 'rect') return <Rect key={el.id} {...props} />;
+            if (el.type === 'circle') return <Circle key={el.id} {...props} />;
+            if (el.type === 'text') return <Text key={el.id} {...props} />;
             return null;
           })}
           
