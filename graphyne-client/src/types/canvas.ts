@@ -1,6 +1,13 @@
 export type ElementType = 'rect' | 'circle' | 'text' | 'image';
 export type AnimationType = 'fade' | 'slide-left' | 'slide-right' | 'scale' | 'none';
 
+export interface ShadowEffect {
+  color: string;
+  blur: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export interface AnimationConfig {
   type: AnimationType;
   duration: number;
@@ -18,20 +25,29 @@ export interface CanvasElement {
   width: number;
   height: number;
   rotation: number;
+  scaleX: number;
+  scaleY: number;
+  zIndex: number;
+
   // Style Props
   fill: string;
   stroke: string;
   strokeWidth: number;
   opacity: number;
   cornerRadius?: number; // For Rect
-  text?: string;         // For Text
-  fontSize?: number;     // For Text
-  src?: string;          // For Image
+  
+  // Text Specific
+  text?: string;         
+  fontSize?: number;     
+  fontFamily?: string;
+  align?: 'left' | 'center' | 'right';
+
+  // Image Specific
+  src?: string;          
+
   // Effects
-  shadowColor: string;
-  shadowBlur: number;
-  shadowOffsetX: number;
-  shadowOffsetY: number;
+  shadow?: ShadowEffect;
+
   // State
   isLocked: boolean;
   isVisible: boolean;
@@ -39,12 +55,14 @@ export interface CanvasElement {
   outAnimation: AnimationConfig;
 }
 
+export interface CanvasConfig {
+  width: number;
+  height: number;
+  background: string;
+}
+
 export interface CanvasState {
   elements: CanvasElement[];
   selectedIds: string[];
-  canvasConfig: {
-    width: number;
-    height: number;
-    background: string;
-  };
+  canvasConfig: CanvasConfig;
 }

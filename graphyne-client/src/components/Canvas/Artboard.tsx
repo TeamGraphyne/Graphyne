@@ -12,38 +12,39 @@ import Konva from 'konva';
 
 export const Artboard = () => {
   const dispatch = useDispatch();
-  // Ensure we are selecting from the present state (if using redux-undo)
+  // Access present state for redux-undo compatibility
   const { elements, selectedIds, canvasConfig } = useSelector((state: RootState) => state.canvas.present);
   
   const trRef = useRef<Konva.Transformer>(null);
+  const layerRef = useRef<Konva.Layer>(null);
 
   // --- 1. TRANSFORMER / SELECTION LOGIC ---
   useEffect(() => {
-    if (trRef.current) {
+    if (trRef.current && layerRef.current) {
       const stage = trRef.current.getStage();
       
-      // Map over ALL selected IDs to find their corresponding Konva nodes
+      // Find nodes matching selectedIds
       const selectedNodes = selectedIds
         .map((id) => stage?.findOne('#' + id))
-        // Filter out any undefined results (in case an ID doesn't exist on stage yet)
         .filter((node): node is Konva.Node => node !== undefined);
 
-      // Attach the transformer to the array of nodes
       trRef.current.nodes(selectedNodes);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedIds, elements]);
+    // Removed 'elements' from dependency array to prevent re-running on every element change
+  }, [selectedIds]);
 
   // --- 2. KEYBOARD SHORTCUTS (DELETE) ---
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Only trigger if not typing in an input
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
-      e.preventDefault(); // Prevent browser back navigation
-      // Remove every currently selected ID
+      e.preventDefault();
       selectedIds.forEach((id) => dispatch(removeElement(id)));
     }
   }, [selectedIds, dispatch]);
 
-  // Attach keyboard listeners
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -53,7 +54,6 @@ export const Artboard = () => {
 
   // --- 3. DESELECTION HANDLER ---
   const checkDeselect = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    // Check if the click target is the Stage itself (empty area)
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty) {
       dispatch(selectElement(null)); 
@@ -65,14 +65,13 @@ export const Artboard = () => {
       <Stage 
         width={canvasConfig.width} 
         height={canvasConfig.height} 
-        scaleX={0.5} 
+        scaleX={0.5}
         scaleY={0.5}
-        // Listener on Stage for deselecting when clicking empty space
         onMouseDown={checkDeselect}
         onTouchStart={checkDeselect}
       >
-        <Layer>
-          {/* Background Rect - Explicitly handles deselect as well */}
+        <Layer ref={layerRef}>
+          {/* Background Rect */}
           <Rect 
             name="background"
             width={canvasConfig.width} 
@@ -85,18 +84,12 @@ export const Artboard = () => {
             const props = {
               key: el.id,
               ...el,
-              draggable: true,
-              // --- 4. CLICK HANDLER (SHIFT+CLICK) ---
+              draggable: !el.isLocked,
               onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
-                // Stop the click from bubbling to the background
                 e.cancelBubble = true;
-
                 if (e.evt.shiftKey) {
-                  // If Shift is held, toggle this item in/out of selection
                   dispatch(toggleSelection(el.id));
                 } else {
-                  // If standard click, perform exclusive select
-                  // (Only if it's not already selected, to prevent jitter)
                   if (!selectedIds.includes(el.id) || selectedIds.length > 1) {
                     dispatch(selectElement(el.id));
                   }
@@ -107,17 +100,31 @@ export const Artboard = () => {
                   id: el.id,
                   props: { x: e.target.x(), y: e.target.y() }
                 }));
+              },
+              onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
+                // Sync transform changes back to store
+                const node = e.target;
+                dispatch(updateElement({
+                  id: el.id,
+                  props: {
+                    x: node.x(),
+                    y: node.y(),
+                    rotation: node.rotation(),
+                    scaleX: node.scaleX(),
+                    scaleY: node.scaleY(),
+                  }
+                }));
               }
             };
 
-            // Render specific shape based on type
+            if (!el.isVisible) return null;
+
             if (el.type === 'rect') return <Rect {...props} />;
             if (el.type === 'circle') return <Circle {...props} />;
             if (el.type === 'text') return <Text {...props} />;
             return null;
           })}
           
-          {/* Transformer Component */}
           <Transformer ref={trRef} />
         </Layer>
       </Stage>
