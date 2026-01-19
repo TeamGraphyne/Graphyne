@@ -25,6 +25,15 @@ export const canvasSlice = createSlice({
         state.elements[index] = { ...state.elements[index], ...action.payload.props };
       }
     },
+
+    updateElements: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }[]>) => {
+      action.payload.forEach(update => {
+        const index = state.elements.findIndex(el => el.id === update.id);
+        if (index !== -1) {
+          state.elements[index] = { ...state.elements[index], ...update.props };
+        }
+      });
+    },
     
     removeElement: (state, action: PayloadAction<string>) => {
       state.elements = state.elements.filter(el => el.id !== action.payload);
@@ -39,6 +48,10 @@ export const canvasSlice = createSlice({
       } else {
         state.selectedIds = [action.payload];
       }
+    },
+
+    setSelection: (state, action: PayloadAction<string[]>) => {
+      state.selectedIds = action.payload;
     },
 
     // Toggles selection for multi-select
@@ -64,9 +77,11 @@ export const canvasSlice = createSlice({
 
 export const { 
   addElement, 
-  updateElement, 
+  updateElement,
+  updateElements,
   removeElement, 
   selectElement, 
+  setSelection,
   toggleSelection,
   reorderElement 
 } = canvasSlice.actions;
