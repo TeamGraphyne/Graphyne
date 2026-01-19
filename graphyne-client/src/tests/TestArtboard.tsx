@@ -1,5 +1,3 @@
-// src/tests/TestArtboard.tsx
-
 import { useDispatch, useSelector } from 'react-redux';
 import { Artboard } from '../components/Canvas/Artboard';
 import { 
