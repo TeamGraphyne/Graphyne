@@ -15,21 +15,46 @@ export const canvasSlice = createSlice({
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
       const newElement = { ...action.payload, id: uuidv4() };
       state.elements.push(newElement);
-      state.selectedIds = [newElement.id]; // Auto-select new item
+      // Auto-select new item
+      state.selectedIds = [newElement.id]; 
     },
+    
     updateElement: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }>) => {
       const index = state.elements.findIndex(el => el.id === action.payload.id);
       if (index !== -1) {
         state.elements[index] = { ...state.elements[index], ...action.payload.props };
       }
     },
+    
     removeElement: (state, action: PayloadAction<string>) => {
       state.elements = state.elements.filter(el => el.id !== action.payload);
-      state.selectedIds = [];
+      // Only remove the deleted ID from selection, keep others selected
+      state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
-    selectElement: (state, action: PayloadAction<string>) => {
-      state.selectedIds = [action.payload];
+    
+    // Accepts string or null. If null, clears selection.
+    selectElement: (state, action: PayloadAction<string | null>) => {
+      if (action.payload === null) {
+        state.selectedIds = [];
+      } else {
+        state.selectedIds = [action.payload];
+      }
     },
+
+    // Toggles selection for multi-select
+    toggleSelection: (state, action: PayloadAction<string>) => {
+      const id = action.payload;
+      const index = state.selectedIds.indexOf(id);
+      
+      if (index !== -1) {
+        // If already selected, remove it
+        state.selectedIds.splice(index, 1);
+      } else {
+        // If not selected, add it
+        state.selectedIds.push(id);
+      }
+    },
+
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
        const [removed] = state.elements.splice(action.payload.fromIndex, 1);
        state.elements.splice(action.payload.toIndex, 0, removed);
@@ -37,5 +62,13 @@ export const canvasSlice = createSlice({
   }
 });
 
-export const { addElement, updateElement, removeElement, selectElement, reorderElement } = canvasSlice.actions;
+export const { 
+  addElement, 
+  updateElement, 
+  removeElement, 
+  selectElement, 
+  toggleSelection,
+  reorderElement 
+} = canvasSlice.actions;
+
 export default canvasSlice.reducer;
