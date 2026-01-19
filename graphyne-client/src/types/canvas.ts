@@ -1,4 +1,12 @@
 export type ElementType = 'rect' | 'circle' | 'text' | 'image';
+export type AnimationType = 'fade' | 'slide-left' | 'slide-right' | 'scale' | 'none';
+
+export interface AnimationConfig {
+  type: AnimationType;
+  duration: number;
+  delay: number;
+  ease: string;
+}
 
 export interface CanvasElement {
   id: string;
@@ -27,6 +35,8 @@ export interface CanvasElement {
   // State
   isLocked: boolean;
   isVisible: boolean;
+  inAnimation: AnimationConfig;
+  outAnimation: AnimationConfig;
 }
 
 export interface CanvasState {
