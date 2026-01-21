@@ -22,8 +22,11 @@ export const AnimationPanel = () => {
     }));
   };
 
+  // 2. Function to PREVIEW animation immediately (Visual Feedback)
   const handlePreview = () => {
-  
+    // Find the Konva node by ID (Konva nodes share the ID with Redux IDs)
+    // Note: In real app, you might need a better way to ref the stage, 
+    // but for MVP, we can target the ID if the Stage is mounted.
     const node = (window as any).Konva.stages[0].findOne('#' + element.id);
     
     if (node) {
@@ -37,11 +40,14 @@ export const AnimationPanel = () => {
       } else if (element.inAnimation.type === 'slide-left') {
          node.x(element.x - 100); // Start offset
          gsap.to(node, { x: element.x, opacity: element.opacity, duration: element.inAnimation.duration });
+      } else if (element.inAnimation.type === 'slide-right') {
+         node.x(element.x + 100); // Start offset
+         gsap.to(node, { x: element.x, opacity: element.opacity, duration: element.inAnimation.duration });
       }
     }
   };
 
-   return (
+  return (
     <div className="p-4 text-white">
       <h3 className="font-bold mb-2">In Animation</h3>
       
@@ -56,7 +62,7 @@ export const AnimationPanel = () => {
         <option value="slide-right">Slide Right</option>
       </select>
 
-       <div className="flex gap-2">
+      <div className="flex gap-2">
         <input 
           type="number" 
           placeholder="Duration (s)"
@@ -69,6 +75,3 @@ export const AnimationPanel = () => {
     </div>
   );
 };
-
-
- 
