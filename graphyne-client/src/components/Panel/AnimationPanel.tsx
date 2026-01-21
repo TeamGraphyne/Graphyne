@@ -41,4 +41,20 @@ export const AnimationPanel = () => {
     }
   };
 
+   return (
+    <div className="p-4 text-white">
+      <h3 className="font-bold mb-2">In Animation</h3>
+      
+      <select 
+        value={element.inAnimation.type}
+        onChange={(e) => updateAnim('inAnimation', 'type', e.target.value)}
+        className="w-full bg-gray-800 mb-2 p-1"
+      >
+        <option value="none">None</option>
+        <option value="fade">Fade In</option>
+        <option value="slide-left">Slide Left</option>
+        <option value="slide-right">Slide Right</option>
+      </select>
+
+
  
