@@ -2,10 +2,77 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { ActionCreators } from 'redux-undo'; // Important for Undo/Redo
 import { addElement } from '../../store/canvasSlice';
-import { Square, Circle, Type, Image as ImageIcon, Undo, Redo } from 'lucide-react';
+import { 
+    Square,
+    Circle,
+    Type, 
+    Image as ImageIcon, 
+    Undo, 
+    Redo,
+    Triangle,
+    Minus, 
+    Star,
+    MousePointer2
+ } from 'lucide-react';
 
 export const Toolbar = () => {
   const dispatch = useDispatch();
+
+  const addLine = () => {
+    dispatch(addElement({
+      type:'line',
+      name:'Line',
+      x: 100,
+      y: 300,
+      width: 200,
+      height:  2,
+      stroke: '#ffffff',
+      strokeWidth: 3,
+      isLocked: false,
+      isVisible: true,
+      inAnimation: { ...defaultAnim},
+      outAnimation: {... defaultAnim}
+    }));
+  };
+
+  const addTriangle = () => {
+  dispatch(addElement({
+    type: 'triangle',
+    name: 'Triangle',
+    x: 300,
+    y: 200,
+    width: 120,
+    height: 120,
+    fill: '#00ffcc',
+    opacity: 1,
+    isLocked: false,
+    isVisible: true,
+    inAnimation: { ...defaultAnim },
+    outAnimation: { ...defaultAnim }
+  }));
+};
+
+const addStar = () => {
+  dispatch(addElement({
+    type: 'star',
+    name: 'Star',
+    x: 450,
+    y: 200,
+    width: 120,
+    height: 120,
+    fill: '#ffd700',
+    opacity: 1,
+    isLocked: false,
+    isVisible: true,
+    inAnimation: { ...defaultAnim },
+    outAnimation: { ...defaultAnim }
+  }));
+};
+
+const  selectTool = () => {
+    console.log('Select tool  activated')
+};
+
 
   // 1. Define the default animation payload
   const defaultAnim = { 
@@ -81,6 +148,8 @@ export const Toolbar = () => {
     }));
   };
 
+  
+
   return (
     <div className="h-14 bg-panel border-b border-gray-700 flex items-center px-4 space-x-4">
       {/* Shape Tools */}
@@ -134,6 +203,38 @@ export const Toolbar = () => {
         >
           <Redo size={20} color="white"/>
         </button>
+
+            <button
+            onClick={addLine}
+            className="p-2 hover:bg-accent rounded transition-colors"
+            title="Add Line"
+            >
+            <Minus size={20} color="white" />
+            </button>
+
+            <button
+            onClick={addTriangle}
+            className="p-2 hover:bg-accent rounded transition-colors"
+            title="Add Triangle"
+            >
+            <Triangle size={20} color="white" />
+            </button>
+
+            <button
+            onClick={addStar}
+            className="p-2 hover:bg-accent rounded transition-colors"
+            title="Add Star"
+            >
+            <Star size={20} color="white" />
+            </button>
+
+            <button
+            onClick={selectTool}
+            className="p-2 hover:bg-accent rounded transition-colors"
+            title="Select Tool"
+            >
+            <MousePointer2 size={20} color="white" />
+            </button>
       </div>
     </div>
   );
