@@ -56,5 +56,19 @@ export const AnimationPanel = () => {
         <option value="slide-right">Slide Right</option>
       </select>
 
+       <div className="flex gap-2">
+        <input 
+          type="number" 
+          placeholder="Duration (s)"
+          value={element.inAnimation.duration}
+          onChange={(e) => updateAnim('inAnimation', 'duration', Number(e.target.value))}
+          className="w-1/2 bg-gray-800 p-1"
+        />
+        <button onClick={handlePreview} className="bg-green-600 px-2 rounded">▶ Play</button>
+      </div>
+    </div>
+  );
+};
+
 
  
