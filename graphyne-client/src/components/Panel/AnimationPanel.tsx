@@ -1,7 +1,6 @@
-import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateElement } from '../../store/canvasSlice';
-import { RootState } from '../../store/store';
+import type { RootState } from '../../store/store';
 import gsap from 'gsap';
 
 export const AnimationPanel = () => {
@@ -13,7 +12,8 @@ export const AnimationPanel = () => {
 
   if (!element) return <div>Select an object to animate</div>;
 
-    const updateAnim = (phase: 'inAnimation' | 'outAnimation', key: string, val: any) => {
+  // 1. Function to update Redux State
+  const updateAnim = (phase: 'inAnimation' | 'outAnimation', key: string, val: any) => {
     dispatch(updateElement({
       id: element.id,
       props: {
@@ -21,3 +21,24 @@ export const AnimationPanel = () => {
       }
     }));
   };
+
+  const handlePreview = () => {
+  
+    const node = (window as any).Konva.stages[0].findOne('#' + element.id);
+    
+    if (node) {
+      // Reset
+      gsap.killTweensOf(node);
+      node.opacity(0); 
+      
+      // Play IN Animation based on selection
+      if (element.inAnimation.type === 'fade') {
+         gsap.to(node, { opacity: element.opacity, duration: element.inAnimation.duration });
+      } else if (element.inAnimation.type === 'slide-left') {
+         node.x(element.x - 100); // Start offset
+         gsap.to(node, { x: element.x, opacity: element.opacity, duration: element.inAnimation.duration });
+      }
+    }
+  };
+
+ 
