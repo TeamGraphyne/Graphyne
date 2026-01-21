@@ -12,3 +12,12 @@ export const AnimationPanel = () => {
   );
 
   if (!element) return <div>Select an object to animate</div>;
+
+    const updateAnim = (phase: 'inAnimation' | 'outAnimation', key: string, val: any) => {
+    dispatch(updateElement({
+      id: element.id,
+      props: {
+        [phase]: { ...element[phase], [key]: val }
+      }
+    }));
+  };
