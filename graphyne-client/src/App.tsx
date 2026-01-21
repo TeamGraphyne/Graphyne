@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
-import { TestArtboard } from './tests/TestArtboard'; 
+import { EditorPage } from './pages/EditorPage';
 import { PlayoutPage } from './pages/PlayoutPage'; 
 
 function App() {
@@ -13,7 +13,7 @@ function App() {
           <Route path="/" element={<Navigate to="/editor" replace />} />
           
           {/* The Editor Zone */}
-          <Route path="/editor" element={<TestArtboard />} />
+          <Route path="/editor" element={<EditorPage />} />
           
           {/*The Playout Engine*/}
           <Route path="/playout" element={<PlayoutPage />} />
