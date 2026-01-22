@@ -1,29 +1,31 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { CanvasElement, CanvasState } from '../types/canvas';
-import { v4 as uuidv4 } from 'uuid';
+
+import type { CanvasState, CanvasElement } from '../types/canvas';
 
 const initialState: CanvasState = {
   elements: [],
   selectedIds: [],
-  canvasConfig: { width: 1920, height: 1080, background: '#ffffff' }
+  // --- ADD INITIAL CONFIG ---
+  config: {
+    width: 1920,
+    height: 1080,
+    background: '#000000'
+  }
 };
 
 export const canvasSlice = createSlice({
   name: 'canvas',
   initialState,
   reducers: {
-    addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
-      const newElement = { ...action.payload, id: uuidv4() };
-      state.elements.push(newElement);
-      state.selectedIds = [newElement.id];
+
+    addElement: (state, action: PayloadAction<CanvasElement>) => {
+      state.elements.push(action.payload);
     },
 
-    // REFACTOR: Flattened payload to match component usage
     updateElement: (state, action: PayloadAction<Partial<CanvasElement> & { id: string }>) => {
-      const { id, ...changes } = action.payload;
-      const index = state.elements.findIndex(el => el.id === id);
+      const index = state.elements.findIndex(el => el.id === action.payload.id);
       if (index !== -1) {
-        state.elements[index] = { ...state.elements[index], ...changes };
+        state.elements[index] = { ...state.elements[index], ...action.payload };
       }
     },
 
@@ -42,6 +44,7 @@ export const canvasSlice = createSlice({
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
 
+    // Accepts string or null. If null, clears selection.
     selectElement: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
         state.selectedIds = [];
@@ -72,15 +75,6 @@ export const canvasSlice = createSlice({
   }
 });
 
-export const {
-  addElement,
-  updateElement,
-  updateElements,
-  removeElement,
-  selectElement,
-  setSelection,
-  toggleSelection,
-  reorderElement
-} = canvasSlice.actions;
+export const { addElement, updateElement, updateElements, removeElement, selectElement, setSelection, toggleSelection, reorderElement } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

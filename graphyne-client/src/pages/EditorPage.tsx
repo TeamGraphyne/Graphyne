@@ -1,80 +1,40 @@
 import React from 'react';
-import { Artboard } from "../components/Canvas/Artboard";
-import {
-  MonitorPlay,
-  Layers,
-  MousePointer2,
-  Square,
-  Type,
-  Image as ImageIcon,
-  Download,
-  Loader2 
+import { 
+  MonitorPlay, Layers, MousePointer2, Square, Type, 
+  Image as ImageIcon, Download, Loader2 
 } from "lucide-react";
 
-// Imports for Logic
+// 1. Imports for Logic
 import { useAppSelector } from '../store/hooks';
 import { api } from '../services/api';
 import { compileGraphicToHTML } from '../utils/exporter';
+import { Artboard } from "../components/Canvas/Artboard";
 
-// PLACEHOLDER TOOLBAR
-const MockToolbar = () => (
-        <div className="flex w-full mt-2">
-          <div className="flex gap-2">
-            <div className="p-2 bg-blue-600 rounded text-white"><MousePointer2 size={20} /></div>
-            <div className="p-2 text-gray-400 hover:text-white"><Square size={20} /></div>
-            <div className="p-2 text-gray-400 hover:text-white"><Type size={20} /></div>
-            <div className="p-2 text-gray-400 hover:text-white"><ImageIcon size={20} /></div>
-          </div>
-        </div>
-);
-
-// PLACEHOLDER PROPERTIES
-const MockProperties = () => (
-  <div className="p-4 text-gray-300 space-y-4">
-    <h3 className="text-sm font-bold text-gray-500 uppercase">Transform</h3>
-    <div className="grid grid-cols-2 gap-2">
-      <div className="bg-gray-800 p-2 rounded text-xs">X: 100</div>
-      <div className="bg-gray-800 p-2 rounded text-xs">Y: 250</div>
-    </div>
-    <h3 className="text-sm font-bold text-gray-500 uppercase mt-4">Appearance</h3>
-    <div className="h-8 bg-red-500 rounded border border-gray-600"></div>
-  </div>
-);
-
-// PLACEHOLDER LAYERS
-const MockLayers = () => (
-  <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-10 transition-all duration-300">
-     <div className="p-3 border-b border-gray-800 font-bold text-xs text-gray-500 uppercase tracking-wider">Layers</div>
-    <div className="flex-1 overflow-y-auto">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="px-4 py-2 border-b border-gray-800 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer flex items-center gap-2">
-          <Layers size={14} /> Layer {i}
-        </div>
-      ))}
-    </div>
-  </div>
-);
+// ... [MockToolbar, MockProperties, MockLayers components remain unchanged] ...
+const MockToolbar = () => ( <div className="flex w-full mt-2"> <div className="flex gap-2"> <div className="p-2 bg-blue-600 rounded text-white"> <MousePointer2 size={20} /> </div> <div className="p-2 text-gray-400 hover:text-white"> <Square size={20} /> </div> <div className="p-2 text-gray-400 hover:text-white"> <Type size={20} /> </div> <div className="p-2 text-gray-400 hover:text-white"> <ImageIcon size={20} /> </div> </div> </div> );
+const MockProperties = () => ( <div className="p-4 text-gray-300 space-y-4"> <h3 className="text-sm font-bold text-gray-500 uppercase">Transform</h3> <div className="grid grid-cols-2 gap-2"> <div className="bg-gray-800 p-2 rounded text-xs">X: 100</div> <div className="bg-gray-800 p-2 rounded text-xs">Y: 250</div> </div> <h3 className="text-sm font-bold text-gray-500 uppercase mt-4"> Appearance </h3> <div className="h-8 bg-red-500 rounded border border-gray-600"></div> </div> );
+const MockLayers = () => ( <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-10 transition-all duration-300"> <div className="p-3 border-b border-gray-800 font-bold text-xs text-gray-500 uppercase tracking-wider"> Layers </div> <div className="flex-1 overflow-y-auto"> {[1, 2, 3].map((i) => ( <div key={i} className="px-4 py-2 border-b border-gray-800 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer flex items-center gap-2"> <Layers size={14} /> Layer {i} </div> ))} </div> </div> );
 
 export function EditorPage() {
-  // 1. Access Redux State (Using 'canvasConfig' to match types)
-  const { canvasConfig, elements, selectedIds } = useAppSelector((state) => state.canvas.present);
+  // 2. Access Redux State
+  const { config, elements } = useAppSelector((state) => state.canvas.present);
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // 2. Export Logic
+  // 3. Handle Export Logic
   const handleExport = async () => {
     const graphicName = prompt("Enter a name for this graphic:", "New Graphic");
     if (!graphicName) return;
 
     setIsSaving(true);
     try {
-      // Compile State to HTML String
-      const htmlContent = await compileGraphicToHTML(canvasConfig, elements);
+      // A. Compile State to HTML String
+      const htmlContent = await compileGraphicToHTML(config, elements);
 
-      // Send to Backend
+      // B. Send to Backend (Saves to Disk & DB)
       const result = await api.saveGraphic({
         name: graphicName,
         html: htmlContent,
-        json: { canvasConfig, elements, selectedIds }
+        json: { config, elements } // - Saving JSON for re-edit
       });
 
       if (result.status === 200 || result.data.success) {
@@ -103,17 +63,21 @@ export function EditorPage() {
               <span className="hover:text-white cursor-pointer">View</span>
             </div>
           </div>
+          
           <div className="flex gap-2">
+            {/* 4. Connected Export Button */}
             <button 
               onClick={handleExport}
               disabled={isSaving}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-colors ${
-                isSaving ? 'bg-blue-800 cursor-wait' : 'bg-blue-600 hover:bg-blue-500 text-white'
-              }`}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-colors
+                ${isSaving ? 'bg-blue-800 cursor-wait' : 'bg-blue-600 hover:bg-blue-500 text-white'}
+              `}
             >
-              {isSaving ? <Loader2 size={14} className="animate-spin"/> : <Download size={14} />} 
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
               {isSaving ? 'SAVING...' : 'EXPORT'}
             </button>
+            
             <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700">
               <MonitorPlay size={14} /> PLAYOUT
             </button>
@@ -122,9 +86,11 @@ export function EditorPage() {
         <MockToolbar />
       </header>
 
-      {/* 2. MAIN WORKSPACE */}
+      {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden">
         <MockLayers />
+        
+        {/* CENTER: Canvas */}
         <div className="flex-1 bg-gray-800/50 relative overflow-hidden flex flex-col">
           <div className="flex-1 flex items-center justify-center overflow-auto p-8">
             <div className="shadow-2xl shadow-black/50">
@@ -132,8 +98,10 @@ export function EditorPage() {
             </div>
           </div>
         </div>
+
+        {/* RIGHT PANEL */}
         <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col z-10">
-          <div className="flex border-b border-gray-800"></div>
+            <div className="flex border-b border-gray-800"></div>
             <MockProperties />
         </div>
       </div>

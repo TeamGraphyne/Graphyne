@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Stage, Layer, Rect, Circle, Text, Transformer } from 'react-konva';
+// Use the typed hooks defined in store/hooks.ts
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   selectElement, 
@@ -12,9 +13,9 @@ import Konva from 'konva';
 
 export const Artboard = () => {
   const dispatch = useAppDispatch();
-  
-  // 1. SELECTOR: Use 'canvasConfig' to match your latest Type definitions
-  const { elements, selectedIds, canvasConfig } = useAppSelector((state) => 
+
+  // Handle redux-undo structure (present) or flat structure fallback
+  const { elements, selectedIds, config } = useAppSelector((state) => 
     state.canvas.present || state.canvas
   );
   
@@ -49,8 +50,11 @@ export const Artboard = () => {
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
+    const id = node.id();
+    
+    // Flatten payload. reducer expects { id, x, y }, NOT { id, props: { x, y } }
     dispatch(updateElement({
-      id: node.id(),
+      id: id,
       x: node.x(),
       y: node.y()
     }));
@@ -128,11 +132,14 @@ export const Artboard = () => {
 
   const scale = 0.5;
 
+  // Safeguard if config is not yet loaded
+  if (!config) return <div>Loading Canvas...</div>;
+
   return (
     <Stage 
       ref={stageRef}
-      width={canvasConfig.width * scale} 
-      height={canvasConfig.height * scale} 
+      width={config.width * scale} 
+      height={config.height * scale} 
       scaleX={scale}
       scaleY={scale}
       onMouseDown={onMouseDown}
@@ -146,9 +153,9 @@ export const Artboard = () => {
       <Layer ref={layerRef}>
         <Rect 
           name="background"
-          width={canvasConfig.width} 
-          height={canvasConfig.height} 
-          fill={canvasConfig.background} 
+          width={config.width} 
+          height={config.height} 
+          fill={config.background} 
         />
         
         {elements.map((el) => {
@@ -158,7 +165,7 @@ export const Artboard = () => {
           const commonProps = {
             ...elementProps,
             name: el.type, 
-            draggable: !el.isLocked,
+            draggable: !el.isLocked, // Now valid thanks to updated types
             onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
               e.cancelBubble = true;
               if (e.evt.shiftKey) {
@@ -173,7 +180,7 @@ export const Artboard = () => {
             onDragEnd: onDragEnd,
             onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
               const node = e.target;
-              // 3. FIX: Send FLAT payload for transforms too
+              // Fix 3: Flatten payload for transform update as well
               dispatch(updateElement({
                 id: el.id,
                 x: node.x(),
@@ -185,7 +192,8 @@ export const Artboard = () => {
             }
           };
 
-          if (!el.isVisible) return null;
+          // Now valid thanks to updated types
+          if (el.isVisible === false) return null; 
 
           if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
           if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
