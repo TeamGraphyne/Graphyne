@@ -17,7 +17,7 @@ const MockLayers = () => ( <div className="w-64 bg-gray-900 border-r border-gray
 
 export function EditorPage() {
   // 2. Access Redux State
-  const { config, elements } = useAppSelector((state) => state.canvas.present);
+  const { config, elements, selectedIds } = useAppSelector((state) => state.canvas.present);
   const [isSaving, setIsSaving] = React.useState(false);
 
   // 3. Handle Export Logic
@@ -34,7 +34,7 @@ export function EditorPage() {
       const result = await api.saveGraphic({
         name: graphicName,
         html: htmlContent,
-        json: { config, elements } // - Saving JSON for re-edit
+        json: { config, elements,selectedIds } // - Saving JSON for re-edit
       });
 
       if (result.status === 200 || result.data.success) {

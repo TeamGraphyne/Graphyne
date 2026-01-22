@@ -128,12 +128,9 @@ export const Artboard = () => {
   }, [handleKeyDown]);
 
   // Handle Loading State
-  if (!canvasConfig) return <div>Loading Canvas...</div>;
+  if (!config) return <div>Loading Canvas...</div>;
 
   const scale = 0.5;
-
-  // Safeguard if config is not yet loaded
-  if (!config) return <div>Loading Canvas...</div>;
 
   return (
     <Stage 
