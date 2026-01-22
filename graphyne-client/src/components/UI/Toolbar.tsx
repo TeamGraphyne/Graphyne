@@ -9,70 +9,13 @@ import {
     Image as ImageIcon, 
     Undo, 
     Redo,
-    Triangle,
-    Minus, 
-    Star,
-    MousePointer2
- } from 'lucide-react';
+    MousePointer2,
+    ZoomIn,
+    ZoomOut
+ } from 'lucide-react'; //icons library
 
 export const Toolbar = () => {
-  const dispatch = useDispatch();
-
-  const addLine = () => {
-    dispatch(addElement({
-      type:'line',
-      name:'Line',
-      x: 100,
-      y: 300,
-      width: 200,
-      height:  2,
-      stroke: '#ffffff',
-      strokeWidth: 3,
-      isLocked: false,
-      isVisible: true,
-      inAnimation: { ...defaultAnim},
-      outAnimation: {... defaultAnim}
-    }));
-  };
-
-  const addTriangle = () => {
-  dispatch(addElement({
-    type: 'triangle',
-    name: 'Triangle',
-    x: 300,
-    y: 200,
-    width: 120,
-    height: 120,
-    fill: '#00ffcc',
-    opacity: 1,
-    isLocked: false,
-    isVisible: true,
-    inAnimation: { ...defaultAnim },
-    outAnimation: { ...defaultAnim }
-  }));
-};
-
-const addStar = () => {
-  dispatch(addElement({
-    type: 'star',
-    name: 'Star',
-    x: 450,
-    y: 200,
-    width: 120,
-    height: 120,
-    fill: '#ffd700',
-    opacity: 1,
-    isLocked: false,
-    isVisible: true,
-    inAnimation: { ...defaultAnim },
-    outAnimation: { ...defaultAnim }
-  }));
-};
-
-const  selectTool = () => {
-    console.log('Select tool  activated')
-};
-
+  const dispatch = useDispatch(); //to get redux dispatch function
 
   // 1. Define the default animation payload
   const defaultAnim = { 
@@ -96,7 +39,7 @@ const  selectTool = () => {
       strokeWidth: 0,
       opacity: 1,
       shadowColor: 'black',
-      shadowBlur: 0,
+      shadowBlur: 0, //shadow properties - currently disablesd
       shadowOffsetX: 0,
       shadowOffsetY: 0,
       isLocked: false,
@@ -148,10 +91,23 @@ const  selectTool = () => {
     }));
   };
 
-  
+  const selectTool = () =>{
+    console.log('Select tool activated');
+  }
+
+  const zoomIn = () => {
+    console.log('Zoom in triggered');
+    // future: dispatch(setZoom(zoom + 0.1))
+  };
+
+  const zoomOut = () => {
+    console.log('Zoom out triggered');
+    // future: dispatch(setZoom(zoom - 0.1))
+  };
 
   return (
     <div className="h-14 bg-panel border-b border-gray-700 flex items-center px-4 space-x-4">
+
       {/* Shape Tools */}
       <div className="flex space-x-2 border-r border-gray-600 pr-4">
         <button 
@@ -204,37 +160,31 @@ const  selectTool = () => {
           <Redo size={20} color="white"/>
         </button>
 
-            <button
-            onClick={addLine}
-            className="p-2 hover:bg-accent rounded transition-colors"
-            title="Add Line"
-            >
-            <Minus size={20} color="white" />
-            </button>
+        {/* ZoomIn and ZoomOUt functions */}
+        <button
+          onClick={zoomIn}
+          className="p-2 hover:bg-accent rounded"
+          title="Zoom In"
+        >
+          <ZoomIn size={20} color="white" />
+        </button>
 
-            <button
-            onClick={addTriangle}
-            className="p-2 hover:bg-accent rounded transition-colors"
-            title="Add Triangle"
-            >
-            <Triangle size={20} color="white" />
-            </button>
+        <button
+          onClick={zoomOut}
+          className="p-2 hover:bg-accent rounded"
+          title="Zoom Out"
+        >
+          <ZoomOut size={20} color="white" />
+        </button>
 
-            <button
-            onClick={addStar}
-            className="p-2 hover:bg-accent rounded transition-colors"
-            title="Add Star"
-            >
-            <Star size={20} color="white" />
-            </button>
-
-            <button
-            onClick={selectTool}
-            className="p-2 hover:bg-accent rounded transition-colors"
-            title="Select Tool"
-            >
-            <MousePointer2 size={20} color="white" />
-            </button>
+        {/* Special tool function */}
+        <button
+          onClick={selectTool}
+          className="p-2 hover:bg-accent rounded"
+          title="Select Tool"
+        >
+          <MousePointer2 size={20} color="white" />
+        </button>
       </div>
     </div>
   );
