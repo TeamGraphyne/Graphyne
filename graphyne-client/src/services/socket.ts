@@ -30,14 +30,14 @@ class SocketService {
     }
 
     // Send a command (e.g., from Playout Page)
-    emit(event: string, data?: any) {
+    emit<T = unknown>(event: string, data?: T) {
         if (this.socket) {
             this.socket.emit(event, data);
         }
     }
 
     // Listen for events (e.g., in Renderer)
-    on(event: string, callback: (data: any) => void) {
+    on<T = unknown>(event: string, callback: (data: T) => void) {
         if (this.socket) {
             this.socket.on(event, callback);
         }

@@ -26,7 +26,7 @@ export const Artboard = () => {
   // --- SELECTION RECTANGLE STATE ---
   const [selectionBox, setSelectionBox] = useState<{ x: number; y: number; width: number; height: number; isSelecting: boolean } | null>(null);
 
-  // --- 1. TRANSFORMER SYNC ---
+  // --- TRANSFORMER SYNC ---
   useEffect(() => {
     if (trRef.current && layerRef.current) {
       const stage = trRef.current.getStage();
@@ -39,7 +39,8 @@ export const Artboard = () => {
     }
   }, [selectedIds, elements]); 
 
-  // --- 2. DRAG HANDLERS ---
+
+  // --- DRAG HANDLERS ---
   const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
     const id = e.target.id();
     if (!selectedIds.includes(id)) {
@@ -59,10 +60,9 @@ export const Artboard = () => {
     }));
   };
 
-  // --- 3. SELECTION RECTANGLE LOGIC ---
+  // --- SELECTION RECTANGLE LOGIC ---
   const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const isElement = e.target !== e.target.getStage();
-    // If clicking empty space, start selection box
     if (!isElement) {
       const pos = e.target.getStage()?.getPointerPosition();
       if (pos) {
@@ -113,7 +113,7 @@ export const Artboard = () => {
     setSelectionBox(null);
   };
 
-  // --- 4. KEYBOARD SHORTCUTS ---
+  // --- KEYBOARD SHORTCUTS ---
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
@@ -126,6 +126,9 @@ export const Artboard = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // Handle Loading State
+  if (!canvasConfig) return <div>Loading Canvas...</div>;
 
   const scale = 0.5;
 

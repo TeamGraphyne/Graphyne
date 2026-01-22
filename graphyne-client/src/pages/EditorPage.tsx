@@ -50,7 +50,7 @@ export function EditorPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
-      {/* HEADER */}
+      {/* 1. HEADER */}
       <header className="h-20 bg-gray-900 border-b border-gray-800 flex flex-col justify-center px-4 z-20">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">

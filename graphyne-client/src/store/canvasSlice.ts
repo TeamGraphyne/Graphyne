@@ -29,18 +29,18 @@ export const canvasSlice = createSlice({
       }
     },
 
-    updateElements: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }[]>) => {
-      action.payload.forEach(update => {
-        const index = state.elements.findIndex(el => el.id === update.id);
+    // REFACTOR: Flattened payload for bulk updates
+    updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
+      action.payload.forEach(({ id, ...changes }) => {
+        const index = state.elements.findIndex(el => el.id === id);
         if (index !== -1) {
-          state.elements[index] = { ...state.elements[index], ...update.props };
+          state.elements[index] = { ...state.elements[index], ...changes };
         }
       });
     },
 
     removeElement: (state, action: PayloadAction<string>) => {
       state.elements = state.elements.filter(el => el.id !== action.payload);
-      // Only remove the deleted ID from selection, keep others selected
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
 
@@ -57,16 +57,13 @@ export const canvasSlice = createSlice({
       state.selectedIds = action.payload;
     },
 
-    // Toggles selection for multi-select
     toggleSelection: (state, action: PayloadAction<string>) => {
       const id = action.payload;
       const index = state.selectedIds.indexOf(id);
 
       if (index !== -1) {
-        // If already selected, remove it
         state.selectedIds.splice(index, 1);
       } else {
-        // If not selected, add it
         state.selectedIds.push(id);
       }
     },
