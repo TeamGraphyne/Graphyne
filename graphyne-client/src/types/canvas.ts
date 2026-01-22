@@ -19,6 +19,7 @@ export interface CanvasElement {
   id: string;
   type: ElementType;
   name: string;
+
   // Position & Dimensions
   x: number;
   y: number;
@@ -31,19 +32,19 @@ export interface CanvasElement {
 
   // Style Props
   fill: string;
-  stroke: string;
-  strokeWidth: number;
+  stroke?: string;        // Made optional to match typical usage
+  strokeWidth?: number;   // Made optional
   opacity: number;
-  cornerRadius?: number; // For Rect
-  
+  cornerRadius?: number;
+
   // Text Specific
-  text?: string;         
-  fontSize?: number;     
+  text?: string;
+  fontSize?: number;
   fontFamily?: string;
   align?: 'left' | 'center' | 'right';
 
   // Image Specific
-  src?: string;          
+  src?: string;
 
   // Effects
   shadow?: ShadowEffect;
@@ -51,8 +52,10 @@ export interface CanvasElement {
   // State
   isLocked: boolean;
   isVisible: boolean;
-  inAnimation: AnimationConfig;
-  outAnimation: AnimationConfig;
+
+  // Animation State
+  inAnimation?: AnimationConfig;  // Optional to allow partial updates
+  outAnimation?: AnimationConfig; // Optional
 }
 
 export interface CanvasConfig {
