@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import fs from 'fs-extra';
 import { projectRoutes } from './routes/projects';
+import { graphicRoutes } from './routes/graphics';
 
 // 1. Setup Directories
 const DATA_DIR = path.join(__dirname, '../data');
@@ -28,7 +29,10 @@ app.register(fastifyStatic, {
 });
 
 // 4. Register Routes
-app.register(projectRoutes(PROJECTS_DIR));
+app.register(projectRoutes);
+app.register(graphicRoutes(DATA_DIR));
+
+
 
 // 5. Initialize Socket.io
 const io = new Server(app.server, {

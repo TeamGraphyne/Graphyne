@@ -1,167 +1,72 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
-import { ProjectData } from '../types/project';
 import { v4 as uuidv4 } from 'uuid';
 
-export const projectRoutes = (projectsDir: string) => async (fastify: FastifyInstance) => {
+interface SaveProjectBody {
+    id?: string;
+    name: string;
+    items: {
+        graphicId: string;
+        order: number;
+    }[];
+}
 
-    // GET: List all projects
-    // Returns a summary list (ID, Name, Thumbnail) for the dashboard
-    fastify.get('/api/projects', async (request, reply) => {
-        try {
-            const projects = await prisma.project.findMany({
-                select: {
-                    id: true,
-                    name: true,
-                    version: true,
-                    thumbnail: true,
-                    updatedAt: true
-                },
-                orderBy: {
-                    updatedAt: 'desc'
-                }
-            });
-            return projects;
-        } catch (error) {
-            request.log.error(error);
-            return reply.code(500).send({ error: 'Failed to fetch projects' });
-        }
-    });
+export const projectRoutes = async (fastify: FastifyInstance) => {
 
-
-    // GET: Load a specific project
-    // Fetches the project, its elements, then reshapes it 
-    // to match the 'ProjectData' interface expected by the frontend
-    fastify.get<{ Params: { id: string } }>('/api/projects/:id', async (request, reply) => {
-        const { id } = request.params;
-
-        try {
-            const project = await prisma.project.findUnique({
-                where: { id },
-                include: {
-                    elements: true // Join the elements table
-                }
-            });
-
-            if (!project) {
-                return reply.code(404).send({ error: 'Project not found' });
+    // GET: List All Projects (Playlists)
+    fastify.get('/api/projects', async () => {
+        return await prisma.project.findMany({
+            include: {
+                _count: { select: { items: true } }
             }
-
-            // RESHAPE: Database (Flat) -> Frontend (Nested)
-            const responseData: ProjectData = {
-                id: project.id,
-                name: project.name,
-                version: project.version,
-                lastModified: project.updatedAt.getTime(),
-                thumbnail: project.thumbnail || undefined,
-                config: {
-                    width: project.width,
-                    height: project.height,
-                    background: project.background // Mapped from 'background' column
-                },
-                // Map elements back to CanvasElement shape
-                elements: project.elements.map(el => ({
-                    id: el.id,
-                    type: el.type as any, // Cast string back to 'rect'|'text' etc.
-                    name: el.name,
-                    x: el.x,
-                    y: el.y,
-                    width: el.width,
-                    height: el.height,
-                    rotation: el.rotation,
-                    scaleX: el.scaleX,
-                    scaleY: el.scaleY,
-                    zIndex: el.zIndex,
-                    fill: el.fill,
-                    stroke: el.stroke || '',
-                    opacity: el.opacity,
-                    text: el.text || undefined,
-                    src: el.src || undefined,
-                    isLocked: false,  // Default
-                    isVisible: true,  // Default
-                }))
-            };
-
-            return responseData;
-
-        } catch (error) {
-            request.log.error(error);
-            return reply.code(500).send({ error: 'Failed to load project' });
-        }
+        });
     });
 
-    // POST: Save (Create or Update) a project
-    // Uses a Transaction to ensure the project and elements 
-    // are saved together atomically.
-    fastify.post<{ Body: ProjectData }>('/api/projects', async (request, reply) => {
-        const data = request.body;
 
-        // Validate
-        if (!data.elements || !Array.isArray(data.elements)) {
-            return reply.code(400).send({ error: 'Invalid project format: missing elements' });
-        }
+    // GET: Load a Project (Playlist with Graphics)
+    fastify.get<{ Params: { id: string } }>('/api/projects/:id', async (request, reply) => {
+        const project = await prisma.project.findUnique({
+            where: { id: request.params.id },
+            include: {
+                items: {
+                    include: {
+                        graphic: true // Fetch the Graphic details (filePath!) for each item
+                    }
+                }
+            }
+        });
+        return project;
+    });
 
-        const projectId = data.id || uuidv4();
+    // POST: Save a Project (Playlist)
+    fastify.post<{ Body: SaveProjectBody }>('/api/projects', async (request, reply) => {
+        const { id, name, items } = request.body;
+        const projectId = id || uuidv4();
 
         try {
-            // We use a transaction to:
-            // 1. Upsert the Project details
-            // 2. Delete ALL old elements for this project
-            // 3. Create ALL new elements (Fresh state)
             const result = await prisma.$transaction(async (tx) => {
-
-                // 1. Update or Create Project
+                // 1. Upsert Project Header
                 const project = await tx.project.upsert({
                     where: { id: projectId },
-                    update: {
-                        name: data.name,
-                        version: data.version,
-                        thumbnail: data.thumbnail,
-                        width: data.config.width,
-                        height: data.config.height,
-                        background: data.config.background,
-                    },
-                    create: {
-                        id: projectId,
-                        name: data.name,
-                        version: data.version || '1.0.0',
-                        thumbnail: data.thumbnail,
-                        width: data.config.width,
-                        height: data.config.height,
-                        background: data.config.background,
-                    }
+                    update: { name },
+                    create: { id: projectId, name }
                 });
 
-                // 2. Clear old elements
-                await tx.element.deleteMany({
+                // 2. Clear old items
+                await tx.playlistItem.deleteMany({
                     where: { projectId: projectId }
                 });
 
-                // 3. Insert new elements
-                if (data.elements.length > 0) {
-                    await tx.element.createMany({
-                        data: data.elements.map(el => ({
-                            id: el.id, // Keep the frontend ID
+                // 3. Create new items
+                if (items && items.length > 0) {
+                    await tx.playlistItem.createMany({
+                        data: items.map((item, index) => ({
                             projectId: projectId,
-                            type: el.type,
-                            name: el.name,
-                            x: el.x,
-                            y: el.y,
-                            width: el.width,
-                            height: el.height,
-                            rotation: el.rotation || 0,
-                            scaleX: el.scaleX || 1,
-                            scaleY: el.scaleY || 1,
-                            zIndex: el.zIndex || 0,
-                            fill: el.fill,
-                            stroke: el.stroke,
-                            opacity: el.opacity ?? 1,
-                            text: el.text,
-                            src: el.src
+                            graphicId: item.graphicId,
+                            order: index // Ensure order is saved based on array position
                         }))
                     });
                 }
-
                 return project;
             });
 
