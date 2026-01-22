@@ -1,107 +1,79 @@
-name: CI Pipeline
+name: Graphyne CI
 
 on:
   push:
-    branches:  [main, develop]
-  pull_request: 
-    branches: [main, develop]
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION:  '8'
 
-jobs: 
-  # Job 1: Lint and Type Check
-  lint: 
-    name: Lint & Type Check
+jobs:
+  # --- CLIENT CHECKS ---
+  client-ci:
+    name: Client (Build & Lint)
     runs-on: ubuntu-latest
-    steps: 
-      - name: Checkout code
-        uses: actions/checkout@v4
+    defaults:
+      run:
+        working-directory: ./graphyne-client
 
-      - name:  Setup pnpm
-        uses: pnpm/action-setup@v2
-        with: 
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node. js
-        uses:  actions/setup-node@v4
-        with: 
-          node-version:  ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run ESLint
-        run: pnpm lint
-
-      - name:  Run TypeScript check
-        run: pnpm type-check
-
-  # Job 2: Run Tests
-  test: 
-    name: Run Tests
-    runs-on: ubuntu-latest
-    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version:  ${{ env. PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          # Caches npm dependencies based on the lock file
+          cache: 'npm'
+          cache-dependency-path: graphyne-client/package-lock.json
 
-      - name:  Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install Client Dependencies
+        run: npm ci
 
-      - name:  Run tests
-        run: pnpm test -- --coverage
+      - name: Lint Client
+        run: npm run lint
 
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        if: always()
-        with:
-          files: ./coverage/lcov.info
+      - name: Build Client
+        run: npm run build
 
-  # Job 3: Build Application
-  build: 
-    name: Build Application
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout code
-        uses:  actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build all packages
-        run:  pnpm build
-
-      - name: Upload build artifacts
+      - name: Upload Client Artifact
         uses: actions/upload-artifact@v4
-        with: 
-          name: build-output
-          path: |
-            apps/web/dist
-            apps/server/dist
-          retention-days: 7
+        with:
+          name: client-dist
+          path: graphyne-client/dist
+          retention-days: 5
+
+  # --- SERVER CHECKS ---
+  server-ci:
+    name: Server (Build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./graphyne-server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: graphyne-server/package-lock.json
+
+      - name: Install Server Dependencies
+        run: npm ci
+
+      - name: Build Server
+        run: npm run build
+
+      - name: Upload Server Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-dist
+          path: graphyne-server/dist
+          retention-days: 5
