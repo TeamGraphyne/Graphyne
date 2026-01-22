@@ -54,7 +54,7 @@ export const TestArtboard = () => {
           <button onClick={() => handleAdd('circle')} className="px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded text-sm transition">
             + Circle
           </button> */}
-          <Toolbar></Toolbar>
+          <Toolbar/>
         </div>
 
         <div className="flex gap-2">
