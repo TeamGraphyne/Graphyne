@@ -15,33 +15,33 @@ export const canvasSlice = createSlice({
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
       const newElement = { ...action.payload, id: uuidv4() };
       state.elements.push(newElement);
-      // Auto-select new item
-      state.selectedIds = [newElement.id]; 
+      state.selectedIds = [newElement.id];
     },
-    
-    updateElement: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }>) => {
-      const index = state.elements.findIndex(el => el.id === action.payload.id);
+
+    // REFACTOR: Flattened payload to match component usage
+    updateElement: (state, action: PayloadAction<Partial<CanvasElement> & { id: string }>) => {
+      const { id, ...changes } = action.payload;
+      const index = state.elements.findIndex(el => el.id === id);
       if (index !== -1) {
-        state.elements[index] = { ...state.elements[index], ...action.payload.props };
+        state.elements[index] = { ...state.elements[index], ...changes };
       }
     },
 
-    updateElements: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }[]>) => {
-      action.payload.forEach(update => {
-        const index = state.elements.findIndex(el => el.id === update.id);
+    // REFACTOR: Flattened payload for bulk updates
+    updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
+      action.payload.forEach(({ id, ...changes }) => {
+        const index = state.elements.findIndex(el => el.id === id);
         if (index !== -1) {
-          state.elements[index] = { ...state.elements[index], ...update.props };
+          state.elements[index] = { ...state.elements[index], ...changes };
         }
       });
     },
-    
+
     removeElement: (state, action: PayloadAction<string>) => {
       state.elements = state.elements.filter(el => el.id !== action.payload);
-      // Only remove the deleted ID from selection, keep others selected
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
-    
-    // Accepts string or null. If null, clears selection.
+
     selectElement: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
         state.selectedIds = [];
@@ -54,36 +54,33 @@ export const canvasSlice = createSlice({
       state.selectedIds = action.payload;
     },
 
-    // Toggles selection for multi-select
     toggleSelection: (state, action: PayloadAction<string>) => {
       const id = action.payload;
       const index = state.selectedIds.indexOf(id);
-      
+
       if (index !== -1) {
-        // If already selected, remove it
         state.selectedIds.splice(index, 1);
       } else {
-        // If not selected, add it
         state.selectedIds.push(id);
       }
     },
 
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
-       const [removed] = state.elements.splice(action.payload.fromIndex, 1);
-       state.elements.splice(action.payload.toIndex, 0, removed);
+      const [removed] = state.elements.splice(action.payload.fromIndex, 1);
+      state.elements.splice(action.payload.toIndex, 0, removed);
     }
   }
 });
 
-export const { 
-  addElement, 
+export const {
+  addElement,
   updateElement,
   updateElements,
-  removeElement, 
-  selectElement, 
+  removeElement,
+  selectElement,
   setSelection,
   toggleSelection,
-  reorderElement 
+  reorderElement
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Stage, Layer, Rect, Circle, Text, Transformer } from 'react-konva';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../../store/store';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   selectElement, 
   updateElement, 
@@ -12,8 +11,12 @@ import {
 import Konva from 'konva';
 
 export const Artboard = () => {
-  const dispatch = useDispatch();
-  const { elements, selectedIds, canvasConfig } = useSelector((state: RootState) => state.canvas.present || state.canvas);
+  const dispatch = useAppDispatch();
+  
+  // 1. SELECTOR: Use 'canvasConfig' to match your latest Type definitions
+  const { elements, selectedIds, canvasConfig } = useAppSelector((state) => 
+    state.canvas.present || state.canvas
+  );
   
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
@@ -22,7 +25,7 @@ export const Artboard = () => {
   // --- SELECTION RECTANGLE STATE ---
   const [selectionBox, setSelectionBox] = useState<{ x: number; y: number; width: number; height: number; isSelecting: boolean } | null>(null);
 
-  // --- 1. TRANSFORMER SYNC ---
+  // --- TRANSFORMER SYNC ---
   useEffect(() => {
     if (trRef.current && layerRef.current) {
       const stage = trRef.current.getStage();
@@ -33,35 +36,29 @@ export const Artboard = () => {
       trRef.current.nodes(selectedNodes);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedIds, elements]); // Include elements to re-attach if they re-render
+  }, [selectedIds, elements]); 
 
 
-  // --- 2. DRAG HANDLERS (MISSING FROM YOUR CODE) ---
+  // --- DRAG HANDLERS ---
   const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
     const id = e.target.id();
-    // If the user drags an item that ISN'T selected, select it
     if (!selectedIds.includes(id)) {
       dispatch(selectElement(id));
     }
   };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    // 1. Get the shape that was actually dragged
     const node = e.target;
-    const id = node.id();
     dispatch(updateElement({
-      id: id,
-      props: {
-        x: node.x(),
-        y: node.y()
-      }
+      id: node.id(),
+      x: node.x(),
+      y: node.y()
     }));
   };
 
-  // --- 3. SELECTION RECTANGLE LOGIC ---
+  // --- SELECTION RECTANGLE LOGIC ---
   const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const isElement = e.target !== e.target.getStage();
-    // If clicking empty space, start selection box
     if (!isElement) {
       const pos = e.target.getStage()?.getPointerPosition();
       if (pos) {
@@ -72,7 +69,7 @@ export const Artboard = () => {
           height: 0,
           isSelecting: true
         });
-        dispatch(selectElement(null)); // Clear current selection
+        dispatch(selectElement(null)); 
       }
     }
   };
@@ -94,7 +91,6 @@ export const Artboard = () => {
 
   const onMouseUp = () => {
     if (selectionBox?.isSelecting && stageRef.current) {
-      // Calculate intersection
       const box = {
         x: Math.min(selectionBox.x, selectionBox.x + selectionBox.width),
         y: Math.min(selectionBox.y, selectionBox.y + selectionBox.height),
@@ -102,9 +98,8 @@ export const Artboard = () => {
         height: Math.abs(selectionBox.height)
       };
 
-      const shapes = stageRef.current.find('.rect, .circle, .text'); // Add classes to shapes if needed, or filter all
+      const shapes = stageRef.current.find('.rect, .circle, .text'); 
       const selected = shapes.filter((shape) => {
-        // Simple bounding box intersection
         return Konva.Util.haveIntersection(box, shape.getClientRect());
       });
 
@@ -114,7 +109,7 @@ export const Artboard = () => {
     setSelectionBox(null);
   };
 
-  // --- 4. KEYBOARD SHORTCUTS ---
+  // --- KEYBOARD SHORTCUTS ---
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
@@ -127,6 +122,9 @@ export const Artboard = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // Handle Loading State
+  if (!canvasConfig) return <div>Loading Canvas...</div>;
 
   const scale = 0.5;
 
@@ -143,7 +141,7 @@ export const Artboard = () => {
       onTouchStart={onMouseDown}
       onTouchMove={onMouseMove}
       onTouchEnd={onMouseUp}
-      style={{ backgroundColor: 'transparent' }} // Ensure no background interferes
+      style={{ backgroundColor: 'transparent' }}
     >
       <Layer ref={layerRef}>
         <Rect 
@@ -154,9 +152,9 @@ export const Artboard = () => {
         />
         
         {elements.map((el) => {
-
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const {zIndex, type, ...elementProps} = el;
+          
           const commonProps = {
             ...elementProps,
             name: el.type, 
@@ -175,15 +173,14 @@ export const Artboard = () => {
             onDragEnd: onDragEnd,
             onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
               const node = e.target;
+              // 3. FIX: Send FLAT payload for transforms too
               dispatch(updateElement({
                 id: el.id,
-                props: {
-                  x: node.x(),
-                  y: node.y(),
-                  rotation: node.rotation(),
-                  scaleX: node.scaleX(),
-                  scaleY: node.scaleY(),
-                }
+                x: node.x(),
+                y: node.y(),
+                rotation: node.rotation(),
+                scaleX: node.scaleX(),
+                scaleY: node.scaleY(),
               }));
             }
           };
@@ -212,7 +209,6 @@ export const Artboard = () => {
         <Transformer 
           ref={trRef} 
           boundBoxFunc={(oldBox, newBox) => {
-            // Limit minimum size to 5px
             if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
               return oldBox;
             }
