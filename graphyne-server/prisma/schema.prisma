@@ -7,46 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Project {
-  id         String   @id @default(uuid())
-  name       String
-  version    String   @default("1.0.0")
-  thumbnail  String? // Base64 or URL
-  width      Int
-  height     Int
-  background String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model Graphic {
+  id        String  @id @default(uuid())
+  name      String
+  thumbnail String?
+  filePath  String
 
-  // A Project contains many Elements
-  elements Element[]
+  rawJson String @db.Text // Stringified JSON source
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A Graphic can be in many Projects (Playlists)
+  projects PlaylistItem[]
 }
 
-model Element {
-  id   String @id @default(uuid())
-  type String // 'rect', 'text', 'circle'
-  name String
+model Project {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
 
-  // Position & Dimensions
-  x        Float
-  y        Float
-  width    Float
-  height   Float
-  rotation Float @default(0)
-  scaleX   Float @default(1)
-  scaleY   Float @default(1)
-  zIndex   Int   @default(0)
+  // A Project is a ordered list of Graphics
+  items PlaylistItem[]
+}
 
-  // Style
-  fill    String
-  stroke  String?
-  opacity Float   @default(1)
+model PlaylistItem {
+  id String @id @default(uuid())
 
-  // Content
-  text String?
-  src  String? // For images
-
-  // Relations
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id])
   projectId String
+
+  graphic   Graphic @relation(fields: [graphicId], references: [id])
+  graphicId String
+
+  order Int
 }
