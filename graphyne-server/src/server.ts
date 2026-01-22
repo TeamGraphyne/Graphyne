@@ -11,10 +11,10 @@ import { graphicRoutes } from './routes/graphics';
 // 1. Setup Directories
 const DATA_DIR = path.join(__dirname, '../data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
-const PROJECTS_DIR = path.join(DATA_DIR, 'projects');
+const GRAPHICS_DIR = path.join(DATA_DIR, 'graphics');
 
 fs.ensureDirSync(UPLOADS_DIR);
-fs.ensureDirSync(PROJECTS_DIR);
+fs.ensureDirSync(GRAPHICS_DIR);
 
 // 2. Initialize Fastify
 const app = Fastify({ logger: true });
@@ -26,6 +26,13 @@ app.register(multipart); // Support file uploads
 app.register(fastifyStatic, {
     root: UPLOADS_DIR,
     prefix: '/uploads/',
+});
+
+// B. Serve Compiled HTML Graphics
+app.register(fastifyStatic, {
+    root: GRAPHICS_DIR,
+    prefix: '/graphics/',
+    decorateReply: false // Required when registering static plugin twice
 });
 
 // 4. Register Routes
@@ -45,16 +52,20 @@ const io = new Server(app.server, {
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
 
-    // Example: Client joins a specific "session" room
     socket.on('join-session', (sessionId) => {
         socket.join(sessionId);
         console.log(`Socket ${socket.id} joined session ${sessionId}`);
     });
 
-    // Example: Receive "TAKE" command from Playout, forward to Renderer
+    // Relay "TAKE" commands to the Renderer
     socket.on('command:take', (data) => {
-        // Broadcast to everyone EXCEPT sender (or specifically to renderer)
+        console.log('⚡ TAKING GRAPHIC:', data);
         socket.broadcast.emit('render:take', data);
+    });
+
+    socket.on('command:clear', () => {
+        console.log('⚡ CLEARING PROGRAM');
+        socket.broadcast.emit('render:clear');
     });
 
     socket.on('disconnect', () => {
@@ -67,6 +78,7 @@ const start = async () => {
     try {
         await app.listen({ port: 3001, host: '0.0.0.0' });
         console.log(`🚀 Graphyne Backend running at http://localhost:3001`);
+        console.log(`📂 Serving Graphics at /graphics/`);
     } catch (err) {
         app.log.error(err);
         process.exit(1);

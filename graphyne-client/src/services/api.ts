@@ -1,43 +1,32 @@
+// graphyne-client/src/services/api.ts
 import axios from 'axios';
-import type { ProjectData } from '../types/project';
+import type { ProjectData, GraphicData } from '../types/project';
 
-// Configuration
 const API_URL = 'http://localhost:3001/api';
-
-const client = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+const client = axios.create({ baseURL: API_URL });
 
 export const api = {
-    // 1. Fetch all projects
-    getProjects: async () => {
-        const response = await client.get<{ id: string; filename: string }[]>('/projects');
+    // --- GRAPHICS (Editor) ---
+    saveGraphic: async (payload: { name: string, html: string, json: any }) => {
+        // Correct Endpoint: /api/graphics
+        return await client.post<{ success: true, id: string }>('/graphics', payload);
+    },
+
+    getGraphics: async () => {
+        const response = await client.get<GraphicData[]>('/graphics');
         return response.data;
     },
 
-    // 2. Load a specific project
+    // --- PROJECTS (Playout) ---
+    getProjects: async () => {
+        // Returns list of Playlists
+        const response = await client.get<{ id: string, name: string }[]>('/projects');
+        return response.data;
+    },
+
     getProjectById: async (id: string) => {
+        // Returns the full Playlist with items
         const response = await client.get<ProjectData>(`/projects/${id}`);
         return response.data;
-    },
-
-    // 3. Save a project
-    saveProject: async (project: ProjectData) => {
-        const response = await client.post<{ success: true; id: string }>('/projects', project);
-        return response.data;
-    },
-
-    // 4. Upload an asset (Image/Video)
-    uploadAsset: async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await client.post<{ url: string }>('/assets/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        return response.data; // Returns { url: "http://localhost:3001/uploads/image.png" }
     }
 };

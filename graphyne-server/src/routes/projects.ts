@@ -16,6 +16,7 @@ export const projectRoutes = async (fastify: FastifyInstance) => {
     // GET: List All Projects (Playlists)
     fastify.get('/api/projects', async () => {
         return await prisma.project.findMany({
+            orderBy: { updatedAt: 'desc' },
             include: {
                 _count: { select: { items: true } }
             }
