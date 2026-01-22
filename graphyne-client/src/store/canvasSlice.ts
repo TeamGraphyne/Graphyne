@@ -68,6 +68,20 @@ export const canvasSlice = createSlice({
       }
     },
 
+    toggleVisibility: (state, action) => {
+      const el = state.elements.find(e => e.id === action.payload);
+      if (el) {
+        el.isVisible = !el.isVisible;
+      }
+    },
+
+    toggleLock: (state, action) => {
+      const el = state.elements.find(e => e.id === action.payload);
+      if (el) {
+        el.isLocked = !el.isLocked;
+      }
+    },
+
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
        const [removed] = state.elements.splice(action.payload.fromIndex, 1);
        state.elements.splice(action.payload.toIndex, 0, removed);
@@ -83,7 +97,9 @@ export const {
   selectElement, 
   setSelection,
   toggleSelection,
-  reorderElement 
+  reorderElement,
+  toggleVisibility,
+  toggleLock
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
