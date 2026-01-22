@@ -1,28 +1,31 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { CanvasElement, CanvasState } from '../types/canvas';
-import { v4 as uuidv4 } from 'uuid';
+
+import type { CanvasState, CanvasElement } from '../types/canvas';
 
 const initialState: CanvasState = {
   elements: [],
   selectedIds: [],
-  canvasConfig: { width: 1920, height: 1080, background: '#ffffff' }
+  // --- ADD INITIAL CONFIG ---
+  config: {
+    width: 1920,
+    height: 1080,
+    background: '#000000'
+  }
 };
 
 export const canvasSlice = createSlice({
   name: 'canvas',
   initialState,
   reducers: {
-    addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
-      const newElement = { ...action.payload, id: uuidv4() };
-      state.elements.push(newElement);
-      // Auto-select new item
-      state.selectedIds = [newElement.id]; 
+
+    addElement: (state, action: PayloadAction<CanvasElement>) => {
+      state.elements.push(action.payload);
     },
-    
-    updateElement: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }>) => {
+
+    updateElement: (state, action: PayloadAction<Partial<CanvasElement> & { id: string }>) => {
       const index = state.elements.findIndex(el => el.id === action.payload.id);
       if (index !== -1) {
-        state.elements[index] = { ...state.elements[index], ...action.payload.props };
+        state.elements[index] = { ...state.elements[index], ...action.payload };
       }
     },
 
@@ -34,13 +37,13 @@ export const canvasSlice = createSlice({
         }
       });
     },
-    
+
     removeElement: (state, action: PayloadAction<string>) => {
       state.elements = state.elements.filter(el => el.id !== action.payload);
       // Only remove the deleted ID from selection, keep others selected
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
-    
+
     // Accepts string or null. If null, clears selection.
     selectElement: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
@@ -58,7 +61,7 @@ export const canvasSlice = createSlice({
     toggleSelection: (state, action: PayloadAction<string>) => {
       const id = action.payload;
       const index = state.selectedIds.indexOf(id);
-      
+
       if (index !== -1) {
         // If already selected, remove it
         state.selectedIds.splice(index, 1);
@@ -69,21 +72,12 @@ export const canvasSlice = createSlice({
     },
 
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
-       const [removed] = state.elements.splice(action.payload.fromIndex, 1);
-       state.elements.splice(action.payload.toIndex, 0, removed);
+      const [removed] = state.elements.splice(action.payload.fromIndex, 1);
+      state.elements.splice(action.payload.toIndex, 0, removed);
     }
   }
 });
 
-export const { 
-  addElement, 
-  updateElement,
-  updateElements,
-  removeElement, 
-  selectElement, 
-  setSelection,
-  toggleSelection,
-  reorderElement 
-} = canvasSlice.actions;
+export const { addElement, updateElement } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
