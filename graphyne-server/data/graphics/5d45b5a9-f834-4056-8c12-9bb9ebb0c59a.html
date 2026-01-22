@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      width: 1920px;
+      height: 1080px;
+      position: relative;
+    }
+
+    .bar {
+      position: absolute;
+      bottom: 100px;
+      left: -100%;
+      width: 80%;
+      height: 100px;
+      background: linear-gradient(90deg, #0044cc, #001133);
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      padding-left: 50px;
+      font-size: 40px;
+      font-weight: bold;
+      animation: slideIn 1s forwards;
+    }
+
+    @keyframes slideIn {
+      to {
+        left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="bar">
+      BREAKING NEWS: Graphyne Engine Test Successful
+    </div>
+  </div>
+</body>
+
+</html>

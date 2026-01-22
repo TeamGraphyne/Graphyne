@@ -1,13 +1,14 @@
 // graphyne-client/src/services/api.ts
 import axios from 'axios';
 import type { ProjectData, GraphicData } from '../types/project';
+import { type CanvasState } from '../types';
 
 const API_URL = 'http://localhost:3001/api';
 const client = axios.create({ baseURL: API_URL });
 
 export const api = {
     // --- GRAPHICS (Editor) ---
-    saveGraphic: async (payload: { name: string, html: string, json: any }) => {
+    saveGraphic: async (payload: { name: string, html: string, json: CanvasState }) => {
         // Correct Endpoint: /api/graphics
         return await client.post<{ success: true, id: string }>('/graphics', payload);
     },
