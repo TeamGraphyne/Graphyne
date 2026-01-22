@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, Square, MonitorPlay, AlertCircle, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { socketService } from '../services/socket';
@@ -6,6 +6,51 @@ import type { PlaylistItem } from '../types/project';
 
 // Configuration
 const SERVER_URL = 'http://localhost:3001'; 
+
+// --- HELPER COMPONENT: Auto-Scaling Iframe ---
+// Renders content at 1920x1080 but shrinks it to fit the container
+const ScaledFrame = ({ src, title }: { src: string; title: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        // Calculate scale based on container width vs broadcast width (1920)
+        const currentWidth = containerRef.current.offsetWidth;
+        setScale(currentWidth / 1920);
+      }
+    };
+
+    // Update on mount and resize
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    if (containerRef.current) observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-black">
+      <div
+        style={{
+          width: '1920px',
+          height: '1080px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+        className="absolute top-0 left-0"
+      >
+        <iframe
+          src={src}
+          title={title}
+          className="w-full h-full border-0"
+          sandbox="allow-scripts"
+        />
+      </div>
+    </div>
+  );
+};
 
 export function PlayoutPage() {
   // --- State ---
@@ -68,10 +113,6 @@ export function PlayoutPage() {
         graphicId: previewItem.graphic.id,
         htmlPath: previewItem.graphic.filePath 
       });
-      
-      // Optional: Auto-load next item to preview?
-      // const currentIndex = playlist.findIndex(i => i.id === previewItem.id);
-      // if (currentIndex + 1 < playlist.length) setPreviewItem(playlist[currentIndex + 1]);
     }
   };
 
@@ -94,14 +135,8 @@ export function PlayoutPage() {
     // Construct the full URL to the backend static file server
     const graphicUrl = `${SERVER_URL}${item.graphic.filePath}`;
 
-    return (
-        <iframe 
-            src={graphicUrl} 
-            className="w-full h-full border-0 pointer-events-none"
-            title={label}
-            sandbox="allow-scripts" // Allow JS (GSAP animations) but block navigation/popups
-        />
-    );
+    // Scaled Frame
+    return <ScaledFrame src={graphicUrl} title={label} />;
   };
 
   return (
