@@ -1,5 +1,11 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  moveLayerUp,
+  moveLayerDown
+} from '../../store/canvasSlice';
+
 import {
   Eye,
   EyeOff,
@@ -11,7 +17,7 @@ import {
 import {
   toggleVisibility,
   toggleLock,
-  removeElement
+  removeElement,
 } from '../../store/canvasSlice';
 
 
@@ -77,6 +83,22 @@ export const LayersPanel = () => {
                   className="text-red-400 hover:text-red-500"
                 />
               </button>
+
+              {/* Move Up */}
+                <button
+                onClick={() => dispatch(moveLayerUp(el.id))}
+                title="Move Up"
+                >
+                <ChevronUp size={16} className="text-gray-300" />
+                </button>
+
+                {/* Move Down */}
+                <button
+                onClick={() => dispatch(moveLayerDown(el.id))}
+                title="Move Down"
+                >
+                <ChevronDown size={16} className="text-gray-300" />
+                </button>
 
             </div>
           </div>
