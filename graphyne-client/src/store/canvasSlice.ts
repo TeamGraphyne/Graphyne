@@ -85,8 +85,33 @@ export const canvasSlice = createSlice({
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
        const [removed] = state.elements.splice(action.payload.fromIndex, 1);
        state.elements.splice(action.payload.toIndex, 0, removed);
-    }
-  }
+    },
+
+    // move layers up and down
+    moveLayerUp: (state, action) => {
+      const index = state.elements.findIndex(
+        el => el.id === action.payload
+      );
+
+      if (index === -1 || index === state.elements.length - 1) return;
+
+      const temp = state.elements[index];
+      state.elements[index] = state.elements[index + 1];
+      state.elements[index + 1] = temp;
+    },
+
+    moveLayerDown: (state, action) => {
+      const index = state.elements.findIndex(
+        el => el.id === action.payload
+      );
+
+      if (index <= 0) return;
+
+      const temp = state.elements[index];
+      state.elements[index] = state.elements[index - 1];
+      state.elements[index - 1] = temp;
+    },
+  } 
 });
 
 export const { 
@@ -99,7 +124,9 @@ export const {
   toggleSelection,
   reorderElement,
   toggleVisibility,
-  toggleLock
+  toggleLock,
+  moveLayerUp,
+  moveLayerDown
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
