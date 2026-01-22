@@ -7,6 +7,8 @@ import {
 } from '../store/canvasSlice';
 import type { RootState } from '../store/store';
 import type { CanvasElement } from '../types/canvas';
+import { Toolbar } from '../components/UI/Toolbar';
+import { LayersPanel } from '../components/UI/LayersPanel';
 
 // Helper: Updated to match new Types
 const createMockElement = (type: 'rect' | 'circle'): Omit<CanvasElement, 'id'> => ({
@@ -46,12 +48,13 @@ export const TestArtboard = () => {
         <h1 className="text-xl font-bold text-gray-200 mr-4">Graphyne Debugger</h1>
         
         <div className="flex gap-2 border-r border-gray-600 pr-4">
-          <button onClick={() => handleAdd('rect')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm transition">
+          {/* <button onClick={() => handleAdd('rect')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm transition">
             + Rect
           </button>
           <button onClick={() => handleAdd('circle')} className="px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded text-sm transition">
             + Circle
-          </button>
+          </button> */}
+          <Toolbar></Toolbar>
         </div>
 
         <div className="flex gap-2">
@@ -67,9 +70,17 @@ export const TestArtboard = () => {
       {/* 2. Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Left: The Actual Artboard (Production Environment) */}
-        <div className="flex-1 relative overflow-hidden flex flex-col">
-          <Artboard />
+        {/* Left: Layers Panel */}
+        <div className="w-64 bg-panel border-r border-gray-700 shrink-0">
+          <LayersPanel />
+        </div>
+
+        {/* Center: The Actual Artboard (Production Environment) */}
+        {/* Center: The Actual Artboard (Production Environment) */}
+        <div className="flex-1 flex items-center justify-center bg-gray-900 relative overflow-hidden">
+          <div className="w-[800px] h-[600px] bg-gray-800">
+            <Artboard />
+          </div>
         </div>
 
         {/* Right: Debug Data Panel */}
