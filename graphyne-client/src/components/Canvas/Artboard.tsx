@@ -7,7 +7,7 @@ import {
   updateElement, 
   toggleSelection, 
   removeElement,
-  setSelection    // Imported the new action
+  setSelection
 } from '../../store/canvasSlice';
 import Konva from 'konva';
 
@@ -128,98 +128,98 @@ export const Artboard = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  const scale = 0.5;
+
   return (
-    <div className="flex-1 bg-gray-900 flex justify-center items-center overflow-auto p-10 outline-none">
-      <Stage 
-        ref={stageRef}
-        width={canvasConfig.width} 
-        height={canvasConfig.height} 
-        scaleX={0.5}
-        scaleY={0.5}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onTouchStart={onMouseDown}
-        onTouchMove={onMouseMove}
-        onTouchEnd={onMouseUp}
-      >
-        <Layer ref={layerRef}>
-          <Rect 
-            name="background"
-            width={canvasConfig.width} 
-            height={canvasConfig.height} 
-            fill={canvasConfig.background} 
-            // Removed onMouseDown here because Stage handles it now
-          />
-          
-          {elements.map((el) => {
+    <Stage 
+      ref={stageRef}
+      width={canvasConfig.width * scale} 
+      height={canvasConfig.height * scale} 
+      scaleX={scale}
+      scaleY={scale}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onTouchStart={onMouseDown}
+      onTouchMove={onMouseMove}
+      onTouchEnd={onMouseUp}
+      style={{ backgroundColor: 'transparent' }} // Ensure no background interferes
+    >
+      <Layer ref={layerRef}>
+        <Rect 
+          name="background"
+          width={canvasConfig.width} 
+          height={canvasConfig.height} 
+          fill={canvasConfig.background} 
+        />
+        
+        {elements.map((el) => {
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const {zIndex, type, ...elementProps} = el;
-            const commonProps = {
-              ...elementProps,
-              name: el.type, 
-              draggable: !el.isLocked,
-              onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
-                e.cancelBubble = true;
-                if (e.evt.shiftKey) {
-                  dispatch(toggleSelection(el.id));
-                } else {
-                  if (!selectedIds.includes(el.id)) {
-                    dispatch(selectElement(el.id));
-                  }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const {zIndex, type, ...elementProps} = el;
+          const commonProps = {
+            ...elementProps,
+            name: el.type, 
+            draggable: !el.isLocked,
+            onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+              e.cancelBubble = true;
+              if (e.evt.shiftKey) {
+                dispatch(toggleSelection(el.id));
+              } else {
+                if (!selectedIds.includes(el.id)) {
+                  dispatch(selectElement(el.id));
                 }
-              },
-              onDragStart: onDragStart,
-              onDragEnd: onDragEnd,
-              onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
-                const node = e.target;
-                dispatch(updateElement({
-                  id: el.id,
-                  props: {
-                    x: node.x(),
-                    y: node.y(),
-                    rotation: node.rotation(),
-                    scaleX: node.scaleX(),
-                    scaleY: node.scaleY(),
-                  }
-                }));
               }
-            };
+            },
+            onDragStart: onDragStart,
+            onDragEnd: onDragEnd,
+            onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
+              const node = e.target;
+              dispatch(updateElement({
+                id: el.id,
+                props: {
+                  x: node.x(),
+                  y: node.y(),
+                  rotation: node.rotation(),
+                  scaleX: node.scaleX(),
+                  scaleY: node.scaleY(),
+                }
+              }));
+            }
+          };
 
-            if (!el.isVisible) return null;
+          if (!el.isVisible) return null;
 
-            if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
-            if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
-            if (el.type === 'text') return <Text key={el.id} {...commonProps} />;
-            return null;
-          })}
-          
-          {/* SELECTION RECTANGLE */}
-          {selectionBox && selectionBox.isSelecting && (
-            <Rect
-              x={selectionBox.x}
-              y={selectionBox.y}
-              width={selectionBox.width}
-              height={selectionBox.height}
-              fill="rgba(0, 161, 255, 0.3)"
-              stroke="#00a1ff"
-              strokeWidth={1}
-            />
-          )}
-
-          <Transformer 
-            ref={trRef} 
-            boundBoxFunc={(oldBox, newBox) => {
-              // Limit minimum size to 5px
-              if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
-                return oldBox;
-              }
-              return newBox;
-            }}
+          if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
+          if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
+          if (el.type === 'text') return <Text key={el.id} {...commonProps} />;
+          return null;
+        })}
+        
+        {/* SELECTION RECTANGLE */}
+        {selectionBox && selectionBox.isSelecting && (
+          <Rect
+            x={selectionBox.x}
+            y={selectionBox.y}
+            width={selectionBox.width}
+            height={selectionBox.height}
+            fill="rgba(0, 161, 255, 0.3)"
+            stroke="#00a1ff"
+            strokeWidth={1}
           />
-        </Layer>
-      </Stage>
-    </div>
+        )}
+
+        <Transformer 
+          ref={trRef} 
+          boundBoxFunc={(oldBox, newBox) => {
+            // Limit minimum size to 5px
+            if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+        />
+      </Layer>
+    </Stage>
   );
 };
