@@ -13,6 +13,7 @@
     "@gsap/react": "^2.1.2",
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/postcss": "^4.1.18",
+    "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "gsap": "^3.14.2",
     "konva": "^10.2.0",
@@ -24,6 +25,7 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.12.0",
     "redux-undo": "^1.1.0",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0"
   },
