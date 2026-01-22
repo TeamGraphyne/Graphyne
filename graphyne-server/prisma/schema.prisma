@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id         String   @id @default(uuid())
+  name       String
+  version    String   @default("1.0.0")
+  thumbnail  String? // Base64 or URL
+  width      Int
+  height     Int
+  background String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // A Project contains many Elements
+  elements Element[]
+}
+
+model Element {
+  id   String @id @default(uuid())
+  type String // 'rect', 'text', 'circle'
+  name String
+
+  // Position & Dimensions
+  x        Float
+  y        Float
+  width    Float
+  height   Float
+  rotation Float @default(0)
+  scaleX   Float @default(1)
+  scaleY   Float @default(1)
+  zIndex   Int   @default(0)
+
+  // Style
+  fill    String
+  stroke  String?
+  opacity Float   @default(1)
+
+  // Content
+  text String?
+  src  String? // For images
+
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+}
