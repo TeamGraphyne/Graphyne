@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Stage, Layer, Rect, Circle, Text, Transformer } from 'react-konva';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../../store/store';
+// Use the typed hooks defined in store/hooks.ts
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   selectElement, 
   updateElement, 
@@ -12,8 +12,12 @@ import {
 import Konva from 'konva';
 
 export const Artboard = () => {
-  const dispatch = useDispatch();
-  const { elements, selectedIds, canvasConfig } = useSelector((state: RootState) => state.canvas.present || state.canvas);
+  const dispatch = useAppDispatch();
+
+  // Handle redux-undo structure (present) or flat structure fallback
+  const { elements, selectedIds, config } = useAppSelector((state) => 
+    state.canvas.present || state.canvas
+  );
   
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
@@ -33,28 +37,25 @@ export const Artboard = () => {
       trRef.current.nodes(selectedNodes);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedIds, elements]); // Include elements to re-attach if they re-render
+  }, [selectedIds, elements]); 
 
-
-  // --- 2. DRAG HANDLERS (MISSING FROM YOUR CODE) ---
+  // --- 2. DRAG HANDLERS ---
   const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
     const id = e.target.id();
-    // If the user drags an item that ISN'T selected, select it
     if (!selectedIds.includes(id)) {
       dispatch(selectElement(id));
     }
   };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    // 1. Get the shape that was actually dragged
     const node = e.target;
     const id = node.id();
+    
+    // Flatten payload. reducer expects { id, x, y }, NOT { id, props: { x, y } }
     dispatch(updateElement({
       id: id,
-      props: {
-        x: node.x(),
-        y: node.y()
-      }
+      x: node.x(),
+      y: node.y()
     }));
   };
 
@@ -72,7 +73,7 @@ export const Artboard = () => {
           height: 0,
           isSelecting: true
         });
-        dispatch(selectElement(null)); // Clear current selection
+        dispatch(selectElement(null)); 
       }
     }
   };
@@ -94,7 +95,6 @@ export const Artboard = () => {
 
   const onMouseUp = () => {
     if (selectionBox?.isSelecting && stageRef.current) {
-      // Calculate intersection
       const box = {
         x: Math.min(selectionBox.x, selectionBox.x + selectionBox.width),
         y: Math.min(selectionBox.y, selectionBox.y + selectionBox.height),
@@ -102,9 +102,8 @@ export const Artboard = () => {
         height: Math.abs(selectionBox.height)
       };
 
-      const shapes = stageRef.current.find('.rect, .circle, .text'); // Add classes to shapes if needed, or filter all
+      const shapes = stageRef.current.find('.rect, .circle, .text'); 
       const selected = shapes.filter((shape) => {
-        // Simple bounding box intersection
         return Konva.Util.haveIntersection(box, shape.getClientRect());
       });
 
@@ -130,11 +129,14 @@ export const Artboard = () => {
 
   const scale = 0.5;
 
+  // Safeguard if config is not yet loaded
+  if (!config) return <div>Loading Canvas...</div>;
+
   return (
     <Stage 
       ref={stageRef}
-      width={canvasConfig.width * scale} 
-      height={canvasConfig.height * scale} 
+      width={config.width * scale} 
+      height={config.height * scale} 
       scaleX={scale}
       scaleY={scale}
       onMouseDown={onMouseDown}
@@ -143,24 +145,24 @@ export const Artboard = () => {
       onTouchStart={onMouseDown}
       onTouchMove={onMouseMove}
       onTouchEnd={onMouseUp}
-      style={{ backgroundColor: 'transparent' }} // Ensure no background interferes
+      style={{ backgroundColor: 'transparent' }}
     >
       <Layer ref={layerRef}>
         <Rect 
           name="background"
-          width={canvasConfig.width} 
-          height={canvasConfig.height} 
-          fill={canvasConfig.background} 
+          width={config.width} 
+          height={config.height} 
+          fill={config.background} 
         />
         
         {elements.map((el) => {
-
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const {zIndex, type, ...elementProps} = el;
+          
           const commonProps = {
             ...elementProps,
             name: el.type, 
-            draggable: !el.isLocked,
+            draggable: !el.isLocked, // Now valid thanks to updated types
             onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
               e.cancelBubble = true;
               if (e.evt.shiftKey) {
@@ -175,20 +177,20 @@ export const Artboard = () => {
             onDragEnd: onDragEnd,
             onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
               const node = e.target;
+              // Fix 3: Flatten payload for transform update as well
               dispatch(updateElement({
                 id: el.id,
-                props: {
-                  x: node.x(),
-                  y: node.y(),
-                  rotation: node.rotation(),
-                  scaleX: node.scaleX(),
-                  scaleY: node.scaleY(),
-                }
+                x: node.x(),
+                y: node.y(),
+                rotation: node.rotation(),
+                scaleX: node.scaleX(),
+                scaleY: node.scaleY(),
               }));
             }
           };
 
-          if (!el.isVisible) return null;
+          // Now valid thanks to updated types
+          if (el.isVisible === false) return null; 
 
           if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
           if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
@@ -212,7 +214,6 @@ export const Artboard = () => {
         <Transformer 
           ref={trRef} 
           boundBoxFunc={(oldBox, newBox) => {
-            // Limit minimum size to 5px
             if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
               return oldBox;
             }

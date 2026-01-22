@@ -12,6 +12,11 @@ export interface CanvasElement {
   scaleY?: number;
   opacity?: number;
   zIndex?: number;
+
+  // State flags
+  isVisible?: boolean;
+  isLocked?: boolean;
+
   // Text specific
   text?: string;
   fontSize?: number;
@@ -39,5 +44,5 @@ export interface CanvasConfig {
 export interface CanvasState {
   elements: CanvasElement[];
   selectedIds: string[];
-  config: CanvasConfig; // <--- ADD THIS
+  config: CanvasConfig;
 }

@@ -78,6 +78,6 @@ export const canvasSlice = createSlice({
   }
 });
 
-export const { addElement, updateElement } = canvasSlice.actions;
+export const { addElement, updateElement, updateElements, removeElement, selectElement, setSelection, toggleSelection, reorderElement } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
