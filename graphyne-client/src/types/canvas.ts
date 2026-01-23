@@ -1,3 +1,17 @@
+export interface ShadowEffect {
+  color: string;
+  blur: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export interface AnimationConfig {
+  type: string;
+  duration: number;
+  delay: number;
+  ease?: string;
+}
+
 export interface CanvasElement {
   id: string;
   type: 'rect' | 'circle' | 'text' | 'image';
@@ -7,6 +21,7 @@ export interface CanvasElement {
   width: number;
   height: number;
   fill: string;
+
   rotation?: number;
   scaleX?: number;
   scaleY?: number;
@@ -24,17 +39,23 @@ export interface CanvasElement {
   fontWeight?: string;
   fontStyle?: string;
   align?: 'left' | 'center' | 'right';
+
   // Shape specific
   stroke?: string;
   strokeWidth?: number;
   cornerRadius?: number;
+
   // Image specific
   src?: string;
+
+  // Effects (Grouped for cleaner state)
+  shadow?: ShadowEffect;
+
   // Animation
-  inAnimation?: { type: string; duration: number; delay: number };
+  inAnimation?: AnimationConfig;
+  outAnimation?: AnimationConfig;
 }
 
-// Canvas Config Interface
 export interface CanvasConfig {
   width: number;
   height: number;

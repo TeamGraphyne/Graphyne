@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
-  MonitorPlay, Layers, MousePointer2, Square, Type, 
-  Image as ImageIcon, Download, Loader2 
+  MonitorPlay, Download, Loader2 
 } from "lucide-react";
 
 // 1. Imports for Logic
@@ -9,11 +8,10 @@ import { useAppSelector } from '../store/hooks';
 import { api } from '../services/api';
 import { compileGraphicToHTML } from '../utils/exporter';
 import { Artboard } from "../components/Canvas/Artboard";
+import { LayersPanel } from "../components/UI/LayersPanel";
+import { Toolbar } from '../components/UI/Toolbar';
 
-// ... [MockToolbar, MockProperties, MockLayers components remain unchanged] ...
-const MockToolbar = () => ( <div className="flex w-full mt-2"> <div className="flex gap-2"> <div className="p-2 bg-blue-600 rounded text-white"> <MousePointer2 size={20} /> </div> <div className="p-2 text-gray-400 hover:text-white"> <Square size={20} /> </div> <div className="p-2 text-gray-400 hover:text-white"> <Type size={20} /> </div> <div className="p-2 text-gray-400 hover:text-white"> <ImageIcon size={20} /> </div> </div> </div> );
 const MockProperties = () => ( <div className="p-4 text-gray-300 space-y-4"> <h3 className="text-sm font-bold text-gray-500 uppercase">Transform</h3> <div className="grid grid-cols-2 gap-2"> <div className="bg-gray-800 p-2 rounded text-xs">X: 100</div> <div className="bg-gray-800 p-2 rounded text-xs">Y: 250</div> </div> <h3 className="text-sm font-bold text-gray-500 uppercase mt-4"> Appearance </h3> <div className="h-8 bg-red-500 rounded border border-gray-600"></div> </div> );
-const MockLayers = () => ( <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-10 transition-all duration-300"> <div className="p-3 border-b border-gray-800 font-bold text-xs text-gray-500 uppercase tracking-wider"> Layers </div> <div className="flex-1 overflow-y-auto"> {[1, 2, 3].map((i) => ( <div key={i} className="px-4 py-2 border-b border-gray-800 text-sm text-gray-300 hover:bg-gray-800 cursor-pointer flex items-center gap-2"> <Layers size={14} /> Layer {i} </div> ))} </div> </div> );
 
 export function EditorPage() {
   // 2. Access Redux State
@@ -83,12 +81,12 @@ export function EditorPage() {
             </button>
           </div>
         </div>
-        <MockToolbar />
+        <Toolbar />
       </header>
 
       {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden">
-        <MockLayers />
+        <LayersPanel />
         
         {/* CENTER: Canvas */}
         <div className="flex-1 bg-gray-800/50 relative overflow-hidden flex flex-col">

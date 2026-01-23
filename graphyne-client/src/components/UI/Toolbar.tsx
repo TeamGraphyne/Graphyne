@@ -1,23 +1,14 @@
-import React from 'react';
 import { useDispatch } from 'react-redux';
-import { ActionCreators } from 'redux-undo'; // Important for Undo/Redo
+import { ActionCreators } from 'redux-undo'; 
 import { addElement } from '../../store/canvasSlice';
 import { 
-    Square,
-    Circle,
-    Type, 
-    Image as ImageIcon, 
-    Undo, 
-    Redo,
-    MousePointer2,
-    ZoomIn,
-    ZoomOut
- } from 'lucide-react'; //icons library
+    Square, Circle, Type, Image as ImageIcon, 
+    Undo, Redo, MousePointer2, ZoomIn, ZoomOut
+ } from 'lucide-react'; 
 
 export const Toolbar = () => {
-  const dispatch = useDispatch(); //to get redux dispatch function
+  const dispatch = useDispatch(); 
 
-  // 1. Define the default animation payload
   const defaultAnim = { 
     type: 'fade', 
     duration: 0.5, 
@@ -25,7 +16,6 @@ export const Toolbar = () => {
     ease: 'power1.out' 
   };
 
-  // 2. Add Rectangle with animation props
   const addRect = () => {
     dispatch(addElement({
       type: 'rect',
@@ -38,26 +28,26 @@ export const Toolbar = () => {
       stroke: '#000000',
       strokeWidth: 0,
       opacity: 1,
-      shadowColor: 'black',
-      shadowBlur: 0, //shadow properties - currently disablesd
-      shadowOffsetX: 0,
-      shadowOffsetY: 0,
+      shadow: {
+        color: 'black',
+        blur: 0,
+        offsetX: 0,
+        offsetY: 0,
+      },
       isLocked: false,
       isVisible: true,
-      // Integrate default animations
       inAnimation: { ...defaultAnim },
       outAnimation: { ...defaultAnim }
     }));
   };
 
-  // 3. Add Circle with animation props
   const addCircle = () => {
     dispatch(addElement({
       type: 'circle',
       name: 'Circle',
       x: 150,
       y: 150,
-      width: 100, // Using width/height for bounding box consistency
+      width: 100, 
       height: 100,
       fill: '#0000ff',
       stroke: '#000000',
@@ -70,7 +60,6 @@ export const Toolbar = () => {
     }));
   };
 
-  // 4. Add Text with animation props
   const addText = () => {
     dispatch(addElement({
       type: 'text',
@@ -91,99 +80,44 @@ export const Toolbar = () => {
     }));
   };
 
-  const selectTool = () =>{
-    console.log('Select tool activated');
-  }
-
-  const zoomIn = () => {
-    console.log('Zoom in triggered');
-    // future: dispatch(setZoom(zoom + 0.1))
-  };
-
-  const zoomOut = () => {
-    console.log('Zoom out triggered');
-    // future: dispatch(setZoom(zoom - 0.1))
-  };
+  const selectTool = () =>{ console.log('Select tool activated'); }
+  const zoomIn = () => { console.log('Zoom in triggered'); };
+  const zoomOut = () => { console.log('Zoom out triggered'); };
 
   return (
-    <div className="h-14 bg-panel border-b border-gray-700 flex items-center px-4 space-x-4">
-
+    <div className="h-14 bg-gray-900 border-b border-gray-700 flex items-center px-4 space-x-4 text-white">
       {/* Shape Tools */}
       <div className="flex space-x-2 border-r border-gray-600 pr-4">
-        <button 
-          onClick={addRect} 
-          className="p-2 hover:bg-accent rounded transition-colors" 
-          title="Add Rectangle"
-        >
-          <Square size={20} color="white"/>
+        <button onClick={addRect} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Add Rectangle">
+          <Square size={20} />
         </button>
-        
-        <button 
-          onClick={addCircle} 
-          className="p-2 hover:bg-accent rounded transition-colors" 
-          title="Add Circle"
-        >
-          <Circle size={20} color="white"/>
+        <button onClick={addCircle} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Add Circle">
+          <Circle size={20} />
         </button>
-        
-        <button 
-          onClick={addText} 
-          className="p-2 hover:bg-accent rounded transition-colors" 
-          title="Add Text"
-        >
-          <Type size={20} color="white"/>
+        <button onClick={addText} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Add Text">
+          <Type size={20} />
         </button>
-        
-        <button 
-          className="p-2 hover:bg-accent rounded transition-colors opacity-50 cursor-not-allowed" 
-          title="Add Image (Coming Soon)"
-        >
-          <ImageIcon size={20} color="white"/>
+        <button className="p-2 hover:bg-gray-700 rounded transition-colors opacity-50 cursor-not-allowed" title="Add Image (Coming Soon)">
+          <ImageIcon size={20} />
         </button>
       </div>
       
       {/* History Controls */}
       <div className="flex space-x-2">
-        <button 
-          onClick={() => dispatch(ActionCreators.undo())} 
-          className="p-2 hover:bg-gray-700 rounded transition-colors" 
-          title="Undo"
-        >
-          <Undo size={20} color="white"/>
+        <button onClick={() => dispatch(ActionCreators.undo())} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Undo">
+          <Undo size={20} />
         </button>
-        
-        <button 
-          onClick={() => dispatch(ActionCreators.redo())} 
-          className="p-2 hover:bg-gray-700 rounded transition-colors" 
-          title="Redo"
-        >
-          <Redo size={20} color="white"/>
+        <button onClick={() => dispatch(ActionCreators.redo())} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Redo">
+          <Redo size={20} />
         </button>
-
-        {/* ZoomIn and ZoomOUt functions */}
-        <button
-          onClick={zoomIn}
-          className="p-2 hover:bg-accent rounded"
-          title="Zoom In"
-        >
-          <ZoomIn size={20} color="white" />
+        <button onClick={zoomIn} className="p-2 hover:bg-gray-700 rounded" title="Zoom In">
+          <ZoomIn size={20} />
         </button>
-
-        <button
-          onClick={zoomOut}
-          className="p-2 hover:bg-accent rounded"
-          title="Zoom Out"
-        >
-          <ZoomOut size={20} color="white" />
+        <button onClick={zoomOut} className="p-2 hover:bg-gray-700 rounded" title="Zoom Out">
+          <ZoomOut size={20} />
         </button>
-
-        {/* Special tool function */}
-        <button
-          onClick={selectTool}
-          className="p-2 hover:bg-accent rounded"
-          title="Select Tool"
-        >
-          <MousePointer2 size={20} color="white" />
+        <button onClick={selectTool} className="p-2 hover:bg-gray-700 rounded" title="Select Tool">
+          <MousePointer2 size={20} />
         </button>
       </div>
     </div>
