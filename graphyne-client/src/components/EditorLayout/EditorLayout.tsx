@@ -1,5 +1,3 @@
-
-import { TestArtboard } from '../../tests/TestArtboard';
 import { AnimationPanel } from '../Panel/AnimationPanel';
 
 export const EditorLayout = () => {
@@ -7,7 +5,7 @@ export const EditorLayout = () => {
     <div className="flex h-screen w-screen overflow-hidden">
       {/* Canvas Area */}
       <div className="flex-1 bg-gray-900">
-        <TestArtboard />
+
       </div>
       
       {/* Right Side Panel with AnimationPanel */}
