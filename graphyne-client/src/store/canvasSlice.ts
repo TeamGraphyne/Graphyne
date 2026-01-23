@@ -1,11 +1,15 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { CanvasElement, CanvasState } from '../types/canvas';
 import { v4 as uuidv4 } from 'uuid';
+import type { CanvasState, CanvasElement } from '../types/canvas';
 
 const initialState: CanvasState = {
   elements: [],
   selectedIds: [],
-  canvasConfig: { width: 1920, height: 1080, background: '#ffffff' }
+  config: {
+    width: 1920,
+    height: 1080,
+    background: '#000000'
+  }
 };
 
 export const canvasSlice = createSlice({
@@ -13,35 +17,41 @@ export const canvasSlice = createSlice({
   initialState,
   reducers: {
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
-      const newElement = { ...action.payload, id: uuidv4() };
+      const newElement = {
+        ...action.payload,
+        id: uuidv4(), // Generate ID automatically
+        // Ensure defaults if missing
+        isVisible: true,
+        isLocked: false,
+        zIndex: state.elements.length
+      };
       state.elements.push(newElement);
-      // Auto-select new item
-      state.selectedIds = [newElement.id]; 
+      // Auto-select the new element
+      state.selectedIds = [newElement.id];
     },
-    
-    updateElement: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }>) => {
-      const index = state.elements.findIndex(el => el.id === action.payload.id);
+
+    updateElement: (state, action: PayloadAction<Partial<CanvasElement> & { id: string }>) => {
+      const { id, ...changes } = action.payload;
+      const index = state.elements.findIndex(el => el.id === id);
       if (index !== -1) {
-        state.elements[index] = { ...state.elements[index], ...action.payload.props };
+        state.elements[index] = { ...state.elements[index], ...changes };
       }
     },
 
-    updateElements: (state, action: PayloadAction<{ id: string; props: Partial<CanvasElement> }[]>) => {
-      action.payload.forEach(update => {
-        const index = state.elements.findIndex(el => el.id === update.id);
+    updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
+      action.payload.forEach(({ id, ...changes }) => {
+        const index = state.elements.findIndex(el => el.id === id);
         if (index !== -1) {
-          state.elements[index] = { ...state.elements[index], ...update.props };
+          state.elements[index] = { ...state.elements[index], ...changes };
         }
       });
     },
-    
+
     removeElement: (state, action: PayloadAction<string>) => {
       state.elements = state.elements.filter(el => el.id !== action.payload);
-      // Only remove the deleted ID from selection, keep others selected
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
-    
-    // Accepts string or null. If null, clears selection.
+
     selectElement: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
         state.selectedIds = [];
@@ -54,36 +64,56 @@ export const canvasSlice = createSlice({
       state.selectedIds = action.payload;
     },
 
-    // Toggles selection for multi-select
     toggleSelection: (state, action: PayloadAction<string>) => {
       const id = action.payload;
       const index = state.selectedIds.indexOf(id);
-      
       if (index !== -1) {
-        // If already selected, remove it
         state.selectedIds.splice(index, 1);
       } else {
-        // If not selected, add it
         state.selectedIds.push(id);
       }
     },
 
+    toggleVisibility: (state, action: PayloadAction<string>) => {
+      const el = state.elements.find(e => e.id === action.payload);
+      if (el) el.isVisible = !el.isVisible;
+    },
+
+    toggleLock: (state, action: PayloadAction<string>) => {
+      const el = state.elements.find(e => e.id === action.payload);
+      if (el) el.isLocked = !el.isLocked;
+    },
+
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
-       const [removed] = state.elements.splice(action.payload.fromIndex, 1);
-       state.elements.splice(action.payload.toIndex, 0, removed);
+      const [removed] = state.elements.splice(action.payload.fromIndex, 1);
+      state.elements.splice(action.payload.toIndex, 0, removed);
+    },
+
+    // FIX 2: Add Layer Movement Logic
+    moveLayerUp: (state, action: PayloadAction<string>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload);
+      if (index < state.elements.length - 1 && index !== -1) {
+        const temp = state.elements[index];
+        state.elements[index] = state.elements[index + 1];
+        state.elements[index + 1] = temp;
+      }
+    },
+
+    moveLayerDown: (state, action: PayloadAction<string>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload);
+      if (index > 0 && index !== -1) {
+        const temp = state.elements[index];
+        state.elements[index] = state.elements[index - 1];
+        state.elements[index - 1] = temp;
+      }
     }
   }
 });
 
-export const { 
-  addElement, 
-  updateElement,
-  updateElements,
-  removeElement, 
-  selectElement, 
-  setSelection,
-  toggleSelection,
-  reorderElement 
+export const {
+  addElement, updateElement, updateElements, removeElement,
+  selectElement, setSelection, toggleSelection, reorderElement,
+  toggleVisibility, toggleLock, moveLayerUp, moveLayerDown
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

@@ -1,7 +1,7 @@
 name: PR Checks
 
 on:
-  pull_request: 
+  pull_request:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
@@ -25,33 +25,19 @@ jobs:
             test
             chore
             ci
-          scopes: |
-            editor
-            canvas
-            layers
-            toolbar
-            properties
-            data
-            preview
-            playback
-            api
-            db
-            sockets
-            ui
-            store
-            deps
-            config
+            revert
           requireScope: false
-          subjectPattern: ^[a-z]. +$
+          # Ensure subject starts with lowercase
+          subjectPattern: ^[a-z].+$
           subjectPatternError: |
-            The subject "{subject}" must start with a lowercase letter. 
+            The subject "{subject}" must start with a lowercase letter.
 
-  # Check PR size
-  pr-size: 
+  # Check PR size (Prevent massive PRs)
+  pr-size:
     name: Check PR Size
     runs-on: ubuntu-latest
-    steps: 
-      - name:  Check PR size
+    steps:
+      - name: Check PR size
         uses: codelytv/pr-size-labeler@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,9 +48,9 @@ jobs:
           m_label: 'size/M'
           m_max_size: 400
           l_label: 'size/L'
-          l_max_size:  800
+          l_max_size: 800
           xl_label: 'size/XL'
           fail_if_xl: false
           message_if_xl: >
-            This PR is quite large. Consider breaking it into smaller PRs
-            for easier review. 
+            This PR is chonky. Consider breaking it into smaller PRs
+            for easier review.

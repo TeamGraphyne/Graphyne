@@ -1,6 +1,3 @@
-export type ElementType = 'rect' | 'circle' | 'text' | 'image';
-export type AnimationType = 'fade' | 'slide-left' | 'slide-right' | 'scale' | 'none';
-
 export interface ShadowEffect {
   color: string;
   blur: number;
@@ -9,50 +6,54 @@ export interface ShadowEffect {
 }
 
 export interface AnimationConfig {
-  type: AnimationType;
+  type: string;
   duration: number;
   delay: number;
-  ease: string;
+  ease?: string;
 }
 
 export interface CanvasElement {
   id: string;
-  type: ElementType;
+  type: 'rect' | 'circle' | 'text' | 'image';
   name: string;
-  // Position & Dimensions
   x: number;
   y: number;
   width: number;
   height: number;
-  rotation: number;
-  scaleX: number;
-  scaleY: number;
-  zIndex: number;
-
-  // Style Props
   fill: string;
-  stroke: string;
-  strokeWidth: number;
-  opacity: number;
-  cornerRadius?: number; // For Rect
-  
-  // Text Specific
-  text?: string;         
-  fontSize?: number;     
+
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  opacity?: number;
+  zIndex?: number;
+
+  // State flags
+  isVisible?: boolean;
+  isLocked?: boolean;
+
+  // Text specific
+  text?: string;
+  fontSize?: number;
   fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
   align?: 'left' | 'center' | 'right';
 
-  // Image Specific
-  src?: string;          
+  // Shape specific
+  stroke?: string;
+  strokeWidth?: number;
+  cornerRadius?: number;
 
-  // Effects
+  // Image specific
+  src?: string;
+
+  // Effects (Grouped for cleaner state)
   shadow?: ShadowEffect;
 
-  // State
-  isLocked: boolean;
-  isVisible: boolean;
-  inAnimation: AnimationConfig;
-  outAnimation: AnimationConfig;
+  // Animation
+  inAnimation?: AnimationConfig;
+  outAnimation?: AnimationConfig;
 }
 
 export interface CanvasConfig {
@@ -64,5 +65,5 @@ export interface CanvasConfig {
 export interface CanvasState {
   elements: CanvasElement[];
   selectedIds: string[];
-  canvasConfig: CanvasConfig;
+  config: CanvasConfig;
 }

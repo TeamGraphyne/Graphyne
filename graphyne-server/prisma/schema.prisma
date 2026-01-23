@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Graphic {
+  id        String  @id @default(uuid())
+  name      String
+  thumbnail String?
+  filePath  String
+
+  rawJson String @db.Text // Stringified JSON source
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A Graphic can be in many Projects (Playlists)
+  projects PlaylistItem[]
+}
+
+model Project {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A Project is a ordered list of Graphics
+  items PlaylistItem[]
+}
+
+model PlaylistItem {
+  id String @id @default(uuid())
+
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  graphic   Graphic @relation(fields: [graphicId], references: [id])
+  graphicId String
+
+  order Int
+}
