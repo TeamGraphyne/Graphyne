@@ -69,7 +69,7 @@ const kWindow = window as unknown as KonvaWindow;
   };
 
   return (
-    <div className="p-4 text-white bg-gray-900 border-l border-gray-800 h-full overflow-y-auto">
+    <div className="p-4 text-white bg-gray-920 border-r border-gray-800 h-full overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">In Animation</h3>
         <button 

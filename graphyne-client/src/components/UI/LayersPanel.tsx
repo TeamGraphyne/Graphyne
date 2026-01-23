@@ -20,7 +20,7 @@ export const LayersPanel = () => {
   );
 
   return (
-    <div className="w-64 bg-gray-900 border-l border-gray-700 p-3 h-full flex flex-col">
+    <div className="w-80 bg-gray-900 border-r border-gray-800 p-3 h-full flex flex-col">
       <h3 className="text-sm text-gray-300 mb-3 font-bold uppercase tracking-wider">Layers</h3>
 
       <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
@@ -28,7 +28,7 @@ export const LayersPanel = () => {
         {[...elements].reverse().map((el) => (
           <div
             key={el.id}
-            className="flex items-center justify-between p-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors group"
+            className="flex items-center justify-between p-2 bg-gray-900 rounded hover:bg-gray-800 transition-colors group"
           >
             {/* Layer name */}
             <span className="text-gray-200 text-sm truncate flex-1">
