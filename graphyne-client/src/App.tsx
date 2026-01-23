@@ -3,7 +3,6 @@ import { Provider } from 'react-redux';
 import { store } from './store/store';
 import { EditorPage } from './pages/EditorPage';
 import { PlayoutPage } from './pages/PlayoutPage'; 
-import { EditorLayout } from './components/EditorLayout/EditorLayout';
 
 
 function App() {
