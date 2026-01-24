@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { MonitorPlay, Download, Loader2 } from "lucide-react";
 
 // 1. Imports for Logic
@@ -8,7 +9,7 @@ import { compileGraphicToHTML } from "../utils/exporter";
 import { Artboard } from "../components/Canvas/Artboard";
 import { LayersPanel } from "../components/UI/LayersPanel";
 import { Toolbar } from "../components/UI/Toolbar";
-import { AnimationPanel } from "../components/UI/AnimationPanel";
+import { PropertiesPanel } from "../components/UI/PropertiesPanel";
 
 export function EditorPage() {
   // 2. Access Redux State
@@ -16,6 +17,8 @@ export function EditorPage() {
     (state) => state.canvas.present,
   );
   const [isSaving, setIsSaving] = React.useState(false);
+
+  const navigate = useNavigate();
 
   // 3. Handle Export Logic
   const handleExport = async () => {
@@ -80,7 +83,10 @@ export function EditorPage() {
               {isSaving ? "SAVING..." : "EXPORT"}
             </button>
 
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700">
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700"
+              onClick={() => navigate("/playout")}
+            >
               <MonitorPlay size={14} /> PLAYOUT
             </button>
           </div>
@@ -104,7 +110,7 @@ export function EditorPage() {
         {/* RIGHT PANEL */}
         <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col z-10">
           <div className="flex border-b border-gray-800"></div>
-          <AnimationPanel />
+          <PropertiesPanel />
         </div>
       </div>
     </div>
