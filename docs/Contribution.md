@@ -58,6 +58,14 @@ Bash
 git clone https://github.com/teamgraphyne/graphyne.git
 cd graphyne
 
+# 1.5 Create .env file
+Create .env file in /graphyne-server
+
+type;
+DATABASE_URL="postgresql://admin:admin@localhost:5432/graphyne_db?schema=public"
+
+and Save.
+
 # 2. Setup the Database (Docker)
 # MUST be running before starting the server
 docker-compose up -d
