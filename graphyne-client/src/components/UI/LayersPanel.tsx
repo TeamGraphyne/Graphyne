@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
-  ChevronUp, ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2 
+  ChevronUp, ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2, GripVertical
 } from 'lucide-react';
 
 import {
@@ -9,7 +9,10 @@ import {
   toggleVisibility,
   toggleLock,
   removeElement,
+  recorderElement,
+  selectElement
 } from '../../store/canvasSlice';
+import { useState } from 'react';
 
 export const LayersPanel = () => {
   const dispatch = useAppDispatch();
@@ -18,6 +21,40 @@ export const LayersPanel = () => {
   const elements = useAppSelector((state) => 
     state.canvas.present ? state.canvas.present.elements : []
   );
+
+  const selectIds = useAppSelector((state) =>
+    state.canvas.present ? state.canvas.present.elements : []
+  );
+  
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleLayerClick = (id: string, e: React.MouseEvent) => {
+    // Don't select if clicking on control buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    dispatch(selectElement(id));
+  };
+
 
   return (
     <div className="w-80 bg-gray-900 border-r border-gray-800 p-3 h-full flex flex-col">
