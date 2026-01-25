@@ -205,6 +205,8 @@ export const Artboard = () => {
               ...elementProps,
               name: el.type, 
               draggable: !el.isLocked,
+              //add zindex based on arrya position
+              listening : true,
               onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
                 e.cancelBubble = true;
                 if (e.evt.shiftKey) {
