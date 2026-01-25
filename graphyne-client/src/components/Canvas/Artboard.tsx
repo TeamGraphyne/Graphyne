@@ -6,12 +6,14 @@ import {
   updateElement, 
   toggleSelection, 
   removeElement,
-  setSelection
+  setSelection,
+  setZoom
 } from '../../store/canvasSlice';
 import Konva from 'konva';
 
 export const Artboard = () => {
   const dispatch = useAppDispatch();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config } = useAppSelector((state) => 
@@ -22,17 +24,6 @@ export const Artboard = () => {
   const layerRef = useRef<Konva.Layer>(null);
   const stageRef = useRef<Konva.Stage>(null);
 
-  const initialState: CanvasState = {
-  elements: [],
-  selectedIds: [],
-  config: {
-    width: 800,    // Smaller, more manageable size
-    height: 600,   // Smaller, more manageable size
-    background: '#000000',
-    zoom: 1
-  }
-};
-
   // --- SELECTION RECTANGLE STATE ---
   const [selectionBox, setSelectionBox] = useState<{ 
     x: number; 
@@ -41,6 +32,25 @@ export const Artboard = () => {
     height: number; 
     isSelecting: boolean 
   } | null>(null);
+
+  // --- AUTO-FIT CANVAS ON MOUNT ---
+  useEffect(() => {
+    if (containerRef.current) {
+      const container = containerRef.current;
+      const padding = 40; // padding around canvas
+      
+      const availableWidth = container.clientWidth - padding;
+      const availableHeight = container.clientHeight - padding;
+      
+      const scaleX = availableWidth / config.width;
+      const scaleY = availableHeight / config.height;
+      
+      // Use the smaller scale to fit both dimensions
+      const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+      
+      dispatch(setZoom(initialZoom));
+    }
+  }, []); // Only run once on mount
 
   // --- TRANSFORMER SYNC ---
   useEffect(() => {
@@ -150,15 +160,18 @@ export const Artboard = () => {
   if (!config) return <div>Loading Canvas...</div>;
 
   return (
-    <div style={{ 
-      width: '100%', 
-      height: '100%', 
-      overflow: 'auto',
-      backgroundColor: '#1a1a1a',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
+    <div 
+      ref={containerRef}
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        overflow: 'auto',
+        backgroundColor: '#1a1a1a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
       <Stage 
         ref={stageRef}
         width={config.width}
