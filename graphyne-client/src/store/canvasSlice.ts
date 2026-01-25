@@ -84,8 +84,14 @@ export const canvasSlice = createSlice({
     },
 
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
-      const [removed] = state.elements.splice(action.payload.fromIndex, 1);
-      state.elements.splice(action.payload.toIndex, 0, removed);
+      const { fromIndex, toIndex } = action.payload;
+      const [removed] = state.elements.splice(fromIndex, 1);
+      state.elements.splice(toIndex, 0, removed);
+      
+      // Update zIndex for all elements based on new array order
+      state.elements.forEach((el, idx) => {
+        el.zIndex = idx;
+      });
     },
 
     moveLayerUp: (state, action: PayloadAction<string>) => {
