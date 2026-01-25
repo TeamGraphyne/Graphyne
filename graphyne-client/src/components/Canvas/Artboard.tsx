@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Stage, Layer, Rect, Circle, Text, Transformer } from 'react-konva';
-// Use the typed hooks defined in store/hooks.ts
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   selectElement, 
@@ -23,8 +22,25 @@ export const Artboard = () => {
   const layerRef = useRef<Konva.Layer>(null);
   const stageRef = useRef<Konva.Stage>(null);
 
+  const initialState: CanvasState = {
+  elements: [],
+  selectedIds: [],
+  config: {
+    width: 800,    // Smaller, more manageable size
+    height: 600,   // Smaller, more manageable size
+    background: '#000000',
+    zoom: 1
+  }
+};
+
   // --- SELECTION RECTANGLE STATE ---
-  const [selectionBox, setSelectionBox] = useState<{ x: number; y: number; width: number; height: number; isSelecting: boolean } | null>(null);
+  const [selectionBox, setSelectionBox] = useState<{ 
+    x: number; 
+    y: number; 
+    width: number; 
+    height: number; 
+    isSelecting: boolean 
+  } | null>(null);
 
   // --- TRANSFORMER SYNC ---
   useEffect(() => {
@@ -39,7 +55,6 @@ export const Artboard = () => {
     }
   }, [selectedIds, elements]); 
 
-
   // --- DRAG HANDLERS ---
   const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
     const id = e.target.id();
@@ -52,7 +67,6 @@ export const Artboard = () => {
     const node = e.target;
     const id = node.id();
     
-    // Flatten payload. reducer expects { id, x, y }, NOT { id, props: { x, y } }
     dispatch(updateElement({
       id: id,
       x: node.x(),
@@ -64,11 +78,15 @@ export const Artboard = () => {
   const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const isElement = e.target !== e.target.getStage();
     if (!isElement) {
-      const pos = e.target.getStage()?.getPointerPosition();
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      const pos = stage.getPointerPosition();
       if (pos) {
+        // Adjust for zoom when creating selection box
         setSelectionBox({
-          x: pos.x,
-          y: pos.y,
+          x: pos.x / config.zoom,
+          y: pos.y / config.zoom,
           width: 0,
           height: 0,
           isSelecting: true
@@ -85,10 +103,11 @@ export const Artboard = () => {
     const pos = stage?.getPointerPosition();
     
     if (pos && selectionBox) {
+      // Adjust for zoom
       setSelectionBox({
         ...selectionBox,
-        width: pos.x - selectionBox.x,
-        height: pos.y - selectionBox.y,
+        width: (pos.x / config.zoom) - selectionBox.x,
+        height: (pos.y / config.zoom) - selectionBox.y,
       });
     }
   };
@@ -130,97 +149,106 @@ export const Artboard = () => {
   // Handle Loading State
   if (!config) return <div>Loading Canvas...</div>;
 
-  const scale = 0.5;
-
   return (
-    <Stage 
-      ref={stageRef}
-      width={config.width * scale} 
-      height={config.height * scale} 
-      scaleX={scale}
-      scaleY={scale}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onTouchStart={onMouseDown}
-      onTouchMove={onMouseMove}
-      onTouchEnd={onMouseUp}
-      style={{ backgroundColor: 'transparent' }}
-    >
-      <Layer ref={layerRef}>
-        <Rect 
-          name="background"
-          width={config.width} 
-          height={config.height} 
-          fill={config.background} 
-        />
-        
-        {elements.map((el) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const {zIndex, type, ...elementProps} = el;
-          
-          const commonProps = {
-            ...elementProps,
-            name: el.type, 
-            draggable: !el.isLocked, // Now valid thanks to updated types
-            onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
-              e.cancelBubble = true;
-              if (e.evt.shiftKey) {
-                dispatch(toggleSelection(el.id));
-              } else {
-                if (!selectedIds.includes(el.id)) {
-                  dispatch(selectElement(el.id));
-                }
-              }
-            },
-            onDragStart: onDragStart,
-            onDragEnd: onDragEnd,
-            onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
-              const node = e.target;
-              // Fix 3: Flatten payload for transform update as well
-              dispatch(updateElement({
-                id: el.id,
-                x: node.x(),
-                y: node.y(),
-                rotation: node.rotation(),
-                scaleX: node.scaleX(),
-                scaleY: node.scaleY(),
-              }));
-            }
-          };
-
-          // Now valid thanks to updated types
-          if (el.isVisible === false) return null; 
-
-          if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
-          if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
-          if (el.type === 'text') return <Text key={el.id} {...commonProps} />;
-          return null;
-        })}
-        
-        {/* SELECTION RECTANGLE */}
-        {selectionBox && selectionBox.isSelecting && (
-          <Rect
-            x={selectionBox.x}
-            y={selectionBox.y}
-            width={selectionBox.width}
-            height={selectionBox.height}
-            fill="rgba(0, 161, 255, 0.3)"
-            stroke="#00a1ff"
-            strokeWidth={1}
+    <div style={{ 
+      width: '100%', 
+      height: '100%', 
+      overflow: 'auto',
+      backgroundColor: '#1a1a1a',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <Stage 
+        ref={stageRef}
+        width={config.width}
+        height={config.height}
+        scaleX={config.zoom}
+        scaleY={config.zoom}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onTouchStart={onMouseDown}
+        onTouchMove={onMouseMove}
+        onTouchEnd={onMouseUp}
+        style={{ 
+          backgroundColor: 'transparent',
+          border: '1px solid #444'
+        }}
+      >
+        <Layer ref={layerRef}>
+          <Rect 
+            name="background"
+            width={config.width} 
+            height={config.height} 
+            fill={config.background} 
           />
-        )}
+          
+          {elements.map((el) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const {zIndex, type, ...elementProps} = el;
+            
+            const commonProps = {
+              ...elementProps,
+              name: el.type, 
+              draggable: !el.isLocked,
+              onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+                e.cancelBubble = true;
+                if (e.evt.shiftKey) {
+                  dispatch(toggleSelection(el.id));
+                } else {
+                  if (!selectedIds.includes(el.id)) {
+                    dispatch(selectElement(el.id));
+                  }
+                }
+              },
+              onDragStart: onDragStart,
+              onDragEnd: onDragEnd,
+              onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
+                const node = e.target;
+                dispatch(updateElement({
+                  id: el.id,
+                  x: node.x(),
+                  y: node.y(),
+                  rotation: node.rotation(),
+                  scaleX: node.scaleX(),
+                  scaleY: node.scaleY(),
+                }));
+              }
+            };
 
-        <Transformer 
-          ref={trRef} 
-          boundBoxFunc={(oldBox, newBox) => {
-            if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
-              return oldBox;
-            }
-            return newBox;
-          }}
-        />
-      </Layer>
-    </Stage>
+            if (el.isVisible === false) return null; 
+
+            if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
+            if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
+            if (el.type === 'text') return <Text key={el.id} {...commonProps} />;
+            return null;
+          })}
+          
+          {/* SELECTION RECTANGLE */}
+          {selectionBox && selectionBox.isSelecting && (
+            <Rect
+              x={selectionBox.x}
+              y={selectionBox.y}
+              width={selectionBox.width}
+              height={selectionBox.height}
+              fill="rgba(0, 161, 255, 0.3)"
+              stroke="#00a1ff"
+              strokeWidth={1 / config.zoom}
+            />
+          )}
+
+          <Transformer 
+            ref={trRef} 
+            boundBoxFunc={(oldBox, newBox) => {
+              if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
+                return oldBox;
+              }
+              return newBox;
+            }}
+          />
+        </Layer>
+      </Stage>
+    </div>
   );
 };
