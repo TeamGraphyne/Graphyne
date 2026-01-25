@@ -54,16 +54,37 @@ const kWindow = window as unknown as KonvaWindow;
       // Reset to initial state based on animation type
       const animType = element.inAnimation?.type || 'none';
       const duration = element.inAnimation?.duration || 0.5;
+      const targetOpacity = element.opacity ?? 1;
 
       if (animType === 'fade') {
         node.opacity(0);
-        gsap.to(node, { opacity: element.opacity ?? 1, duration });
+        gsap.to(node, { opacity: targetOpacity, duration });
       } else if (animType === 'slide-left') {
-        node.x((element.x) - 100); 
-        gsap.to(node, { x: element.x, opacity: element.opacity ?? 1, duration });
-      } else if (animType === 'slide-right') {
         node.x((element.x) + 100); 
-        gsap.to(node, { x: element.x, opacity: element.opacity ?? 1, duration });
+        node.opacity(0);
+        gsap.to(node, { x: element.x, opacity:targetOpacity, duration,ease: 'power2.out' });
+      } else if (animType === 'slide-right') {
+        node.x((element.x) - 100); 
+        node.opacity(0);
+        gsap.to(node, { x: element.x, opacity:targetOpacity , duration, ease: 'power2.out' });
+      } else if (animType === 'slide-up'){
+        node.y((element.y)+ 100);
+        node.opacity(0);
+        gsap.to(node, {
+          y: element.y,
+          opacity: targetOpacity,
+          duration,
+          ease: 'power2.out'
+        })
+      } else if (animType === 'slide-down'){
+        node.y((element.y) - 100);
+        node.opacity(0);
+        gsap.to(node,{
+          y: element.y,
+          opacity: targetOpacity,
+          duration,
+          ease: 'power2.out'
+        })
       }
     }
   };
@@ -92,6 +113,8 @@ const kWindow = window as unknown as KonvaWindow;
           <option value="fade">Fade In</option>
           <option value="slide-left">Slide Left</option>
           <option value="slide-right">Slide Right</option>
+          <option value="slide-up">Slide from Bottom</option>
+          <option value="slide-down">Slide from Top</option>
         </select>
       </div>
 
