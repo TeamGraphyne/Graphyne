@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux';
 import { ActionCreators } from 'redux-undo'; 
-import { addElement } from '../../store/canvasSlice';
+import { addElement, zoomIn, zoomOut } from '../../store/canvasSlice'; // Import the actions
 import { 
     Square, Circle, Type, Image as ImageIcon, 
     Undo, Redo, MousePointer2, ZoomIn, ZoomOut
@@ -80,9 +80,16 @@ export const Toolbar = () => {
     }));
   };
 
-  const selectTool = () =>{ console.log('Select tool activated'); }
-  const zoomIn = () => { console.log('Zoom in triggered'); };
-  const zoomOut = () => { console.log('Zoom out triggered'); };
+  const selectTool = () => { console.log('Select tool activated'); };
+  
+  // Dispatch the actual Redux actions
+  const handleZoomIn = () => { 
+    dispatch(zoomIn()); 
+  };
+  
+  const handleZoomOut = () => { 
+    dispatch(zoomOut()); 
+  };
 
   return (
     <div className="h-14 bg-gray-900 border-b border-gray-700 flex items-center px-4 space-x-4 text-white">
@@ -110,10 +117,10 @@ export const Toolbar = () => {
         <button onClick={() => dispatch(ActionCreators.redo())} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Redo">
           <Redo size={20} />
         </button>
-        <button onClick={zoomIn} className="p-2 hover:bg-gray-700 rounded" title="Zoom In">
+        <button onClick={handleZoomIn} className="p-2 hover:bg-gray-700 rounded" title="Zoom In">
           <ZoomIn size={20} />
         </button>
-        <button onClick={zoomOut} className="p-2 hover:bg-gray-700 rounded" title="Zoom Out">
+        <button onClick={handleZoomOut} className="p-2 hover:bg-gray-700 rounded" title="Zoom Out">
           <ZoomOut size={20} />
         </button>
         <button onClick={selectTool} className="p-2 hover:bg-gray-700 rounded" title="Select Tool">
