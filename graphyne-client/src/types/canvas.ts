@@ -66,5 +66,5 @@ export interface CanvasConfig {
 export interface CanvasState {
   elements: CanvasElement[];
   selectedIds: string[];
-  canvasConfig: CanvasConfig;
+  config: CanvasConfig;
 }
