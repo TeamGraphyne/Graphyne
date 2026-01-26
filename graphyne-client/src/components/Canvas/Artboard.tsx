@@ -87,23 +87,27 @@ export const Artboard = () => {
   };
 
   // --- SELECTION RECTANGLE LOGIC ---
-  const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const isElement = e.target !== e.target.getStage();
-    if (!isElement) {
+const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // FIX: Treat the "background" rectangle as empty space
+    const isBackground = e.target === e.target.getStage() || e.target.name() === 'background';
+
+    if (isBackground) {
       const stage = e.target.getStage();
       if (!stage) return;
 
+      // 1. DESELECT CURRENT ELEMENT
+      dispatch(selectElement(null)); 
+
+      // 2. START SELECTION BOX
       const pos = stage.getPointerPosition();
       if (pos) {
-        // Adjust for zoom when creating selection box
         setSelectionBox({
           x: pos.x / config.zoom,
           y: pos.y / config.zoom,
           width: 0,
           height: 0,
-          isSelecting: true,
+          isSelecting: true
         });
-        dispatch(selectElement(null));
       }
     }
   };
