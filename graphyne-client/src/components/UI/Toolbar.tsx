@@ -92,9 +92,9 @@ export const Toolbar = () => {
   };
 
   return (
-    <div className="h-14 bg-fuchsia-900 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
+    <div className="h-14 bg-fuchsia-950 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
       {/* Shape Tools */}
-      <div className="flex space-x-2 border-r border-none pr-4">
+      <div className="flex space-x-2   border-r border-none pr-4">
         <button onClick={addRect} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Add Rectangle">
           <Square size={20} className="group-hover/button:text-gray-800" />
         </button>
@@ -117,10 +117,10 @@ export const Toolbar = () => {
         <button onClick={() => dispatch(ActionCreators.redo())} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Redo">
           <Redo size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={zoomIn} className="group/button p-2 hover:bg-orange-300 rounded" title="Zoom In">
+        <button onClick={handleZoomIn} className="group/button p-2 hover:bg-orange-300 rounded" title="Zoom In">
           <ZoomIn size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={zoomOut} className="group/button p-2 hover:bg-orange-300 rounded" title="Zoom Out">
+        <button onClick={handleZoomOut} className="group/button p-2 hover:bg-orange-300 rounded" title="Zoom Out">
           <ZoomOut size={20} className="group-hover/button:text-gray-800"/>
         </button>
         <button onClick={selectTool} className="group/button p-2 hover:bg-orange-300 rounded" title="Select Tool">
