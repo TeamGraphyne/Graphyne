@@ -18,7 +18,7 @@ export const PropertiesPanel = () => {
 
   if (!element) {
     return (
-      <div className="w-80 bg-gray-900 border-l border-gray-800 text-gray-500 flex items-center justify-center h-full text-sm">
+      <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-gray-500 flex items-center justify-center h-full text-sm">
         Select an element to edit
       </div>
     );
@@ -49,16 +49,16 @@ export const PropertiesPanel = () => {
   };
 
   return (
-    <div className="w-80 bg-gray-900 border-l border-gray-800 text-white flex flex-col h-full z-20">
+    <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-white flex flex-col h-full z-20">
       
       {/* --- Tab Navigation --- */}
-      <div className="flex border-b border-gray-800">
+      <div className="flex border-b border-fuchsia-200/30">
         <button
           onClick={() => setActiveTab('design')}
           className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
             activeTab === 'design' 
-              ? 'text-blue-500 border-b-2 border-blue-500 bg-gray-800/50' 
-              : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
+              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
           }`}
         >
           Design
@@ -67,8 +67,8 @@ export const PropertiesPanel = () => {
           onClick={() => setActiveTab('animate')}
           className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
             activeTab === 'animate' 
-              ? 'text-blue-500 border-b-2 border-blue-500 bg-gray-800/50' 
-              : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
+              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
           }`}
         >
           Animate
@@ -84,61 +84,61 @@ export const PropertiesPanel = () => {
             
             {/* Dimensions */}
             <div>
-              <h2 className="font-bold mb-3 text-xs text-gray-500 uppercase tracking-wider">Transform</h2>
+              <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Transform</h2>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">X Position</label>
+                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">X Position</label>
                   <input 
                     type="number" 
                     value={Math.round(element.x)} 
                     onChange={(e) => handleChange('x', Number(e.target.value))} 
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Y Position</label>
+                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Y Position</label>
                   <input 
                     type="number" 
                     value={Math.round(element.y)} 
                     onChange={(e) => handleChange('y', Number(e.target.value))} 
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Width</label>
+                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Width</label>
                   <input 
                     type="number" 
                     value={Math.round(element.width)} 
                     onChange={(e) => handleChange('width', Number(e.target.value))} 
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Height</label>
+                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Height</label>
                   <input 
                     type="number" 
                     value={Math.round(element.height)} 
                     onChange={(e) => handleChange('height', Number(e.target.value))} 
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
                   />
                 </div>
               </div>
             </div>
 
             {/* Appearance */}
-            <div className="border-t border-gray-800 pt-4">
-              <h2 className="font-bold mb-3 text-xs text-gray-500 uppercase tracking-wider">Appearance</h2>
+            <div>
+              <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Appearance</h2>
               <div className="space-y-3">
                 
                 {/* Fill Color */}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Fill Color</label>
-                  <div className="flex items-center gap-2 bg-gray-950 p-1 rounded border border-gray-800">
+                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Fill Color</label>
+                  <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
                     <input 
                       type="color" 
                       value={element.fill} 
                       onChange={(e) => handleChange('fill', e.target.value)} 
-                      className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent" 
+                      className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
                     />
                     <span className="text-xs text-gray-400 font-mono">{element.fill}</span>
                   </div>
@@ -146,7 +146,7 @@ export const PropertiesPanel = () => {
 
                 {/* Opacity */}
                 <div>
-                    <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                    <label className="text-[12px] text-gray-400  mb-1 uppercase flex justify-between">
                         <span>Opacity</span>
                         <span>{Math.round((element.opacity || 1) * 100)}%</span>
                     </label>
@@ -157,14 +157,20 @@ export const PropertiesPanel = () => {
                         step="0.01"
                         value={element.opacity ?? 1}
                         onChange={(e) => handleChange('opacity', parseFloat(e.target.value))}
-                        className="w-full accent-blue-500 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer"
+                        className="w-full h-1 bg-gray-400/50 rounded-lg appearance-none cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none 
+                        [&::-webkit-slider-thumb]:w-4
+                        [&::-webkit-slider-thumb]:h-2
+                        [&::-webkit-slider-thumb]:rounded-full 
+                        [&::-webkit-slider-thumb]:bg-white/50
+                        hover:[&::-webkit-slider-thumb]:bg-orange-300"
                     />
                 </div>
 
                 {/* Shadow Controls */}
-                <div className="border-t border-gray-800 pt-3 mt-3">
-                  <h3 className="text-xs font-semibold mb-2 text-gray-300 flex items-center gap-2">
-                    Shadows
+                <div> 
+                  <h3 className="text-[14px] font-bold  mb-2 text-gray-400 flex items-center gap-2">
+                    SHADOWS
                     <input 
                         type="checkbox" 
                         checked={!!element.shadow}
@@ -172,47 +178,54 @@ export const PropertiesPanel = () => {
                             if (!e.target.checked) handleChange('shadow', undefined);
                             else handleShadowChange('blur', 10);
                         }}
-                        className="accent-blue-500"
+                        className="accent-orange-300"
                     />
                   </h3>
                   
                   {element.shadow && (
-                      <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-gray-800">
+                      <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-orange-300">
                         <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 block mb-1 uppercase">Blur Radius</label>
+                          <label className="text-[12px] text-gray-400 block mb-1 uppercase">Blur Radius</label>
                           <input 
                             type="range" 
                             min="0" 
                             max="50" 
                             value={element.shadow.blur || 0} 
                             onChange={(e) => handleShadowChange('blur', Number(e.target.value))} 
-                            className="w-full accent-blue-500 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer"
+                            className="w-full appearance-none h-1 bg-gray-400/50 rounded-lg cursor-pointer
+                            [&::-webkit-slider-thumb]:appearance-none 
+                             [&::-webkit-slider-thumb]:w-4
+                            [&::-webkit-slider-thumb]:h-2
+                            [&::-webkit-slider-thumb]:rounded-full 
+                            [&::-webkit-slider-thumb]:bg-white/50
+                            hover:[&::-webkit-slider-thumb]:bg-orange-300"
+                            
                           />
                         </div>
                         
                         <div>
-                          <label className="text-[10px] text-gray-400 block mb-1 uppercase">Offset X</label>
+                          <label className="text-[12px] text-gray-400 block mb-1 uppercase">Offset X</label>
                           <input 
                             type="number" 
                             value={element.shadow.offsetX || 0} 
                             onChange={(e) => handleShadowChange('offsetX', Number(e.target.value))} 
-                            className="w-full bg-gray-950 p-1 rounded text-xs border border-gray-800 text-gray-300" 
+                            className="w-full bg-fuchsia-950/10 p-1 rounded text-xs border border-gray-400 text-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50" 
                           />
                         </div>
 
                         <div>
-                          <label className="text-[10px] text-gray-400 block mb-1 uppercase">Offset Y</label>
+                          <label className="text-[12px] text-gray-400 block mb-1 uppercase">Offset Y</label>
                           <input 
                             type="number" 
                             value={element.shadow.offsetY || 0} 
                             onChange={(e) => handleShadowChange('offsetY', Number(e.target.value))} 
-                            className="w-full bg-gray-950 p-1 rounded text-xs border border-gray-800 text-gray-300" 
+                            className="w-full bg-fuchsia-950/10 p-1 rounded text-xs border border-gray-400 text-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50" 
                           />
                         </div>
 
                         <div className="col-span-2">
                              <label className="text-[10px] text-gray-400 block mb-1 uppercase">Shadow Color</label>
-                             <div className="flex items-center gap-2 bg-gray-950 p-1 rounded border border-gray-800">
+                             <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
                                 <input 
                                 type="color" 
                                 value={element.shadow.color || '#000000'} 

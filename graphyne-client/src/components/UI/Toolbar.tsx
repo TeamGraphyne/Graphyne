@@ -24,7 +24,7 @@ export const Toolbar = () => {
       y: 100,
       width: 200,
       height: 100,
-      fill: '#ff0000',
+      fill: '#ffb86a',
       stroke: '#000000',
       strokeWidth: 0,
       opacity: 1,
@@ -49,7 +49,7 @@ export const Toolbar = () => {
       y: 150,
       width: 100, 
       height: 100,
-      fill: '#0000ff',
+      fill: '#721378',
       stroke: '#000000',
       strokeWidth: 0,
       opacity: 1,
@@ -69,7 +69,7 @@ export const Toolbar = () => {
       text: 'Double click to edit',
       fontSize: 24,
       fontFamily: 'Arial',
-      fill: '#ffffff',
+      fill: '#000000',
       width: 200,
       height: 40,
       opacity: 1,
@@ -85,39 +85,39 @@ export const Toolbar = () => {
   const zoomOut = () => { console.log('Zoom out triggered'); };
 
   return (
-    <div className="h-14 bg-gray-900 border-b border-gray-700 flex items-center px-4 space-x-4 text-white">
+    <div className="h-14 bg-fuchsia-900 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
       {/* Shape Tools */}
-      <div className="flex space-x-2 border-r border-gray-600 pr-4">
-        <button onClick={addRect} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Add Rectangle">
-          <Square size={20} />
+      <div className="flex space-x-2 border-r border-none pr-4">
+        <button onClick={addRect} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Add Rectangle">
+          <Square size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button onClick={addCircle} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Add Circle">
-          <Circle size={20} />
+        <button onClick={addCircle} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Add Circle">
+          <Circle size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={addText} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Add Text">
-          <Type size={20} />
+        <button onClick={addText} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Add Text">
+          <Type size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button className="p-2 hover:bg-gray-700 rounded transition-colors opacity-50 cursor-not-allowed" title="Add Image (Coming Soon)">
-          <ImageIcon size={20} />
+        <button className="group/button p-2 hover:bg-orange-300 rounded transition-colors opacity-50 cursor-not-allowed" title="Add Image (Coming Soon)">
+          <ImageIcon size={20} className="group-hover/button:text-gray-800"/>
         </button>
       </div>
       
       {/* History Controls */}
       <div className="flex space-x-2">
-        <button onClick={() => dispatch(ActionCreators.undo())} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Undo">
-          <Undo size={20} />
+        <button onClick={() => dispatch(ActionCreators.undo())} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Undo">
+          <Undo size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={() => dispatch(ActionCreators.redo())} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Redo">
-          <Redo size={20} />
+        <button onClick={() => dispatch(ActionCreators.redo())} className="group/button p-2 hover:bg-orange-300 rounded transition-colors" title="Redo">
+          <Redo size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={zoomIn} className="p-2 hover:bg-gray-700 rounded" title="Zoom In">
-          <ZoomIn size={20} />
+        <button onClick={zoomIn} className="group/button p-2 hover:bg-orange-300 rounded" title="Zoom In">
+          <ZoomIn size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={zoomOut} className="p-2 hover:bg-gray-700 rounded" title="Zoom Out">
-          <ZoomOut size={20} />
+        <button onClick={zoomOut} className="group/button p-2 hover:bg-orange-300 rounded" title="Zoom Out">
+          <ZoomOut size={20} className="group-hover/button:text-gray-800"/>
         </button>
-        <button onClick={selectTool} className="p-2 hover:bg-gray-700 rounded" title="Select Tool">
-          <MousePointer2 size={20} />
+        <button onClick={selectTool} className="group/button p-2 hover:bg-orange-300 rounded" title="Select Tool">
+          <MousePointer2 size={20} className="group-hover/button:text-gray-800"/>
         </button>
       </div>
     </div>

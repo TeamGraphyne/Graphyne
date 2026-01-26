@@ -131,6 +131,7 @@ export const Artboard = () => {
   if (!config) return <div>Loading Canvas...</div>;
 
   const scale = 0.5;
+  const checkerSize = 10;
 
   return (
     <Stage 
@@ -145,14 +146,23 @@ export const Artboard = () => {
       onTouchStart={onMouseDown}
       onTouchMove={onMouseMove}
       onTouchEnd={onMouseUp}
-      style={{ backgroundColor: 'transparent' }}
+      style={{
+        backgroundColor: '#ffffff',
+        backgroundImage:
+          `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+          linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+          linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+          linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
+        backgroundSize: `${checkerSize / scale}px ${checkerSize / scale}px`,
+        backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`
+      }}
     >
       <Layer ref={layerRef}>
         <Rect 
           name="background"
           width={config.width} 
           height={config.height} 
-          fill={config.background} 
+          fill="transparent"
         />
         
         {elements.map((el) => {
@@ -205,7 +215,7 @@ export const Artboard = () => {
             y={selectionBox.y}
             width={selectionBox.width}
             height={selectionBox.height}
-            fill="rgba(0, 161, 255, 0.3)"
+            fill="rgba(0, 161, 255, 0)"
             stroke="#00a1ff"
             strokeWidth={1}
           />
