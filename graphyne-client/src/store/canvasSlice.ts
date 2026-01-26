@@ -1,8 +1,17 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
-import type { CanvasState, CanvasElement } from '../types/canvas';
+import type { CanvasState, CanvasElement, CanvasConfig } from '../types/canvas';
 
-const initialState: CanvasState = {
+// Extend the state to track Metadata (Database IDs)
+interface ExtendedCanvasState extends CanvasState {
+  meta: {
+    id: string | null;        // The Database ID of this graphic
+    name: string;             // The name of the graphic
+    projectId: string | null; // The currently selected Project/Playlist ID
+  };
+}
+
+const initialState: ExtendedCanvasState = {
   elements: [],
   selectedIds: [],
   config: {
@@ -10,6 +19,11 @@ const initialState: CanvasState = {
     height: 1080,
     background: '#000000',
     zoom: 1
+  },
+  meta: {
+    id: null,
+    name: "New Graphic",
+    projectId: null
   }
 };
 
@@ -17,6 +31,23 @@ export const canvasSlice = createSlice({
   name: 'canvas',
   initialState,
   reducers: {
+    // --- METADATA ACTIONS ---
+    setGraphicMeta: (state, action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>) => {
+      if (action.payload.id !== undefined) state.meta.id = action.payload.id;
+      if (action.payload.name !== undefined) state.meta.name = action.payload.name;
+      if (action.payload.projectId !== undefined) state.meta.projectId = action.payload.projectId;
+    },
+
+    // [FIXED] Replaced 'any' with 'CanvasConfig'
+    loadGraphic: (state, action: PayloadAction<{ id: string; name: string; elements: CanvasElement[]; config: CanvasConfig }>) => {
+      state.meta.id = action.payload.id;
+      state.meta.name = action.payload.name;
+      state.elements = action.payload.elements;
+      state.config = { ...state.config, ...action.payload.config };
+      state.selectedIds = [];
+    },
+
+    // --- EXISTING ACTIONS ---
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
       const newElement = {
         ...action.payload,
@@ -127,6 +158,8 @@ export const canvasSlice = createSlice({
 });
 
 export const {
+  setGraphicMeta,
+  loadGraphic,
   addElement, 
   updateElement, 
   updateElements, 

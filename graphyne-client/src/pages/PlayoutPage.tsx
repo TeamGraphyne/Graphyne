@@ -16,27 +16,41 @@ import { useNavigate } from "react-router-dom";
 const SERVER_URL = "http://localhost:3001";
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
-// Renders content at 1920x1080 but shrinks it to fit the container
-const ScaledFrame = ({ src, title }: { src: string; title: string }) => {
+// [UPDATED] Added onLoad and ref support to control the internal iframe
+interface ScaledFrameProps {
+  src: string;
+  title: string;
+  autoPlay?: boolean; // New prop to trigger play command on load
+}
+
+const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null); // Local ref for the iframe
   const [scale, setScale] = useState(1);
 
+  // 1. Handle Scaling
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
-        // Calculate scale based on container width vs broadcast width (1920)
         const currentWidth = containerRef.current.offsetWidth;
         setScale(currentWidth / 1920);
       }
     };
-
-    // Update on mount and resize
     updateScale();
     const observer = new ResizeObserver(updateScale);
     if (containerRef.current) observer.observe(containerRef.current);
-
     return () => observer.disconnect();
   }, []);
+
+  // 2. [NEW] Handle Auto-Play Logic
+  // When the iframe finishes loading, we send the 'play' command if autoPlay is true.
+  const handleLoad = () => {
+    if (autoPlay && iframeRef.current?.contentWindow) {
+      console.log(`▶️ Auto-playing ${title}`);
+      // Emitting 'play' to the graphic's window
+      iframeRef.current.contentWindow.postMessage('play', '*');
+    }
+  };
 
   return (
     <div
@@ -53,10 +67,12 @@ const ScaledFrame = ({ src, title }: { src: string; title: string }) => {
         className="absolute top-0 left-0"
       >
         <iframe
+          ref={iframeRef}
           src={src}
           title={title}
+          onLoad={handleLoad} // Trigger command when content is ready
           className="w-full h-full border-0"
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin" // 'allow-same-origin' needed for postMessage in some browsers
         />
       </div>
     </div>
@@ -64,7 +80,6 @@ const ScaledFrame = ({ src, title }: { src: string; title: string }) => {
 };
 
 export function PlayoutPage() {
-  // --- State ---
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PlaylistItem | null>(null);
   const [programItem, setProgramItem] = useState<PlaylistItem | null>(null);
@@ -74,12 +89,8 @@ export function PlayoutPage() {
 
   // --- 1. System Startup ---
   useEffect(() => {
-    // A. Connect to Real-time Engine
     socketService.connect();
-
-    // B. Load the Rundown (Playlist)
     loadRundown();
-
     return () => {
       socketService.disconnect();
     };
@@ -88,16 +99,11 @@ export function PlayoutPage() {
   const loadRundown = async () => {
     setIsLoading(true);
     try {
-      // 1. Get list of all projects
       const projects = await api.getProjects();
-
       if (projects.length > 0) {
-        // 2. Load the most recently modified project
         const activeProject = await api.getProjectById(projects[0].id);
-
         setProjectName(activeProject.name);
-        setPlaylist(activeProject.items || []); // Ensure items exists
-        console.log("✅ Loaded Rundown:", activeProject.name);
+        setPlaylist(activeProject.items || []);
       } else {
         setProjectName("No Projects Found");
       }
@@ -113,18 +119,23 @@ export function PlayoutPage() {
 
   const handleLoadToPreview = (item: PlaylistItem) => {
     setPreviewItem(item);
+    // Note: We don't auto-play Preview by default so you can see it in "Ready" state.
+    // If you want Preview to animate in, you can pass autoPlay={true} to the Preview ScaledFrame below.
   };
 
   const handleTake = () => {
     if (previewItem) {
-      // 1. Update Local State (Immediate Feedback)
+      // 1. Move Preview to Program
       setProgramItem(previewItem);
-
-      // 2. Send Command to Engine (For External Renderers)
+      
+      // 2. Emit Socket command for external renderers (e.g. OBS overlay)
       socketService.emit("command:take", {
         graphicId: previewItem.graphic.id,
         htmlPath: previewItem.graphic.filePath,
       });
+
+      // Note: The 'play' command for the Local Program Monitor is handled 
+      // by the <ScaledFrame autoPlay={true} /> prop automatically when it loads.
     }
   };
 
@@ -133,8 +144,8 @@ export function PlayoutPage() {
     socketService.emit("command:clear");
   };
 
-  // --- 3. Render Helper (The Monitor) ---
-  const renderMonitorContent = (item: PlaylistItem | null, label: string) => {
+  // --- 3. Render Helper ---
+  const renderMonitorContent = (item: PlaylistItem | null, label: string, shouldAutoPlay: boolean) => {
     if (!item) {
       return (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
@@ -144,11 +155,15 @@ export function PlayoutPage() {
       );
     }
 
-    // Construct the full URL to the backend static file server
     const graphicUrl = `${SERVER_URL}${item.graphic.filePath}`;
 
-    // Scaled Frame
-    return <ScaledFrame src={graphicUrl} title={label} />;
+    return (
+      <ScaledFrame 
+        src={graphicUrl} 
+        title={label} 
+        autoPlay={shouldAutoPlay} // [UPDATED] Pass the autoPlay flag
+      />
+    );
   };
 
   return (
@@ -162,7 +177,6 @@ export function PlayoutPage() {
           </h1>
         </div>
 
-        {/* Connection Status / Active Show */}
         <div className="flex items-center gap-4">
           <div className="text-right mr-4">
             <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
@@ -182,35 +196,24 @@ export function PlayoutPage() {
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col p-6 gap-6 max-w-[1920px] mx-auto w-full">
-        {/* TOP ROW: MONITORS */}
         <div className="grid grid-cols-2 gap-6 w-full">
+          
           {/* PREVIEW WINDOW */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
-              <span className="text-sm font-bold text-gray-400 tracking-wider">
-                PREVIEW
-              </span>
+              <span className="text-sm font-bold text-gray-400 tracking-wider">PREVIEW</span>
               <span className="text-xs text-blue-400 font-mono">
                 {previewItem ? previewItem.graphic.name : "IDLE"}
               </span>
             </div>
+            <div className="relative w-full aspect-video bg-gray-900 rounded-lg border-2 border-gray-700 overflow-hidden shadow-inner">
+               {/* Checkerboard */}
+               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#6b7280 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
+               
+               {/* [UPDATED] Render Preview (autoPlay = false usually, or true if you want to preview the anim) */}
+               {renderMonitorContent(previewItem, "Preview", true)} 
 
-            <div className="relative w-full aspect-video bg-gray-900 rounded-lg border-2 border-gray-700 overflow-hidden shadow-inner group">
-              {/* Checkerboard Background */}
-              <div
-                className="absolute inset-0 opacity-20 pointer-events-none"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(#6b7280 1px, transparent 1px)",
-                  backgroundSize: "20px 20px",
-                }}
-              ></div>
-
-              {renderMonitorContent(previewItem, "Preview")}
-
-              <div className="absolute top-4 left-4 px-2 py-0.5 bg-blue-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">
-                PVW
-              </div>
+               <div className="absolute top-4 left-4 px-2 py-0.5 bg-blue-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
             </div>
           </div>
 
@@ -225,32 +228,27 @@ export function PlayoutPage() {
                 {programItem ? programItem.graphic.name : "BLACK"}
               </span>
             </div>
-
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-              {renderMonitorContent(programItem, "Program")}
+              
+              {/* [UPDATED] Render Program with autoPlay=TRUE */}
+              {renderMonitorContent(programItem, "Program", true)}
 
-              <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">
-                ON AIR
-              </div>
+              <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>
           </div>
         </div>
 
-        {/* MIDDLE ROW: TRANSPORT CONTROLS */}
+        {/* CONTROLS */}
         <div className="flex justify-center items-center py-2">
           <div className="flex gap-4 p-2 bg-gray-900 rounded-xl border border-gray-800 shadow-xl">
             <button
               onClick={handleTake}
               disabled={!previewItem}
               className={`
-                    group relative overflow-hidden w-48 h-12 rounded-lg font-black tracking-[0.15em] transition-all duration-200
-                    flex items-center justify-center gap-2
-                    ${
-                      previewItem
-                        ? "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95"
-                        : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"
-                    }
-                  `}
+                group relative overflow-hidden w-48 h-12 rounded-lg font-black tracking-[0.15em] transition-all duration-200
+                flex items-center justify-center gap-2
+                ${previewItem ? "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"}
+              `}
             >
               <Play size={18} className={previewItem ? "fill-current" : ""} />
               TAKE
@@ -260,14 +258,10 @@ export function PlayoutPage() {
               onClick={handleClearProgram}
               disabled={!programItem}
               className={`
-                    w-32 h-12 rounded-lg font-bold tracking-widest border-2 transition-all duration-200
-                    flex items-center justify-center gap-2
-                    ${
-                      programItem
-                        ? "border-red-900/50 text-red-500 hover:bg-red-950 hover:border-red-600 active:scale-95"
-                        : "border-gray-800 text-gray-700 cursor-not-allowed bg-gray-900"
-                    }
-                  `}
+                w-32 h-12 rounded-lg font-bold tracking-widest border-2 transition-all duration-200
+                flex items-center justify-center gap-2
+                ${programItem ? "border-red-900/50 text-red-500 hover:bg-red-950 hover:border-red-600 active:scale-95" : "border-gray-800 text-gray-700 cursor-not-allowed bg-gray-900"}
+              `}
             >
               <Square size={16} className={programItem ? "fill-current" : ""} />
               CLEAR
@@ -275,23 +269,15 @@ export function PlayoutPage() {
           </div>
         </div>
 
-        {/* BOTTOM ROW: RUNDOWN LIST */}
+        {/* RUNDOWN LIST */}
         <div className="flex-1 flex flex-col bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-lg min-h-0">
           <div className="px-4 py-3 bg-gray-850 border-b border-gray-800 flex justify-between items-center">
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
               RUNDOWN
             </h3>
-
-            <button
-              onClick={loadRundown}
-              className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors"
-              title="Refresh Rundown"
-            >
-              <RefreshCw
-                size={14}
-                className={isLoading ? "animate-spin" : ""}
-              />
+            <button onClick={loadRundown} className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors" title="Refresh Rundown">
+              <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
             </button>
           </div>
 
@@ -299,71 +285,33 @@ export function PlayoutPage() {
             {playlist.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-2">
                 <AlertCircle size={32} className="opacity-20" />
-                <p className="text-sm">
-                  Rundown is empty or could not be loaded.
-                </p>
+                <p className="text-sm">Rundown is empty or could not be loaded.</p>
               </div>
             ) : (
               playlist.map((item, index) => {
                 const isPreview = previewItem?.id === item.id;
                 const isProgram = programItem?.id === item.id;
-
                 return (
                   <div
                     key={item.id}
                     onClick={() => handleLoadToPreview(item)}
                     className={`
-                            group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
-                            ${
-                              isProgram
-                                ? "bg-red-950/30 border-red-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]"
-                                : isPreview
-                                  ? "bg-blue-950/30 border-blue-600/50 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]"
-                                  : "bg-gray-800/40 border-transparent hover:bg-gray-800 hover:border-gray-700"
-                            }
-                        `}
+                      group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
+                      ${isProgram ? "bg-red-950/30 border-red-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-blue-950/30 border-blue-600/50 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-gray-800/40 border-transparent hover:bg-gray-800 hover:border-gray-700"}
+                    `}
                   >
-                    {/* Selection Indicator */}
-                    {(isPreview || isProgram) && (
-                      <div
-                        className={`absolute left-0 top-0 bottom-0 w-1 ${isProgram ? "bg-red-500" : "bg-blue-500"}`}
-                      />
-                    )}
-
-                    {/* ID / Index */}
-                    <div className="w-8 font-mono text-xs text-gray-600 text-center">
-                      {(index + 1).toString().padStart(2, "0")}
-                    </div>
-
-                    {/* Status Dots */}
+                    {(isPreview || isProgram) && (<div className={`absolute left-0 top-0 bottom-0 w-1 ${isProgram ? "bg-red-500" : "bg-blue-500"}`} />)}
+                    <div className="w-8 font-mono text-xs text-gray-600 text-center">{(index + 1).toString().padStart(2, "0")}</div>
                     <div className="w-8 flex justify-center mr-2">
-                      {isProgram && (
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />
-                      )}
-                      {!isProgram && isPreview && (
-                        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,1)]" />
-                      )}
+                      {isProgram && (<div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />)}
+                      {!isProgram && isPreview && (<div className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,1)]" />)}
                     </div>
-
-                    {/* Content Info */}
                     <div className="flex-1 flex flex-col justify-center">
-                      <span
-                        className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-blue-400" : "text-gray-200"}`}
-                      >
-                        {item.graphic.name}
-                      </span>
-                      <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide">
-                        HTML5 SOURCE
-                      </span>
+                      <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-blue-400" : "text-gray-200"}`}>{item.graphic.name}</span>
+                      <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide">HTML5 SOURCE</span>
                     </div>
-
-                    {/* Status Label */}
                     <div className="w-20 text-right">
-                      <span
-                        className={`text-[10px] font-black tracking-wider ${isProgram ? "text-red-600" : isPreview ? "text-blue-600" : "hidden"}`}
-                      >
-                        {isProgram ? "ON AIR" : "NEXT"}
-                      </span>
+                      <span className={`text-[10px] font-black tracking-wider ${isProgram ? "text-red-600" : isPreview ? "text-blue-600" : "hidden"}`}>{isProgram ? "ON AIR" : "NEXT"}</span>
                     </div>
                   </div>
                 );
