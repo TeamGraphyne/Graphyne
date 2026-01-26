@@ -87,7 +87,7 @@ export const Artboard = () => {
   };
 
   // --- SELECTION RECTANGLE LOGIC ---
-const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const isBackground = e.target === e.target.getStage() || e.target.name() === 'background';
 
     if (isBackground) {
@@ -174,52 +174,66 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
   const checkerSize = 10;
 
   return (
-    <Stage 
-      ref={stageRef}
-      width={config.width * scale} 
-      height={config.height * scale} 
-      scaleX={scale}
-      scaleY={scale}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onTouchStart={onMouseDown}
-      onTouchMove={onMouseMove}
-      onTouchEnd={onMouseUp}
+    <div
+      ref={containerRef}
       style={{
-        backgroundColor: '#ffffff',
-        backgroundImage:
-          `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-          linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-          linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-          linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
-        backgroundSize: `${checkerSize / scale}px ${checkerSize / scale}px`,
-        backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`
+        width: "100%",
+        height: "100%",
+        overflow: "auto",
+        backgroundColor: "#1a1a1a",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <Layer ref={layerRef}>
-        <Rect 
-          name="background"
-          width={config.width} 
-          height={config.height} 
-          fill="transparent"
-        />
-        
-        {elements.map((el) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const {zIndex, type, ...elementProps} = el;
-          
-          const commonProps = {
-            ...elementProps,
-            name: el.type, 
-            draggable: !el.isLocked, // Now valid thanks to updated types
-            onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
-              e.cancelBubble = true;
-              if (e.evt.shiftKey) {
-                dispatch(toggleSelection(el.id));
-              } else {
-                if (!selectedIds.includes(el.id)) {
-                  dispatch(selectElement(el.id));
+      <Stage
+        ref={stageRef}
+        width={config.width * config.zoom}
+        height={config.height * config.zoom}
+        scaleX={config.zoom}
+        scaleY={config.zoom}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onTouchStart={onMouseDown}
+        onTouchMove={onMouseMove}
+        onTouchEnd={onMouseUp}
+        style={{
+          backgroundColor: "#ffffff",
+          backgroundImage:
+            `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+             linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+             linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+             linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
+          backgroundSize: `${checkerSize / scale}px ${checkerSize / scale}px`,
+          backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`
+        }}
+      >
+        <Layer ref={layerRef}>
+          <Rect
+            name="background"
+            width={config.width}
+            height={config.height}
+            fill="transparent"
+          />
+
+          {elements.map((el) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { zIndex, type, ...elementProps } = el;
+
+            const commonProps = {
+              ...elementProps,
+              name: el.type,
+              draggable: !el.isLocked,
+              listening: true,
+              onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+                e.cancelBubble = true;
+                if (e.evt.shiftKey) {
+                  dispatch(toggleSelection(el.id));
+                } else {
+                  if (!selectedIds.includes(el.id)) {
+                    dispatch(selectElement(el.id));
+                  }
                 }
               },
               onDragStart: onDragStart,
@@ -305,42 +319,8 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
               if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
                 return oldBox;
               }
-            },
-            onDragStart: onDragStart,
-            onDragEnd: onDragEnd,
-            onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
-              const node = e.target;
-              // Fix 3: Flatten payload for transform update as well
-              dispatch(updateElement({
-                id: el.id,
-                x: node.x(),
-                y: node.y(),
-                rotation: node.rotation(),
-                scaleX: node.scaleX(),
-                scaleY: node.scaleY(),
-              }));
-            }
-          };
-
-          // Now valid thanks to updated types
-          if (el.isVisible === false) return null; 
-
-          if (el.type === 'rect') return <Rect key={el.id} {...commonProps} />;
-          if (el.type === 'circle') return <Circle key={el.id} {...commonProps} />;
-          if (el.type === 'text') return <Text key={el.id} {...commonProps} />;
-          return null;
-        })}
-        
-        {/* SELECTION RECTANGLE */}
-        {selectionBox && selectionBox.isSelecting && (
-          <Rect
-            x={selectionBox.x}
-            y={selectionBox.y}
-            width={selectionBox.width}
-            height={selectionBox.height}
-            fill="rgba(0, 161, 255, 0)"
-            stroke="#00a1ff"
-            strokeWidth={1}
+              return newBox;
+            }}
           />
         </Layer>
       </Stage>
