@@ -85,72 +85,77 @@ export function EditorPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-neutral-950 text-gray-300 overflow-hidden">
       {/* --- HEADER --- */}
-      <header className="h-20 bg-gray-900 border-b border-gray-800 flex flex-col justify-center px-4 z-20">
-        <div className="flex items-center justify-between w-full">
-          
-          {/* Logo & Info */}
-          <div className="flex items-center gap-4">
-            <h1 className="font-bold text-lg tracking-tight text-blue-500">
-              Graphyne{" "}
-              <span className="text-gray-500 text-xs font-normal">EDITOR</span>
-            </h1>
-            
-            {/* Quick Name Edit */}
-            <input 
-              type="text" 
-              value={meta.name} 
-              onChange={handleNameChange}
-              className="bg-transparent border border-transparent hover:border-gray-700 focus:border-blue-500 text-sm px-2 py-1 rounded outline-none transition-colors"
-            />
-          </div>
+      <header className="h-20 bg-neutral-950 border-b border-none flex flex-col justify-center z-20">
+        <div className="flex items-center w-full">
 
-          {/* Context & Actions */}
-          <div className="flex gap-2 items-center">
-            
-            {/* Project Selector */}
-            <div className="flex items-center gap-2 mr-4">
-                <span className="text-xs text-gray-500 uppercase font-bold">Target Project:</span>
-                <select 
-                    value={meta.projectId || ""} 
-                    onChange={handleProjectChange}
-                    className="bg-gray-800 border border-gray-700 text-xs rounded px-2 py-1.5 focus:border-blue-500 outline-none"
-                >
-                    <option value="">(None - Library Only)</option>
-                    {projects.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                </select>
+        <div className="flex items-center gap-6 px-4 py-2 w-full justify-between">  
+          {/* Logo & Info */}
+            <div className="flex items-center gap-4 justify-start">
+              <h1 className="font-bold text-lg tracking-tight text-orange-300">
+                Graphyne{" "}
+                <span className="text-gray-400 text-xs font-normal">EDITOR</span>
+              </h1>
+              
+              {/* Quick Name Edit */}
+              <input 
+                type="text" 
+                value={meta.name} 
+                onChange={handleNameChange}
+                className="bg-transparent border border-transparent hover:border-fuchsia-200/30 focus:border-orange-300 text-sm px-2 py-1 rounded outline-none transition-colors"
+              />
             </div>
 
-            {/* EXPORT / SAVE BUTTON */}
-            <button
-              onClick={handleExport}
-              disabled={isSaving}
-              className={`
-                flex items-center gap-2 px-4 py-1.5 rounded text-xs font-bold transition-colors shadow-lg
-                ${isSaving ? "bg-blue-900 text-blue-200 cursor-wait" : "bg-blue-600 hover:bg-blue-500 text-white"}
-              `}
-            >
-              {isSaving ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Save size={14} />
-              )}
-              {isSaving ? "SAVING..." : (meta.id ? "UPDATE" : "SAVE")}
-            </button>
+            {/* Context & Actions */}
+            <div className="flex gap-2">
+              
+              {/* Project Selector */}
+              <div className="flex items-center gap-2 mr-4">
+                  <span className="text-xs text-gray-400 uppercase font-bold">Target Project:</span>
+                  <select 
+                      value={meta.projectId || ""} 
+                      onChange={handleProjectChange}
+                      className="bg-neutral-700/40 border border-fuchsia-200/30 text-xs rounded px-2 py-1.5 
+                      focus:border-orange-300 outline-none focus:bg-neutral-700/50 focus:text-gray-800
+                      hover:border-orange-300/50"
+                  >
+                      <option value="">(None - Library Only)</option>
+                      {projects.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </select>
+              </div>
 
-            {/* PLAYOUT NAVIGATION */}
-            <button
-              className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700 ml-2"
-              onClick={() => navigate("/playout")}
-            >
-              <MonitorPlay size={14} /> PLAYOUT
-            </button>
+              {/* EXPORT / SAVE BUTTON */}
+              <button
+                onClick={handleExport}
+                disabled={isSaving}
+                className={`
+                  flex items-center gap-2 px-4 py-1.5 rounded text-xs font-bold transition-colors shadow-lg
+                  ${isSaving ? "bg-orange-300 text-gray-800 cursor-wait" : "bg-gray-300 hover:bg-orange-300 text-gray-800"}
+                `}
+              >
+                {isSaving ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                {isSaving ? "SAVING..." : (meta.id ? "UPDATE" : "SAVE")}
+              </button>
+
+              {/* PLAYOUT NAVIGATION */}
+              <button
+                className="flex items-center gap-2 px-3 py-1.5 bg-transparent text-xs font-bold rounded text-gray-300 border border-fuchsia-200/30 ml-2
+                hover:border-orange-300/50 focus:border-orange-300"
+                onClick={() => navigate("/playout")}
+              >
+                <MonitorPlay size={14} /> PLAYOUT
+              </button>
+            </div>
           </div>
         </div>
-        
+
         {/* Toolbar Component */}
         <Toolbar />
       </header>
