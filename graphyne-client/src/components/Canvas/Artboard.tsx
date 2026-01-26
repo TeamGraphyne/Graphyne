@@ -87,7 +87,7 @@ export const Artboard = () => {
   };
 
   // --- SELECTION RECTANGLE LOGIC ---
-const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const isBackground = e.target === e.target.getStage() || e.target.name() === 'background';
 
     if (isBackground) {
@@ -170,6 +170,9 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
 
   if (!config) return <div>Loading Canvas...</div>;
 
+  const scale = 0.5;
+  const checkerSize = 10;
+
   return (
     <div
       ref={containerRef}
@@ -196,8 +199,14 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
         onTouchMove={onMouseMove}
         onTouchEnd={onMouseUp}
         style={{
-          backgroundColor: "transparent",
-          border: "1px solid #444",
+          backgroundColor: "#ffffff",
+          backgroundImage:
+            `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+             linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+             linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+             linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
+          backgroundSize: `${checkerSize / scale}px ${checkerSize / scale}px`,
+          backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`
         }}
       >
         <Layer ref={layerRef}>
@@ -205,7 +214,7 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
             name="background"
             width={config.width}
             height={config.height}
-            fill={config.background}
+            fill="transparent"
           />
 
           {elements.map((el) => {
