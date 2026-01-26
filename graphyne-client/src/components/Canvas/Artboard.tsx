@@ -88,17 +88,14 @@ export const Artboard = () => {
 
   // --- SELECTION RECTANGLE LOGIC ---
 const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    // FIX: Treat the "background" rectangle as empty space
     const isBackground = e.target === e.target.getStage() || e.target.name() === 'background';
 
     if (isBackground) {
       const stage = e.target.getStage();
       if (!stage) return;
 
-      // 1. DESELECT CURRENT ELEMENT
       dispatch(selectElement(null)); 
 
-      // 2. START SELECTION BOX
       const pos = stage.getPointerPosition();
       if (pos) {
         setSelectionBox({
@@ -119,7 +116,6 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const pos = stage?.getPointerPosition();
 
     if (pos && selectionBox) {
-      // Adjust for zoom
       setSelectionBox({
         ...selectionBox,
         width: pos.x / config.zoom - selectionBox.x,
@@ -172,7 +168,6 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Handle Loading State
   if (!config) return <div>Loading Canvas...</div>;
 
   return (
@@ -221,7 +216,6 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
               ...elementProps,
               name: el.type,
               draggable: !el.isLocked,
-              //add zindex based on arrya position
               listening: true,
               onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
                 e.cancelBubble = true;
@@ -235,6 +229,25 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
               },
               onDragStart: onDragStart,
               onDragEnd: onDragEnd,
+
+              // [UPDATED] Live Resize Logic (HTML-First)
+              // Instead of scaling, we calculate new width/height and reset scale to 1.
+              onTransform: (e: Konva.KonvaEventObject<Event>) => {
+                 const node = e.target;
+                 const scaleX = node.scaleX();
+                 const scaleY = node.scaleY();
+
+                 // Reset scale so it doesn't compound or distort
+                 node.scaleX(1);
+                 node.scaleY(1);
+
+                 // Apply calculated size
+                 // (Math.max prevents collapsing to 0)
+                 node.width(Math.max(5, node.width() * scaleX));
+                 node.height(Math.max(5, node.height() * scaleY));
+              },
+
+              // [UPDATED] Save Final Dimensions
               onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
                 const node = e.target;
                 dispatch(
@@ -243,8 +256,10 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
                     x: node.x(),
                     y: node.y(),
                     rotation: node.rotation(),
-                    scaleX: node.scaleX(),
-                    scaleY: node.scaleY(),
+                    width: node.width(),
+                    height: node.height(),
+                    scaleX: 1, // Always force 1
+                    scaleY: 1, // Always force 1
                   }),
                 );
               },
@@ -254,10 +269,25 @@ const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
 
             if (el.type === "rect")
               return <Rect key={el.id} {...commonProps} />;
+            
+            // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
-              return <Circle key={el.id} {...commonProps} />;
+              return (
+                  <Circle 
+                    key={el.id} 
+                    {...commonProps} 
+                    // Konva Circle uses radius, not width/height.
+                    // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
+                    radius={el.width / 2} 
+                    // Fix offset because Rect origin is top-left, Circle is center
+                    offsetX={-el.width / 2}
+                    offsetY={-el.height / 2}
+                  />
+              );
+            
             if (el.type === "text")
-              return <Text key={el.id} {...commonProps} />;
+              return <Text key={el.id} {...commonProps} verticalAlign="middle" />;
+            
             return null;
           })}
 

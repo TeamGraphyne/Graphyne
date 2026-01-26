@@ -1,5 +1,13 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { 
+  AlignLeft, 
+  AlignCenter, 
+  AlignRight, 
+  Bold, 
+  Italic, 
+  Type 
+} from 'lucide-react';
 import type { RootState } from '../../store/store';
 import { updateElement } from '../../store/canvasSlice';
 import type { CanvasElement, ShadowEffect } from '../../types/canvas';
@@ -27,7 +35,6 @@ export const PropertiesPanel = () => {
   // CanvasElement values
   type ElementValue = string | number | boolean | ShadowEffect | undefined;
 
-  // FIX 2: Removed 'props' nesting to satisfy TS Error 2353
   const handleChange = (key: keyof CanvasElement, value: ElementValue) => {
     dispatch(updateElement({ id: element.id, [key]: value }));
   };
@@ -81,6 +88,103 @@ export const PropertiesPanel = () => {
         {/* VIEW 1: DESIGN CONTROLS */}
         {activeTab === 'design' && (
           <div className="p-4 space-y-6">
+
+            {/* [NEW] TYPOGRAPHY SECTION (Text Only) */}
+            {element.type === 'text' && (
+              <div className="border-b border-gray-800 pb-6">
+                <h2 className="font-bold mb-3 text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                  <Type size={12} /> Typography
+                </h2>
+                
+                {/* Text Content */}
+                <div className="mb-4">
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Content</label>
+                  <textarea
+                    value={element.text || ""}
+                    onChange={(e) => handleChange('text', e.target.value)}
+                    rows={3}
+                    className="w-full bg-gray-950 p-2 rounded text-sm border border-gray-800 focus:border-blue-500 focus:outline-none text-white resize-none font-sans"
+                    placeholder="Enter text..."
+                  />
+                </div>
+
+                <div className="space-y-3">
+                    {/* Font Family & Size */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="text-[10px] text-gray-400 block mb-1 uppercase">Size (px)</label>
+                            <input 
+                                type="number" 
+                                value={element.fontSize || 20} 
+                                onChange={(e) => handleChange('fontSize', Number(e.target.value))}
+                                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300"
+                            />
+                        </div>
+                         <div>
+                            <label className="text-[10px] text-gray-400 block mb-1 uppercase">Font</label>
+                            <select 
+                                value={element.fontFamily || 'Arial, sans-serif'} 
+                                onChange={(e) => handleChange('fontFamily', e.target.value)}
+                                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300"
+                            >
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Open Sans', sans-serif">Open Sans</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Formatting Buttons */}
+                    <div>
+                         <label className="text-[10px] text-gray-400 block mb-1 uppercase">Formatting</label>
+                         <div className="flex bg-gray-950 rounded border border-gray-800 p-1 gap-1">
+                            {/* Bold */}
+                            <button 
+                                onClick={() => handleChange('fontWeight', element.fontWeight === 'bold' ? 'normal' : 'bold')}
+                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.fontWeight === 'bold' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                title="Bold"
+                            >
+                                <Bold size={14} />
+                            </button>
+                            
+                            {/* Italic */}
+                            <button 
+                                onClick={() => handleChange('fontStyle', element.fontStyle === 'italic' ? 'normal' : 'italic')}
+                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.fontStyle === 'italic' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                title="Italic"
+                            >
+                                <Italic size={14} />
+                            </button>
+
+                            <div className="w-px bg-gray-800 mx-1"></div>
+
+                            {/* Alignment */}
+                            <button 
+                                onClick={() => handleChange('align', 'left')}
+                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${(!element.align || element.align === 'left') ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                            >
+                                <AlignLeft size={14} />
+                            </button>
+                            <button 
+                                onClick={() => handleChange('align', 'center')}
+                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.align === 'center' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                            >
+                                <AlignCenter size={14} />
+                            </button>
+                            <button 
+                                onClick={() => handleChange('align', 'right')}
+                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.align === 'right' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                            >
+                                <AlignRight size={14} />
+                            </button>
+                         </div>
+                    </div>
+                </div>
+              </div>
+            )}
             
             {/* Dimensions */}
             <div>

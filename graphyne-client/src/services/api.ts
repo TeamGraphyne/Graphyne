@@ -5,9 +5,9 @@ const API_URL = 'http://localhost:3001/api';
 const client = axios.create({ baseURL: API_URL });
 
 export const api = {
-    // [UPDATED] Added optional projectId
-    saveGraphic: async (payload: { name: string, html: string, json: object, projectId?: string }) => {
-        return await client.post<{ success: true, id: string }>('/graphics', payload);
+    // [UPDATED] Accepts id for updates and optional projectId
+    saveGraphic: async (payload: { id?: string | null, name: string, html: string, json: object, projectId?: string | null }) => {
+        return await client.post<{ success: true, id: string, filePath: string }>('/graphics', payload);
     },
 
     getGraphics: async () => {
