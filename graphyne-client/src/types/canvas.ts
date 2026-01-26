@@ -60,6 +60,7 @@ export interface CanvasConfig {
   width: number;
   height: number;
   background: string;
+  zoom:number;
 }
 
 export interface CanvasState {
