@@ -49,7 +49,7 @@ export const compileGraphicToHTML = async (
       .map(el => el.fontFamily)
   ));
 
-  // Create Google Fonts link (simple implementation assuming standard Google Fonts names)
+  // Create Google Fonts link
   const fontLink = usedFonts.length > 0
     ? `<link href="https://fonts.googleapis.com/css2?family=${usedFonts.map(f => f?.replace(/ /g, '+')).join('&family=')}&display=swap" rel="stylesheet">`
     : '';
@@ -67,6 +67,13 @@ export const compileGraphicToHTML = async (
       z-index: ${el.zIndex || 0};
     `;
 
+    // Handle Shadows
+    let shadowCss = '';
+    if (el.shadow) {
+        const { color, blur, offsetX, offsetY } = el.shadow;
+        shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+    }
+
     if (el.type === 'text') {
       css += `
         font-family: ${el.fontFamily || 'Arial, sans-serif'};
@@ -74,20 +81,20 @@ export const compileGraphicToHTML = async (
         color: ${el.fill};
         display: flex;
         align-items: center;
-        /* Fix: Add text-align for multi-line text alignment */
         text-align: ${el.align || 'left'};
         justify-content: ${el.align === 'center' ? 'center' : el.align === 'right' ? 'flex-end' : 'flex-start'};
         white-space: pre-wrap;
+        ${shadowCss ? `text-shadow: ${shadowCss};` : ''} 
       `;
     } else {
       css += `
         background-color: ${el.fill};
         border-radius: ${el.cornerRadius || 0}px;
         ${el.stroke ? `border: ${el.strokeWidth || 1}px solid ${el.stroke};` : ''}
+        ${shadowCss ? `box-shadow: ${shadowCss};` : ''}
       `;
     }
 
-    // Image Handling
     if (el.type === 'image' && el.src) {
       css += `background-image: url('${el.src}'); background-size: cover;`;
     }
@@ -96,67 +103,105 @@ export const compileGraphicToHTML = async (
   };
 
   // 2. GENERATE DOM ELEMENTS
+  // ✅ FIX: Prefix ID with "gfx-" to prevent "not a valid selector" error
   const domElements = processedElements.map(el => {
-    // Fix: Escape text content
     const content = el.type === 'text' ? escapeHtml(el.text) : '';
-    return `<div id="${el.id}" style="${generateStyles(el)}">${content}</div>`;
+    return `<div id="gfx-${el.id}" style="${generateStyles(el)}">${content}</div>`;
   }).join('\n');
 
   // 3. EMBED ANIMATION LOGIC (GSAP + Triggers)
   const scriptLogic = `
-    const tl = gsap.timeline({ paused: true });
+    const tlIn = gsap.timeline({ paused: true });
+    const tlOut = gsap.timeline({ paused: true });
     
-    // --- ANIMATION MAPPING ---
-    const elements = ${JSON.stringify(processedElements).replace(/<\/script>/g, '<\\/script>')}; // Fix: Escape closing script tags
+    // Process Data
+    const elements = ${JSON.stringify(processedElements).replace(/<\/script>/g, '<\\/script>')};
     
     elements.forEach(el => {
-      const target = "#" + el.id;
-      // Default to fade if no animation specified
-      const anim = el.inAnimation || { type: 'fade', duration: 0.5, delay: 0 };
+      // ✅ FIX: Target the prefixed ID
+      const target = "#gfx-" + el.id;
       
       const targetOpacity = typeof el.opacity === 'number' ? el.opacity : 1;
-      
-      gsap.set(target, { opacity: 0 }); // Init state
+      const inAnim = el.inAnimation || { type: 'fade', duration: 0.5, delay: 0 };
+      const inEase = inAnim.ease || "power2.out";
 
-      switch(anim.type) {
-        case 'slide-left':
+      // Initialize State
+      gsap.set(target, { opacity: 0 }); 
+
+      // --- IN ANIMATION (Enter) ---
+      switch(inAnim.type) {
+        case 'slide-left': // Enters from Left
           gsap.set(target, { x: -100 });
-          tl.to(target, { x: 0, opacity: targetOpacity, duration: anim.duration, ease: "power2.out" }, anim.delay);
+          tlIn.to(target, { x: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
           break;
-        case 'slide-right':
+        case 'slide-right': // Enters from Right
           gsap.set(target, { x: 100 });
-          tl.to(target, { x: 0, opacity: targetOpacity, duration: anim.duration, ease: "power2.out" }, anim.delay);
+          tlIn.to(target, { x: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
           break;
-        case 'scale':
+        case 'slide-up': // Enters from Bottom (Moves Up)
+          gsap.set(target, { y: 100 });
+          tlIn.to(target, { y: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
+          break;
+        case 'slide-down': // Enters from Top (Moves Down)
+          gsap.set(target, { y: -100 });
+          tlIn.to(target, { y: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
+          break;
+        case 'scale': // Pop In
           gsap.set(target, { scale: 0 });
-          tl.to(target, { scale: 1, opacity: targetOpacity, duration: anim.duration, ease: "back.out(1.7)" }, anim.delay);
+          tlIn.to(target, { scale: 1, opacity: targetOpacity, duration: inAnim.duration, ease: "back.out(1.7)" }, inAnim.delay);
           break;
         default: // fade
-          tl.to(target, { opacity: targetOpacity, duration: anim.duration }, anim.delay);
+          tlIn.to(target, { opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
+      }
+
+      // --- OUT ANIMATION (Exit) ---
+      if (el.outAnimation) {
+        const outAnim = el.outAnimation;
+        const outEase = outAnim.ease || "power2.in"; 
+
+        switch(outAnim.type) {
+            case 'slide-left': // Exits to Left
+                tlOut.to(target, { x: -100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'slide-right': // Exits to Right
+                tlOut.to(target, { x: 100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'slide-up': // Exits Up (Moves to -Y)
+                tlOut.to(target, { y: -100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'slide-down': // Exits Down (Moves to +Y)
+                tlOut.to(target, { y: 100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'scale': // Pop Out
+                tlOut.to(target, { scale: 0, opacity: 0, duration: outAnim.duration, ease: "back.in(1.7)" }, outAnim.delay);
+                break;
+            default: // Fade Out
+                tlOut.to(target, { opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+        }
       }
     });
 
     // --- CONTROLLERS ---
-    window.playIn = () => tl.restart();
-    window.playOut = () => tl.reverse();
+    window.playIn = () => tlIn.restart();
+    window.playOut = () => {
+        if (tlOut.getChildren().length > 0) {
+            tlOut.restart();
+        } else {
+            tlIn.reverse();
+        }
+    };
 
     // --- TRIGGERS ---
-    
-    // 1. Keyboard (1 = IN, 2 = OUT)
     window.addEventListener('keydown', (e) => {
         if (e.key === '1') window.playIn();
         if (e.key === '2') window.playOut();
     });
 
-    // 2. API / Socket Commands
     window.addEventListener('message', (event) => {
         const cmd = typeof event.data === 'string' ? event.data : event.data.command;
         if (cmd === 'play' || cmd === 'take') window.playIn();
         if (cmd === 'stop' || cmd === 'out' || cmd === 'clear') window.playOut();
     });
-
-    // Auto-play for testing
-    // window.playIn();
   `;
 
   // 4. RETURN FINAL HTML

@@ -1,14 +1,29 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
-import type { CanvasState, CanvasElement } from '../types/canvas';
+import type { CanvasState, CanvasElement, CanvasConfig } from '../types/canvas';
 
-const initialState: CanvasState = {
+// Extend the state to track Metadata (Database IDs)
+interface ExtendedCanvasState extends CanvasState {
+  meta: {
+    id: string | null;        // The Database ID of this graphic
+    name: string;             // The name of the graphic
+    projectId: string | null; // The currently selected Project/Playlist ID
+  };
+}
+
+const initialState: ExtendedCanvasState = {
   elements: [],
   selectedIds: [],
   config: {
     width: 1920,
     height: 1080,
-    background: '#000000'
+    background: '#000000',
+    zoom: 1
+  },
+  meta: {
+    id: null,
+    name: "New Graphic",
+    projectId: null
   }
 };
 
@@ -16,17 +31,32 @@ export const canvasSlice = createSlice({
   name: 'canvas',
   initialState,
   reducers: {
+    // --- METADATA ACTIONS ---
+    setGraphicMeta: (state, action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>) => {
+      if (action.payload.id !== undefined) state.meta.id = action.payload.id;
+      if (action.payload.name !== undefined) state.meta.name = action.payload.name;
+      if (action.payload.projectId !== undefined) state.meta.projectId = action.payload.projectId;
+    },
+
+    // [FIXED] Replaced 'any' with 'CanvasConfig'
+    loadGraphic: (state, action: PayloadAction<{ id: string; name: string; elements: CanvasElement[]; config: CanvasConfig }>) => {
+      state.meta.id = action.payload.id;
+      state.meta.name = action.payload.name;
+      state.elements = action.payload.elements;
+      state.config = { ...state.config, ...action.payload.config };
+      state.selectedIds = [];
+    },
+
+    // --- EXISTING ACTIONS ---
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
       const newElement = {
         ...action.payload,
-        id: uuidv4(), // Generate ID automatically
-        // Ensure defaults if missing
-        isVisible: true,
-        isLocked: false,
+        id: uuidv4(),
+        isVisible: action.payload.isVisible ?? true,
+        isLocked: action.payload.isLocked ?? false,
         zIndex: state.elements.length
       };
       state.elements.push(newElement);
-      // Auto-select the new element
       state.selectedIds = [newElement.id];
     },
 
@@ -85,11 +115,16 @@ export const canvasSlice = createSlice({
     },
 
     reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
-      const [removed] = state.elements.splice(action.payload.fromIndex, 1);
-      state.elements.splice(action.payload.toIndex, 0, removed);
+      const { fromIndex, toIndex } = action.payload;
+      const [removed] = state.elements.splice(fromIndex, 1);
+      state.elements.splice(toIndex, 0, removed);
+      
+      // Update zIndex for all elements based on new array order
+      state.elements.forEach((el, idx) => {
+        el.zIndex = idx;
+      });
     },
 
-    // FIX 2: Add Layer Movement Logic
     moveLayerUp: (state, action: PayloadAction<string>) => {
       const index = state.elements.findIndex(el => el.id === action.payload);
       if (index < state.elements.length - 1 && index !== -1) {
@@ -106,14 +141,40 @@ export const canvasSlice = createSlice({
         state.elements[index] = state.elements[index - 1];
         state.elements[index - 1] = temp;
       }
+    },
+
+    zoomIn: (state) => {
+      state.config.zoom = Math.min(state.config.zoom + 0.1, 3);
+    },
+
+    zoomOut: (state) => {
+      state.config.zoom = Math.max(state.config.zoom - 0.1, 0.2);
+    },
+
+    setZoom: (state, action: PayloadAction<number>) => {
+      state.config.zoom = Math.max(0.2, Math.min(3, action.payload));
     }
   }
 });
 
 export const {
-  addElement, updateElement, updateElements, removeElement,
-  selectElement, setSelection, toggleSelection, reorderElement,
-  toggleVisibility, toggleLock, moveLayerUp, moveLayerDown
+  setGraphicMeta,
+  loadGraphic,
+  addElement, 
+  updateElement, 
+  updateElements, 
+  removeElement,
+  selectElement, 
+  setSelection, 
+  toggleSelection, 
+  reorderElement,
+  toggleVisibility, 
+  toggleLock, 
+  moveLayerUp, 
+  moveLayerDown,
+  zoomIn,
+  zoomOut,
+  setZoom
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

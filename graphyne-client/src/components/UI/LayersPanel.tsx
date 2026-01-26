@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
-  ChevronUp, ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2 
+  ChevronUp, ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2, GripVertical
 } from 'lucide-react';
 
 import {
@@ -9,15 +10,71 @@ import {
   toggleVisibility,
   toggleLock,
   removeElement,
+  reorderElement,
+  selectElement
 } from '../../store/canvasSlice';
 
 export const LayersPanel = () => {
   const dispatch = useAppDispatch();
 
-  //  Handles redux-undo
+  // Handles redux-undo
   const elements = useAppSelector((state) => 
     state.canvas.present ? state.canvas.present.elements : []
   );
+
+  const selectedIds = useAppSelector((state) => 
+    state.canvas.present ? state.canvas.present.selectedIds : []
+  );
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex !== null && draggedIndex !== dropIndex) {
+      // Convert visual index to actual array index (since we display reversed)
+      const reversedLength = elements.length - 1;
+      const fromIndex = reversedLength - draggedIndex;
+      const toIndex = reversedLength - dropIndex;
+      
+      dispatch(reorderElement({ fromIndex, toIndex }));
+    }
+    
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleLayerClick = (id: string, e: React.MouseEvent) => {
+    // Don't select if clicking on control buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    dispatch(selectElement(id));
+  };
 
   return (
     <div className="w-80 bg-fuchsia-950/40 border-r border-fuchsia-200/30 p-3 h-full flex flex-col">
@@ -57,9 +114,10 @@ export const LayersPanel = () => {
                 <Trash2 size={14} className="group-hover/button:text-red-300"/>
               </button>
 
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux';
 import { ActionCreators } from 'redux-undo'; 
-import { addElement } from '../../store/canvasSlice';
+import { addElement, zoomIn, zoomOut } from '../../store/canvasSlice'; // Import the actions
 import { 
     Square, Circle, Type, Image as ImageIcon, 
     Undo, Redo, MousePointer2, ZoomIn, ZoomOut
@@ -80,9 +80,16 @@ export const Toolbar = () => {
     }));
   };
 
-  const selectTool = () =>{ console.log('Select tool activated'); }
-  const zoomIn = () => { console.log('Zoom in triggered'); };
-  const zoomOut = () => { console.log('Zoom out triggered'); };
+  const selectTool = () => { console.log('Select tool activated'); };
+  
+  // Dispatch the actual Redux actions
+  const handleZoomIn = () => { 
+    dispatch(zoomIn()); 
+  };
+  
+  const handleZoomOut = () => { 
+    dispatch(zoomOut()); 
+  };
 
   return (
     <div className="h-14 bg-fuchsia-900 border-b border-none flex items-center px-4 space-x-4 text-gray-300">

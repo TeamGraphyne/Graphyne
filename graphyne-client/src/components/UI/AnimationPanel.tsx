@@ -37,7 +37,7 @@ export const AnimationPanel = () => {
   // 5. Preview Logic (Safe Mode)
   const handlePreview = () => {
     // We check if Konva is attached to window
-const kWindow = window as unknown as KonvaWindow;
+    const kWindow = window as unknown as KonvaWindow;
     const stage = kWindow.Konva?.stages?.[0];
 
     if (!stage) {
@@ -54,16 +54,49 @@ const kWindow = window as unknown as KonvaWindow;
       // Reset to initial state based on animation type
       const animType = element.inAnimation?.type || 'none';
       const duration = element.inAnimation?.duration || 0.5;
+      const targetOpacity = element.opacity ?? 1;
 
+      // [FIXED] Updated logic to match exporter.ts definitions exactly
       if (animType === 'fade') {
         node.opacity(0);
-        gsap.to(node, { opacity: element.opacity ?? 1, duration });
+        gsap.to(node, { opacity: targetOpacity, duration });
+
       } else if (animType === 'slide-left') {
+        // Exporter: Enters FROM Left (-100 -> 0)
         node.x((element.x) - 100); 
-        gsap.to(node, { x: element.x, opacity: element.opacity ?? 1, duration });
+        node.opacity(0);
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
+
       } else if (animType === 'slide-right') {
+        // Exporter: Enters FROM Right (+100 -> 0)
         node.x((element.x) + 100); 
-        gsap.to(node, { x: element.x, opacity: element.opacity ?? 1, duration });
+        node.opacity(0);
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
+
+      } else if (animType === 'slide-up'){
+        // Exporter: Enters FROM Bottom (+100 -> 0)
+        node.y((element.y) + 100);
+        node.opacity(0);
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
+
+      } else if (animType === 'slide-down'){
+        // Exporter: Enters FROM Top (-100 -> 0)
+        node.y((element.y) - 100);
+        node.opacity(0);
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
+        
+      } else if (animType === 'scale') {
+        // [NEW] Added Scale preview
+        node.scaleX(0);
+        node.scaleY(0);
+        node.opacity(0);
+        gsap.to(node, { 
+            scaleX: element.scaleX || 1, 
+            scaleY: element.scaleY || 1, 
+            opacity: targetOpacity, 
+            duration, 
+            ease: 'back.out(1.7)' 
+        });
       }
     }
   };
@@ -104,8 +137,11 @@ const kWindow = window as unknown as KonvaWindow;
         >
           <option value="none">None</option>
           <option value="fade">Fade In</option>
-          <option value="slide-left">Slide Left</option>
-          <option value="slide-right">Slide Right</option>
+          <option value="slide-left">Slide from Left</option>
+          <option value="slide-right">Slide from Right</option>
+          <option value="slide-up">Slide from Bottom</option>
+          <option value="slide-down">Slide from Top</option>
+          <option value="scale">Pop In (Scale)</option>
         </select>
       </div>
 
