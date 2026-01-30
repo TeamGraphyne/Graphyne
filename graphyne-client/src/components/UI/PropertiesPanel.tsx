@@ -21,8 +21,7 @@ export const PropertiesPanel = () => {
       <div className="w-80 bg-gray-900 border-l border-gray-800 text-gray-500 flex items-center justify-center h-full text-sm">
         Select an element to edit
       </div>
-    );
-  }
+  )}
 
   // CanvasElement values
   type ElementValue = string | number | boolean | ShadowEffect | undefined;
@@ -142,6 +141,22 @@ export const PropertiesPanel = () => {
                     />
                     <span className="text-xs text-gray-400 font-mono">{element.fill}</span>
                   </div>
+                </div>
+
+                {/* Stroke Width */}
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                    <span>Stroke Width</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={1}
+                    value={element.strokeWidth || 0}
+                    onChange={(e) => handleChange("strokeWidth", Number(e.target.value))} 
+                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                  />
                 </div>
 
                 {/* Opacity */}
