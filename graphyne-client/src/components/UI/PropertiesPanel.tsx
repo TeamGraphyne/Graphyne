@@ -159,6 +159,20 @@ export const PropertiesPanel = () => {
                   />
                 </div>
 
+                {/* Stroke Fill */}
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Stroke Fill</label>
+                  <div className="flex items-center gap-2 bg-gray-950 p-1 rounded border border-gray-800">
+                    <input 
+                      type="color" 
+                      value={element.stroke} 
+                      onChange={(e) => handleChange('stroke', e.target.value)} 
+                      className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent" 
+                    />
+                    <span className="text-xs text-gray-400 font-mono">{element.stroke}</span>
+                  </div>
+                </div>
+
                 {/* Opacity */}
                 <div>
                     <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
