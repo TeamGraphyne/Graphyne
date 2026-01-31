@@ -1,7 +1,3 @@
-Here is the completely updated **Graphyne Contributor Reference Card**, tailored to your current **React (Vite) + Node (Fastify) + Prisma (PostgreSQL)** stack and the new "HTML-First" architecture.
-
----
-
 # Graphyne Contributor Reference Card
 
 Welcome to the Graphyne development team! This document contains everything you need to know about our development workflow, coding standards, and collaboration practices. **This is the Source of Truth.**
