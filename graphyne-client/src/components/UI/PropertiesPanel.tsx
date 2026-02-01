@@ -151,7 +151,7 @@ export const PropertiesPanel = () => {
                   <input
                     type="number"
                     min={0}
-                    max={500}
+                    max={100}
                     step={1}
                     value={element.strokeWidth || 0}
                     onChange={(e) => handleChange("strokeWidth", Number(e.target.value))} 
@@ -171,6 +171,22 @@ export const PropertiesPanel = () => {
                     />
                     <span className="text-xs text-gray-400 font-mono">{element.stroke}</span>
                   </div>
+                </div>
+
+                {/* Corner Radius*/}
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                    <span>Corner Radius</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={element.cornerRadius || 0}
+                    onChange={(e) => handleChange("cornerRadius", Number(e.target.value))} 
+                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                  />
                 </div>
 
                 {/* Opacity */}
