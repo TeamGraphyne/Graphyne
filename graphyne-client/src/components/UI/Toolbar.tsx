@@ -118,15 +118,19 @@ export const Toolbar = () => {
     // 2. Load image to get natural dimensions
     const img = new window.Image();
     img.onload = () => {
+      const maxSize = 500;
+      const scale = Math.min(1, maxSize / img.width, maxSize / img.height);
+      const scaledWidth = img.width * scale;
+      const scaledHeight = img.height * scale;
+
       dispatch(
         addElement({
           type: "image",
           name: file.name,
           x: 100,
           y: 100,
-          width: img.width > 500 ? 500 : img.width, // Cap initial size
-          height:
-            img.height > 500 ? (500 * img.height) / img.width : img.height,
+          width: scaledWidth, // Cap initial size while preserving aspect ratio
+          height: scaledHeight,
           src: objectUrl, // Store blob URL in Redux
           opacity: 1,
           rotation: 0,
