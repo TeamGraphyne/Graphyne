@@ -10,6 +10,7 @@ import {
   setZoom,
 } from "../../store/canvasSlice";
 import Konva from "konva";
+import { CanvasImage } from "./CanvasImage";
 
 export const Artboard = () => {
   const dispatch = useAppDispatch();
@@ -88,13 +89,14 @@ export const Artboard = () => {
 
   // --- SELECTION RECTANGLE LOGIC ---
   const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const isBackground = e.target === e.target.getStage() || e.target.name() === 'background';
+    const isBackground =
+      e.target === e.target.getStage() || e.target.name() === "background";
 
     if (isBackground) {
       const stage = e.target.getStage();
       if (!stage) return;
 
-      dispatch(selectElement(null)); 
+      dispatch(selectElement(null));
 
       const pos = stage.getPointerPosition();
       if (pos) {
@@ -103,7 +105,7 @@ export const Artboard = () => {
           y: pos.y / config.zoom,
           width: 0,
           height: 0,
-          isSelecting: true
+          isSelecting: true,
         });
       }
     }
@@ -200,13 +202,12 @@ export const Artboard = () => {
         onTouchEnd={onMouseUp}
         style={{
           backgroundColor: "#ffffff",
-          backgroundImage:
-            `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+          backgroundImage: `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
              linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
              linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
              linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
           backgroundSize: `${checkerSize / scale}px ${checkerSize / scale}px`,
-          backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`
+          backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`,
         }}
       >
         <Layer ref={layerRef}>
@@ -242,18 +243,18 @@ export const Artboard = () => {
               // [UPDATED] Live Resize Logic (HTML-First)
               // Instead of scaling, we calculate new width/height and reset scale to 1.
               onTransform: (e: Konva.KonvaEventObject<Event>) => {
-                 const node = e.target;
-                 const scaleX = node.scaleX();
-                 const scaleY = node.scaleY();
+                const node = e.target;
+                const scaleX = node.scaleX();
+                const scaleY = node.scaleY();
 
-                 // Reset scale so it doesn't compound or distort
-                 node.scaleX(1);
-                 node.scaleY(1);
+                // Reset scale so it doesn't compound or distort
+                node.scaleX(1);
+                node.scaleY(1);
 
-                 // Apply calculated size
-                 // (Math.max prevents collapsing to 0)
-                 node.width(Math.max(5, node.width() * scaleX));
-                 node.height(Math.max(5, node.height() * scaleY));
+                // Apply calculated size
+                // (Math.max prevents collapsing to 0)
+                node.width(Math.max(5, node.width() * scaleX));
+                node.height(Math.max(5, node.height() * scaleY));
               },
 
               // [UPDATED] Save Final Dimensions
@@ -278,25 +279,37 @@ export const Artboard = () => {
 
             if (el.type === "rect")
               return <Rect key={el.id} {...commonProps} />;
-            
+
             // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
               return (
-                  <Circle 
-                    key={el.id} 
-                    {...commonProps} 
-                    // Konva Circle uses radius, not width/height.
-                    // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
-                    radius={el.width / 2} 
-                    // Fix offset because Rect origin is top-left, Circle is center
-                    offsetX={-el.width / 2}
-                    offsetY={-el.height / 2}
-                  />
+                <Circle
+                  key={el.id}
+                  {...commonProps}
+                  // Konva Circle uses radius, not width/height.
+                  // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
+                  radius={el.width / 2}
+                  // Fix offset because Rect origin is top-left, Circle is center
+                  offsetX={-el.width / 2}
+                  offsetY={-el.height / 2}
+                />
               );
-            
+
             if (el.type === "text")
-              return <Text key={el.id} {...commonProps} verticalAlign="middle" />;
-            
+              return (
+                <Text key={el.id} {...commonProps} verticalAlign="middle" />
+              );
+
+            if (el.type === "image") {
+              return (
+                <CanvasImage
+                  key={el.id}
+                  {...commonProps}
+                  src={el.src}
+                />
+              );
+            }
+
             return null;
           })}
 
