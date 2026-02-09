@@ -27,6 +27,7 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
+  const [hasError, setHasError] = useState(false);
 
   // 1. Handle Scaling
   useEffect(() => {
@@ -50,6 +51,17 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
     }
   };
 
+  // Error UI
+  if (hasError) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-gray-400">
+        <AlertCircle size={48} className="mb-3 opacity-50" />
+        <div className="text-lg font-bold">{title}</div>
+        <div className="text-xs mt-1">Graphic preview unavailable</div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -69,6 +81,7 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
           src={src}
           title={title}
           onLoad={handleLoad}
+          onError={() => setHasError(true)}
           className="w-full h-full border-0"
           sandbox="allow-scripts allow-same-origin"
         />
@@ -84,6 +97,11 @@ export function PlayoutPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
+
+  // ========== FEATURE 3: DRAG AND DROP STATE ==========
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // ==================================================
 
   // --- 1. System Startup ---
   useEffect(() => {
@@ -118,6 +136,33 @@ export function PlayoutPage() {
     }
   };
 
+  // ========== FEATURE 3: DRAG AND DROP HANDLERS ==========
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (index: number) => {
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => {
+    if (dragIndex === null || dragIndex === index) return;
+    
+    const updated = [...playlist];
+    const [movedItem] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, movedItem);
+    
+    setPlaylist(updated);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+  // =====================================================
+
   // --- 2. Transport Controls ---
 
   // Helper to generate correct URL
@@ -142,7 +187,7 @@ export function PlayoutPage() {
       // 2. Emit Socket command for external renderers (Output Window)
       console.log("🚀 Emitting TAKE:", fullUrl);
       socketService.emit("command:take", {
-        url: fullUrl // Using simple 'url' payload to match OutputPage expectation
+        url: fullUrl
       });
     }
   };
@@ -286,7 +331,7 @@ export function PlayoutPage() {
           </div>
         </div>
 
-        {/* RUNDOWN LIST */}
+        {/* RUNDOWN LIST - WITH DRAG AND DROP */}
         <div className="flex-1 flex flex-col bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-lg min-h-0">
           <div className="px-4 py-3 bg-gray-850 border-b border-gray-800 flex justify-between items-center">
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
@@ -308,12 +353,29 @@ export function PlayoutPage() {
               playlist.map((item, index) => {
                 const isPreview = previewItem?.id === item.id;
                 const isProgram = programItem?.id === item.id;
+                // ========== FEATURE 3: DRAG VISUAL FEEDBACK ==========
+                const isDragging = dragIndex === index;
+                const isDragOver = dragOverIndex === index;
+                // ==================================================
+                
                 return (
                   <div
                     key={item.id}
+                    // ========== FEATURE 3: DRAG HANDLERS ==========
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      handleDragOver(index);
+                    }}
+                    onDrop={() => handleDrop(index)}
+                    onDragEnd={handleDragEnd}
+                    // ============================================
                     onClick={() => handleLoadToPreview(item)}
                     className={`
                       group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
+                      ${isDragging ? "opacity-50" : ""}
+                      ${isDragOver ? "border-t-4 border-t-blue-500" : ""}
                       ${isProgram ? "bg-red-950/30 border-red-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-blue-950/30 border-blue-600/50 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-gray-800/40 border-transparent hover:bg-gray-800 hover:border-gray-700"}
                     `}
                   >
