@@ -3,6 +3,7 @@ import { Provider } from 'react-redux';
 import { store } from './store/store';
 import { EditorPage } from './pages/EditorPage';
 import { PlayoutPage } from './pages/PlayoutPage'; 
+import { OutputPage } from './pages/OutputPage';
 
 function App() {
   return (
@@ -17,6 +18,9 @@ function App() {
           
           {/*The Playout Engine*/}
           <Route path="/playout" element={<PlayoutPage />} />
+
+          {/*The Output Zone*/}
+          <Route path="/output" element={<OutputPage />} />
         </Routes>
       </BrowserRouter>
     </Provider>
