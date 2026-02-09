@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MonitorPlay, Loader2, Save } from "lucide-react";
+import { MonitorPlay, Loader2, Save, FolderOpen } from "lucide-react";
 
 // 1. Imports for Logic
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -13,28 +13,33 @@ import { Artboard } from "../components/Canvas/Artboard";
 import { LayersPanel } from "../components/UI/LayersPanel";
 import { Toolbar } from "../components/UI/Toolbar";
 import { PropertiesPanel } from "../components/UI/PropertiesPanel";
+import { ProjectManager } from "../components/UI/ProjectManager";
 
 export function EditorPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   // 3. Access Redux State (wrapped in .present due to redux-undo)
-  // We now also access 'meta' to know if we are editing an existing graphic
   const { config, elements, selectedIds, meta } = useAppSelector(
     (state) => state.canvas.present,
   );
   
   const [isSaving, setIsSaving] = useState(false);
   const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
+  const [isProjectMgrOpen, setProjectMgrOpen] = useState(false); // State for Modal
 
   // 4. Fetch Projects on Mount
   useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = () => {
     api.getProjects().then(data => {
       setProjects(data);
     }).catch(err => console.error("Failed to load projects", err));
-  }, []);
+  };
 
-  // 5. Handle Project Selection
+  // 5. Handle Project Selection (Dropdown fallback)
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(setGraphicMeta({ projectId: e.target.value || null }));
   };
@@ -45,23 +50,20 @@ export function EditorPage() {
 
   // 6. Handle Export / Save to DB
   const handleExport = async () => {
-    // If no name set, force prompt
     let graphicName = meta.name;
     if (!graphicName || graphicName === "New Graphic") {
         const input = prompt("Enter a name for this graphic:", meta.name);
-        if (!input) return; // Cancelled
+        if (!input) return;
         graphicName = input;
         dispatch(setGraphicMeta({ name: input }));
     }
 
     setIsSaving(true);
     try {
-      // A. Compile State to HTML String (includes GSAP & Fonts)
+      // A. Compile State to HTML String
       const htmlContent = await compileGraphicToHTML(config, elements);
 
       // B. Send to Backend
-      // We pass 'id' (if it exists) to update. If null, backend creates new.
-      // We pass 'projectId' so backend links it to the playlist.
       const result = await api.saveGraphic({
         id: meta.id,
         name: graphicName,
@@ -71,10 +73,11 @@ export function EditorPage() {
       });
 
       if (result.status === 200 || result.data.success) {
-        // C. Update State with the ID returned from DB (Crucial for subsequent updates)
         dispatch(setGraphicMeta({ id: result.data.id }));
-        
         alert(`✅ Saved "${graphicName}" to ${meta.projectId ? 'Project & ' : ''}Library!`);
+        
+        // Refresh project list just in case
+        loadProjects();
       }
     } catch (error) {
       console.error("Export failed:", error);
@@ -86,6 +89,16 @@ export function EditorPage() {
 
   return (
     <div className="h-screen flex flex-col bg-neutral-950 text-gray-300 overflow-hidden">
+      
+      {/* --- PROJECT MANAGER MODAL --- */}
+      <ProjectManager 
+         isOpen={isProjectMgrOpen} 
+         onClose={() => {
+             setProjectMgrOpen(false);
+             loadProjects(); // Refresh dropdown when modal closes
+         }} 
+       />
+
       {/* --- HEADER --- */}
       <header className="h-20 bg-neutral-950 border-b border-none flex flex-col justify-center z-20">
         <div className="flex items-center w-full">
@@ -110,17 +123,26 @@ export function EditorPage() {
             {/* Context & Actions */}
             <div className="flex gap-2">
               
-              {/* Project Selector */}
+              {/* New Project Manager Button */}
+              <button 
+                 onClick={() => setProjectMgrOpen(true)}
+                 className="flex items-center gap-2 px-3 py-1.5 bg-fuchsia-900/40 hover:bg-fuchsia-800 text-fuchsia-200 border border-fuchsia-800 rounded text-xs font-bold transition-colors mr-2"
+               >
+                   <FolderOpen size={14} />
+                   PROJECTS
+               </button>
+
+              {/* Project Selector (Quick Switcher) */}
               <div className="flex items-center gap-2 mr-4">
-                  <span className="text-xs text-gray-400 uppercase font-bold">Target Project:</span>
+                  <span className="text-xs text-gray-400 uppercase font-bold">Target:</span>
                   <select 
                       value={meta.projectId || ""} 
                       onChange={handleProjectChange}
                       className="bg-neutral-700/40 border border-fuchsia-200/30 text-xs rounded px-2 py-1.5 
                       focus:border-orange-300 outline-none focus:bg-neutral-700/50 focus:text-gray-800
-                      hover:border-orange-300/50"
+                      hover:border-orange-300/50 max-w-[150px]"
                   >
-                      <option value="">(None - Library Only)</option>
+                      <option value="">(Library Only)</option>
                       {projects.map(p => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
