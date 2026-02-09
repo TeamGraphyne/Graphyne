@@ -6,6 +6,7 @@ import {
   AlertCircle,
   RefreshCw,
   VectorSquare,
+  ExternalLink
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
@@ -16,16 +17,15 @@ import { useNavigate } from "react-router-dom";
 const SERVER_URL = "http://localhost:3001";
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
-// [UPDATED] Added onLoad and ref support to control the internal iframe
 interface ScaledFrameProps {
   src: string;
   title: string;
-  autoPlay?: boolean; // New prop to trigger play command on load
+  autoPlay?: boolean;
 }
 
 const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null); // Local ref for the iframe
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
 
   // 1. Handle Scaling
@@ -42,12 +42,10 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
     return () => observer.disconnect();
   }, []);
 
-  // 2. [NEW] Handle Auto-Play Logic
-  // When the iframe finishes loading, we send the 'play' command if autoPlay is true.
+  // 2. Handle Auto-Play Logic
   const handleLoad = () => {
     if (autoPlay && iframeRef.current?.contentWindow) {
       console.log(`▶️ Auto-playing ${title}`);
-      // Emitting 'play' to the graphic's window
       iframeRef.current.contentWindow.postMessage('play', '*');
     }
   };
@@ -70,9 +68,9 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
           ref={iframeRef}
           src={src}
           title={title}
-          onLoad={handleLoad} // Trigger command when content is ready
+          onLoad={handleLoad}
           className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin" // 'allow-same-origin' needed for postMessage in some browsers
+          sandbox="allow-scripts allow-same-origin"
         />
       </div>
     </div>
@@ -101,9 +99,14 @@ export function PlayoutPage() {
     try {
       const projects = await api.getProjects();
       if (projects.length > 0) {
+        // [FIXED] Use getProjectById to get items
         const activeProject = await api.getProjectById(projects[0].id);
         setProjectName(activeProject.name);
-        setPlaylist(activeProject.items || []);
+        
+        // Sort items by order
+        const items = activeProject.items || [];
+        const sorted = items.sort((a: PlaylistItem, b: PlaylistItem) => a.order - b.order);
+        setPlaylist(sorted);
       } else {
         setProjectName("No Projects Found");
       }
@@ -117,10 +120,16 @@ export function PlayoutPage() {
 
   // --- 2. Transport Controls ---
 
+  // Helper to generate correct URL
+  const getGraphicUrl = (filePath: string) => {
+    // Assuming filePath is something like "/graphics/uuid.html"
+    // We append SERVER_URL if it's a relative path, or ensure it's correct
+    const filename = filePath.split('/').pop();
+    return `${SERVER_URL}/graphics/${filename}`;
+  };
+
   const handleLoadToPreview = (item: PlaylistItem) => {
     setPreviewItem(item);
-    // Note: We don't auto-play Preview by default so you can see it in "Ready" state.
-    // If you want Preview to animate in, you can pass autoPlay={true} to the Preview ScaledFrame below.
   };
 
   const handleTake = () => {
@@ -128,20 +137,24 @@ export function PlayoutPage() {
       // 1. Move Preview to Program
       setProgramItem(previewItem);
       
-      // 2. Emit Socket command for external renderers (e.g. OBS overlay)
-      socketService.emit("command:take", {
-        graphicId: previewItem.graphic.id,
-        htmlPath: previewItem.graphic.filePath,
-      });
+      const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
 
-      // Note: The 'play' command for the Local Program Monitor is handled 
-      // by the <ScaledFrame autoPlay={true} /> prop automatically when it loads.
+      // 2. Emit Socket command for external renderers (Output Window)
+      console.log("🚀 Emitting TAKE:", fullUrl);
+      socketService.emit("command:take", {
+        url: fullUrl // Using simple 'url' payload to match OutputPage expectation
+      });
     }
   };
 
   const handleClearProgram = () => {
     setProgramItem(null);
+    console.log("🛑 Emitting CLEAR");
     socketService.emit("command:clear");
+  };
+
+  const openOutputWindow = () => {
+    window.open('/output', 'GraphyneOutput', 'width=1920,height=1080,menubar=no,toolbar=no');
   };
 
   // --- 3. Render Helper ---
@@ -155,13 +168,11 @@ export function PlayoutPage() {
       );
     }
 
-    const graphicUrl = `${SERVER_URL}${item.graphic.filePath}`;
-
     return (
       <ScaledFrame 
-        src={graphicUrl} 
+        src={getGraphicUrl(item.graphic.filePath)} 
         title={label} 
-        autoPlay={shouldAutoPlay} // [UPDATED] Pass the autoPlay flag
+        autoPlay={shouldAutoPlay}
       />
     );
   };
@@ -184,6 +195,14 @@ export function PlayoutPage() {
             </div>
             <div className="text-sm font-bold text-gray-200">{projectName}</div>
           </div>
+
+          {/* NEW: Open Output Button */}
+          <button 
+             onClick={openOutputWindow}
+             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-blue-400 border border-blue-900/30 hover:border-blue-500 transition-colors"
+           >
+             <ExternalLink size={14} /> OUTPUT
+           </button>
 
           <button
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700"
@@ -210,7 +229,6 @@ export function PlayoutPage() {
                {/* Checkerboard */}
                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#6b7280 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
                
-               {/* [UPDATED] Render Preview (autoPlay = false usually, or true if you want to preview the anim) */}
                {renderMonitorContent(previewItem, "Preview", true)} 
 
                <div className="absolute top-4 left-4 px-2 py-0.5 bg-blue-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
@@ -230,7 +248,6 @@ export function PlayoutPage() {
             </div>
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
               
-              {/* [UPDATED] Render Program with autoPlay=TRUE */}
               {renderMonitorContent(programItem, "Program", true)}
 
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
