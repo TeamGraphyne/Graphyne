@@ -77,7 +77,7 @@ export const PropertiesPanel = () => {
               : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
           }`}
         >
-          Animate
+          Transition
         </button>
       </div>
 
