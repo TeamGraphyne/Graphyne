@@ -138,7 +138,14 @@ export const AnimationPanel = () => {
             duration, 
             ease: 'back.out(1.7)' 
         });
-    }
+
+    } else if (animType === 'slide-left'){
+      gsap.to(node, {
+        x: element.x-100, 
+        opacity: 0,
+        duration,ease: 'power2.in'});
+
+    } 
   };
 
 
