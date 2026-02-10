@@ -394,9 +394,9 @@ export const PropertiesPanel = () => {
 
         {/* VIEW 2: ANIMATION CONTROLS */}
         {activeTab === 'animate' && (
-          <div className="h-full p-4">
+  
              <AnimationPanel />
-          </div>
+    
         )}
 
       </div>

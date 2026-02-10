@@ -85,21 +85,21 @@ export const AnimationPanel = () => {
         node.opacity(0);
         gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
         
-      } else if (animType === 'scale') {
-        // Added Scale preview
-        node.scaleX(0);
-        node.scaleY(0);
-        node.opacity(0);
-        gsap.to(node, { 
-            scaleX: element.scaleX || 1, 
-            scaleY: element.scaleY || 1, 
-            opacity: targetOpacity, 
-            duration, 
-            ease: 'back.out(1.7)' 
-        });
+        } else if (animType === 'scale') {
+          // Added Scale preview
+          node.scaleX(0);
+          node.scaleY(0);
+          node.opacity(0);
+          gsap.to(node, { 
+              scaleX: element.scaleX || 1, 
+              scaleY: element.scaleY || 1, 
+              opacity: targetOpacity, 
+              duration, 
+              ease: 'back.out(1.7)' 
+          });
+        }
       }
-    }
-  };
+    };
 
   // Preview Out Animation
   const handlePreviewOut = () => {
@@ -164,12 +164,12 @@ export const AnimationPanel = () => {
           opacity: 0, 
           duration, 
           ease: 'power2.in' });
-
+    }
     }
   };
 
   return (
-    <div className="p-4 text-grey-400 bg-gray-920 border-r border-none h-full overflow-y-auto space-y-8">
+    <div className="p-4 text-gray-400 bg-gray-920 h-full overflow-y-auto space-y-8">
       
       {/* IN TRANSITION */}
       <div>
@@ -308,5 +308,4 @@ export const AnimationPanel = () => {
       </div>
     </div>
   );
-}
-};
+  };
