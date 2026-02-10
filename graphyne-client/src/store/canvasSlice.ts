@@ -153,7 +153,15 @@ export const canvasSlice = createSlice({
 
     setZoom: (state, action: PayloadAction<number>) => {
       state.config.zoom = Math.max(0.2, Math.min(3, action.payload));
-    }
+    },
+
+    // Add this to your canvasSlice reducers
+    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
+      const element = state.elements.find(el => el.id === action.payload.id);
+      if (element) {
+        element.name = action.payload.name;
+      }
+},
   }
 });
 
@@ -174,7 +182,8 @@ export const {
   moveLayerDown,
   zoomIn,
   zoomOut,
-  setZoom
+  setZoom,
+  renameElement
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
