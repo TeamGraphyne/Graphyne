@@ -1,5 +1,6 @@
 import type { CanvasElement, CanvasConfig } from '../types/canvas';
 
+// Helper to convert Blob URL to Base64
 const blobToBase64 = async (blobUrl: string): Promise<string> => {
   try {
     const response = await fetch(blobUrl);
@@ -12,10 +13,11 @@ const blobToBase64 = async (blobUrl: string): Promise<string> => {
     });
   } catch (e) {
     console.error("Failed to convert blob to base64", e);
-    return blobUrl;
+    return blobUrl; // Fallback to original if failed
   }
 };
 
+// Helper to escape HTML characters
 const escapeHtml = (unsafe: string | undefined) => {
   if (!unsafe) return "";
   return unsafe
@@ -26,12 +28,57 @@ const escapeHtml = (unsafe: string | undefined) => {
     .replace(/'/g, "&#039;");
 };
 
+// ✅ FIX: System/generic fonts that should NEVER be sent to Google Fonts
+const SYSTEM_FONTS = new Set([
+  'arial',
+  'helvetica',
+  'times new roman',
+  'times',
+  'courier new',
+  'courier',
+  'verdana',
+  'georgia',
+  'palatino',
+  'garamond',
+  'bookman',
+  'trebuchet ms',
+  'comic sans ms',
+  'impact',
+  'tahoma',
+  'lucida console',
+  'lucida sans unicode',
+  'sans-serif',
+  'serif',
+  'monospace',
+  'cursive',
+  'fantasy',
+  'system-ui',
+  'ui-serif',
+  'ui-sans-serif',
+  'ui-monospace',
+  'ui-rounded',
+]);
+
+// ✅ FIX: Extract the primary font name from a CSS font-family string
+// e.g. "'Roboto', sans-serif" → "Roboto", "Arial, sans-serif" → "Arial"
+const extractPrimaryFont = (fontFamily: string): string => {
+  const first = fontFamily.split(',')[0].trim();
+  // Remove surrounding quotes (single or double)
+  return first.replace(/^['"]|['"]$/g, '');
+};
+
+// ✅ FIX: Check whether a font is a system/generic font
+const isSystemFont = (fontFamily: string): boolean => {
+  const primary = extractPrimaryFont(fontFamily);
+  return SYSTEM_FONTS.has(primary.toLowerCase());
+};
+
 export const compileGraphicToHTML = async (
   config: CanvasConfig,
   elements: CanvasElement[]
 ): Promise<string> => {
 
-  // 1. Pre-process Images
+  // A. PRE-PROCESS ELEMENTS (Convert Images & Collect Fonts)
   const processedElements = await Promise.all(elements.map(async (el) => {
     const newEl = { ...el };
     if (newEl.type === 'image' && newEl.src && newEl.src.startsWith('blob:')) {
@@ -40,18 +87,19 @@ export const compileGraphicToHTML = async (
     return newEl;
   }));
 
-  // 2. Collect Fonts
+  // ✅ FIX: Collect unique fonts, EXCLUDING system fonts
   const usedFonts = Array.from(new Set(
     processedElements
-      .filter(el => el.type === 'text' && el.fontFamily)
-      .map(el => el.fontFamily)
+      .filter(el => el.type === 'text' && el.fontFamily && !isSystemFont(el.fontFamily))
+      .map(el => extractPrimaryFont(el.fontFamily!))
   ));
-  
+
+  // Create Google Fonts link — only if there are actual Google Fonts to load
   const fontLink = usedFonts.length > 0
-    ? `<link href="https://fonts.googleapis.com/css2?family=${usedFonts.map(f => f?.replace(/ /g, '+')).join('&family=')}&display=swap" rel="stylesheet">`
+    ? `<link href="https://fonts.googleapis.com/css2?family=${usedFonts.map(f => f.replace(/ /g, '+')).join('&family=')}&display=swap" rel="stylesheet">`
     : '';
 
-  // 3. Generate Styles
+  // 1. GENERATE CSS (Positioning & Styling)
   const generateStyles = (el: CanvasElement) => {
     let css = `
       position: absolute;
@@ -64,10 +112,14 @@ export const compileGraphicToHTML = async (
       z-index: ${el.zIndex || 0};
     `;
 
+    // Handle Shadows
     let shadowCss = '';
     if (el.shadow) {
         const { color, blur, offsetX, offsetY } = el.shadow;
-        shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+        // ✅ FIX: Only generate shadow CSS if there's actual blur or offset
+        if (blur > 0 || offsetX !== 0 || offsetY !== 0) {
+            shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+        }
     }
 
     if (el.type === 'text') {
@@ -86,7 +138,7 @@ export const compileGraphicToHTML = async (
       css += `
         background-color: ${el.fill};
         border-radius: ${el.cornerRadius || 0}px;
-        ${el.stroke ? `border: ${el.strokeWidth || 1}px solid ${el.stroke};` : ''}
+        ${(el.stroke && el.strokeWidth && el.strokeWidth > 0) ? `border: ${el.strokeWidth}px solid ${el.stroke};` : ''}
         ${shadowCss ? `box-shadow: ${shadowCss};` : ''}
       `;
     }
@@ -95,76 +147,84 @@ export const compileGraphicToHTML = async (
       css += `background-image: url('${el.src}'); background-size: cover;`;
     }
 
-    return css.replace(/\s+/g, ' ');
+    return css.replace(/\s+/g, ' '); // Minify styles
   };
 
-  // 4. Generate DOM (With GFX Prefix)
+  // 2. GENERATE DOM ELEMENTS
+  // ✅ FIX: Prefix ID with "gfx-" to prevent "not a valid selector" error
   const domElements = processedElements.map(el => {
     const content = el.type === 'text' ? escapeHtml(el.text) : '';
     return `<div id="gfx-${el.id}" style="${generateStyles(el)}">${content}</div>`;
   }).join('\n');
 
-  // 5. Generate Script Logic
+  // 3. EMBED ANIMATION LOGIC (GSAP + Triggers)
   const scriptLogic = `
-    // Safety check for GSAP
-    if (typeof gsap === 'undefined') {
-        console.error("GSAP failed to load. Check internet connection or CDN.");
-        document.body.innerHTML += '<div style="color:red; font-size:20px; background:white;">Error: GSAP Not Found</div>';
-    }
-
     const tlIn = gsap.timeline({ paused: true });
     const tlOut = gsap.timeline({ paused: true });
     
+    // Process Data
     const elements = ${JSON.stringify(processedElements).replace(/<\/script>/g, '<\\/script>')};
     
     elements.forEach(el => {
-      // 1. Target the Prefixed ID
+      // ✅ FIX: Target the prefixed ID
       const target = "#gfx-" + el.id;
       
       const targetOpacity = typeof el.opacity === 'number' ? el.opacity : 1;
       const inAnim = el.inAnimation || { type: 'fade', duration: 0.5, delay: 0 };
       const inEase = inAnim.ease || "power2.out";
 
+      // Initialize State
       gsap.set(target, { opacity: 0 }); 
 
-      // --- IN ANIMATION ---
+      // --- IN ANIMATION (Enter) ---
       switch(inAnim.type) {
-        case 'slide-left':
+        case 'slide-left': // Enters from Left
           gsap.set(target, { x: -100 });
           tlIn.to(target, { x: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
           break;
-        case 'slide-right':
+        case 'slide-right': // Enters from Right
           gsap.set(target, { x: 100 });
           tlIn.to(target, { x: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
           break;
-        case 'slide-up':
+        case 'slide-up': // Enters from Bottom (Moves Up)
           gsap.set(target, { y: 100 });
           tlIn.to(target, { y: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
           break;
-        case 'slide-down':
+        case 'slide-down': // Enters from Top (Moves Down)
           gsap.set(target, { y: -100 });
           tlIn.to(target, { y: 0, opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
           break;
-        case 'scale':
+        case 'scale': // Pop In
           gsap.set(target, { scale: 0 });
           tlIn.to(target, { scale: 1, opacity: targetOpacity, duration: inAnim.duration, ease: "back.out(1.7)" }, inAnim.delay);
           break;
-        default:
+        default: // fade
           tlIn.to(target, { opacity: targetOpacity, duration: inAnim.duration, ease: inEase }, inAnim.delay);
       }
 
-      // --- OUT ANIMATION ---
+      // --- OUT ANIMATION (Exit) ---
       if (el.outAnimation) {
         const outAnim = el.outAnimation;
         const outEase = outAnim.ease || "power2.in"; 
 
         switch(outAnim.type) {
-            case 'slide-left': tlOut.to(target, { x: -100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay); break;
-            case 'slide-right': tlOut.to(target, { x: 100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay); break;
-            case 'slide-up': tlOut.to(target, { y: -100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay); break;
-            case 'slide-down': tlOut.to(target, { y: 100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay); break;
-            case 'scale': tlOut.to(target, { scale: 0, opacity: 0, duration: outAnim.duration, ease: "back.in(1.7)" }, outAnim.delay); break;
-            default: tlOut.to(target, { opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+            case 'slide-left': // Exits to Left
+                tlOut.to(target, { x: -100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'slide-right': // Exits to Right
+                tlOut.to(target, { x: 100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'slide-up': // Exits Up (Moves to -Y)
+                tlOut.to(target, { y: -100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'slide-down': // Exits Down (Moves to +Y)
+                tlOut.to(target, { y: 100, opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
+                break;
+            case 'scale': // Pop Out
+                tlOut.to(target, { scale: 0, opacity: 0, duration: outAnim.duration, ease: "back.in(1.7)" }, outAnim.delay);
+                break;
+            default: // Fade Out
+                tlOut.to(target, { opacity: 0, duration: outAnim.duration, ease: outEase }, outAnim.delay);
         }
       }
     });
@@ -172,8 +232,11 @@ export const compileGraphicToHTML = async (
     // --- CONTROLLERS ---
     window.playIn = () => tlIn.restart();
     window.playOut = () => {
-        if (tlOut.getChildren().length > 0) tlOut.restart();
-        else tlIn.reverse();
+        if (tlOut.getChildren().length > 0) {
+            tlOut.restart();
+        } else {
+            tlIn.reverse();
+        }
     };
 
     // --- TRIGGERS ---
@@ -183,33 +246,46 @@ export const compileGraphicToHTML = async (
     });
 
     window.addEventListener('message', (event) => {
+        // Handle animation commands (existing)
         const cmd = typeof event.data === 'string' ? event.data : event.data.command;
         if (cmd === 'play' || cmd === 'take') window.playIn();
         if (cmd === 'stop' || cmd === 'out' || cmd === 'clear') window.playOut();
 
-        // --- DATA BINDING FIX ---
+        // --- DATA BINDING LISTENER (NEW) ---
         if (event.data && event.data.type === 'data:update') {
-            const updates = event.data.updates || [];
-            updates.forEach(u => {
-                // ✅ FIX: Use "gfx-" prefix to find the DOM element
-                const el = document.getElementById("gfx-" + u.elementId);
-                if (!el) return;
+            var updates = event.data.updates || [];
+            for (var i = 0; i < updates.length; i++) {
+                var u = updates[i];
+                var domEl = document.getElementById(u.elementId);
+                if (!domEl) continue;
 
                 switch (u.property) {
-                    case 'text': el.textContent = u.value; break;
-                    case 'fill': 
-                        if (el.style.color) el.style.color = u.value;
-                        else el.style.backgroundColor = u.value;
+                    case 'text':
+                        domEl.textContent = u.value;
                         break;
-                    case 'src': el.style.backgroundImage = "url('" + u.value + "')"; break;
-                    case 'opacity': el.style.opacity = u.value; break;
-                    case 'fontSize': el.style.fontSize = u.value + 'px'; break;
+                    case 'fill':
+                        if (domEl.style.color) {
+                            domEl.style.color = u.value;
+                        } else {
+                            domEl.style.backgroundColor = u.value;
+                        }
+                        break;
+                    case 'src':
+                        domEl.style.backgroundImage = "url('" + u.value + "')";
+                        break;
+                    case 'opacity':
+                        domEl.style.opacity = u.value;
+                        break;
+                    case 'fontSize':
+                        domEl.style.fontSize = u.value + 'px';
+                        break;
                 }
-            });
+            }
         }
     });
   `;
 
+  // 4. RETURN FINAL HTML
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
