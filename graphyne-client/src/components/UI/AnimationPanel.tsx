@@ -101,10 +101,41 @@ export const AnimationPanel = () => {
     }
   };
 
+  // Preview Out Animation
+  const handlePreviewOut = () => {
+    const kWindow = window as unknown as KonvaWindow;
+    const stage = kWindow.Konva?.stages?.[0];
+
+    if (!stage) {
+      console.warn("Preview unavailable: Konva stage not found on window");
+      return;
+    }
+
+    const node = stage.findOne('#' + element.id);
+    
+    if (node) {
+      gsap.killTweensOf(node);
+
+      // Reset to normal state first
+      node.x(element.x);
+      node.y(element.y);
+      node.opacity(element.opacity ?? 1);
+      node.scaleX(element.scaleX || 1);
+      node.scaleY(element.scaleY || 1);
+
+      const animType = element.outAnimation?.type || 'none';
+      const duration = element.outAnimation?.duration || 0.5;
+
+      // Animation logic will be added in next commits
+    }
+  };
+
+
+
   return (
     <div className="p-4 text-grey-400 bg-gray-920 border-r border-none h-full overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">In Animation</h3>
+        <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">In Transition</h3>
         <button 
           onClick={handlePreview}
           className="group bg-fuchsia-900/50 px-2 py-1 rounded
