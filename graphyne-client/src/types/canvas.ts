@@ -75,6 +75,7 @@ export interface CanvasState {
 // New!!!
 export interface DataBinding {
   sourceId: string;      // Which data source (UUID)
+  sourceName: string;    // For UI display
   fieldPath: string;     
   targetProperty: string; 
   format?: string;       // Optional
