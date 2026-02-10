@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectElement,
   updateElement,
+  updateElementText,
   toggleSelection,
   removeElement,
   setSelection,
@@ -18,8 +19,13 @@ export const Artboard = () => {
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config } = useAppSelector(
-    (state) => state.canvas.present || state.canvas,
-  );
+    (state) => {
+      const canvasState = state.canvas as any;
+      if(canvasState.present){
+        return canvasState.present;
+      }
+      return canvasState;
+});
 
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
