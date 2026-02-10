@@ -158,6 +158,13 @@ export const AnimationPanel = () => {
           duration, 
           ease: 'power2.in' });
 
+    } else if (animType === 'slide-down'){
+        gsap.to(node, { 
+          y: element.y + 100, 
+          opacity: 0, 
+          duration, 
+          ease: 'power2.in' });
+
     }
   };
 
