@@ -86,7 +86,7 @@ export const AnimationPanel = () => {
         gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
         
       } else if (animType === 'scale') {
-        // [NEW] Added Scale preview
+        // Added Scale preview
         node.scaleX(0);
         node.scaleY(0);
         node.opacity(0);
@@ -126,9 +126,22 @@ export const AnimationPanel = () => {
       const animType = element.outAnimation?.type || 'none';
       const duration = element.outAnimation?.duration || 0.5;
 
-      // Animation logic will be added in next commits
+      // Animation logic 
+      if (animType === 'fade') {
+        gsap.to(node, { opacity: 0, duration });
+
+      } else if (animType === 'scale') {
+        gsap.to(node, { 
+            scaleX: element.scaleX || 1, 
+            scaleY: element.scaleY || 1, 
+            opacity: 0, 
+            duration, 
+            ease: 'back.out(1.7)' 
+        });
     }
   };
+
+
 
 
 
@@ -200,5 +213,5 @@ export const AnimationPanel = () => {
         </div>
       </div>
     </div>
-  );
+  )}
 };
