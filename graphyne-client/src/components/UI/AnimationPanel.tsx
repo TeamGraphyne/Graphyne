@@ -151,7 +151,14 @@ export const AnimationPanel = () => {
         opacity: 0,
         duration,ease: 'power2.in'});
 
-    } 
+    } else if (animType === 'slide-up'){
+        gsap.to(node, { 
+          y: element.y - 100, 
+          opacity: 0, 
+          duration, 
+          ease: 'power2.in' });
+
+    }
   };
 
 
