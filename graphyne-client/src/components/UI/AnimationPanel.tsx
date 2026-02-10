@@ -145,6 +145,12 @@ export const AnimationPanel = () => {
         opacity: 0,
         duration,ease: 'power2.in'});
 
+    } else if (animType === 'slide-right'){
+      gsap.to(node, {
+        x: element.x+100, 
+        opacity: 0,
+        duration,ease: 'power2.in'});
+
     } 
   };
 
