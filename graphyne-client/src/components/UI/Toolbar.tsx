@@ -12,6 +12,7 @@ import {
   MousePointer2,
   ZoomIn,
   ZoomOut,
+  Maximize,
 } from "lucide-react";
 
 export const Toolbar = () => {
@@ -150,6 +151,11 @@ export const Toolbar = () => {
     e.target.value = "";
   };
 
+  const handleFit = () => {
+    const event = new CustomEvent('fit-canvas');
+    window.dispatchEvent(event);
+  };
+
   return (
     <div className="h-14 bg-fuchsia-950 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
       {/* Hidden File Input for Image Upload */}
@@ -232,6 +238,13 @@ export const Toolbar = () => {
             size={20}
             className="group-hover/button:text-gray-800"
           />
+        </button>
+        <button
+          onClick={handleFit}
+          className="group/button p-2 hover:bg-orange-300 rounded"
+          title="Canvas Fit"
+        >
+          <Maximize size={20} className="group-hover/button:text-gray-800" />
         </button>
       </div>
     </div>

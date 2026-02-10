@@ -53,6 +53,29 @@ export const Artboard = () => {
     }
   }, [config.width, config.height, dispatch]); // Only run once on mount
 
+  // ---HANDLE FIT BUTTON---
+  const fitCanvas = useCallback(() => {
+    if (containerRef.current) {
+      const container = containerRef.current;
+      const padding = 40;
+
+      const availableWidth = container.clientWidth - padding;
+      const availableHeight = container.clientHeight - padding;
+
+      const scaleX = availableWidth / config.width;
+      const scaleY = availableHeight / config.height;
+
+      const newZoom = Math.min(scaleX, scaleY);
+
+      dispatch(setZoom(newZoom));
+    }
+  }, [config.width, config.height, dispatch]);
+
+  useEffect(() => {
+    window.addEventListener("fit-canvas", fitCanvas);
+    return () => window.removeEventListener("fit-canvas", fitCanvas);
+  }, [fitCanvas]);
+
   // --- TRANSFORMER SYNC ---
   useEffect(() => {
     if (trRef.current && layerRef.current) {
