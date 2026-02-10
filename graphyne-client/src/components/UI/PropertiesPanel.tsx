@@ -9,7 +9,7 @@ import {
   Type 
 } from 'lucide-react';
 import type { RootState } from '../../store/store';
-import { updateElement } from '../../store/canvasSlice';
+import { updateElement,updateElementText } from '../../store/canvasSlice';
 import type { CanvasElement, ShadowEffect } from '../../types/canvas';
 import { AnimationPanel } from './AnimationPanel';
 
@@ -18,12 +18,15 @@ export const PropertiesPanel = () => {
   const [activeTab, setActiveTab] = useState<'design' | 'animate'>('design');
 
   // 1. Access state via .present because of redux-undo
-  const selectedId = useSelector((state: RootState) => state.canvas.present.selectedIds[0]);
-  
-  const element = useSelector((state: RootState) => 
-    state.canvas.present.elements.find((el: CanvasElement) => el.id === selectedId)
-  );
+const selectedId = useSelector((state: RootState) => {
+  const canvas = state.canvas.present || state.canvas;
+  return canvas.selectedIds[0];
+});
 
+const element = useSelector((state: RootState) => {
+  const canvas = state.canvas.present || state.canvas;
+  return canvas.elements.find((el: CanvasElement) => el.id === selectedId);
+});
   if (!element) {
     return (
       <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-gray-500 flex items-center justify-center h-full text-sm">
@@ -100,7 +103,9 @@ export const PropertiesPanel = () => {
                   <label className="text-[10px] text-gray-400 block mb-1 uppercase">Content</label>
                   <textarea
                     value={element.text || ""}
-                    onChange={(e) => handleChange('text', e.target.value)}
+                    onChange={(e) => {
+                      dispatch(updateElementText({ id: element.id, text: e.target.value }));
+                    }}
                     rows={3}
                     className="w-full bg-gray-950 p-2 rounded text-sm border border-gray-800 focus:border-blue-500 focus:outline-none text-white resize-none font-sans"
                     placeholder="Enter text..."
