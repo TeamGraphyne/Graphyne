@@ -68,6 +68,14 @@ export const canvasSlice = createSlice({
       }
     },
 
+    //Separate action for text updates, this will be gruoped when user clickes undo :)
+    updateElementText: (state, action: PayloadAction<{ id: string; text: string }>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload.id);
+      if (index !== -1) {
+        state.elements[index].text = action.payload.text;
+      }
+    },
+
     updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
       action.payload.forEach(({ id, ...changes }) => {
         const index = state.elements.findIndex(el => el.id === id);
@@ -161,7 +169,8 @@ export const {
   setGraphicMeta,
   loadGraphic,
   addElement, 
-  updateElement, 
+  updateElement,
+  updateElementText, 
   updateElements, 
   removeElement,
   selectElement, 
