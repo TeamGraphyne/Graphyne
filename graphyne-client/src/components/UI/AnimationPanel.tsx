@@ -35,7 +35,7 @@ export const AnimationPanel = () => {
   };
 
   // 5. Preview Logic (Safe Mode)
-  const handlePreview = () => {
+  const handlePreviewIn = () => {
     // We check if Konva is attached to window
     const kWindow = window as unknown as KonvaWindow;
     const stage = kWindow.Konva?.stages?.[0];
@@ -168,77 +168,145 @@ export const AnimationPanel = () => {
     }
   };
 
-
-
-
-
   return (
-    <div className="p-4 text-grey-400 bg-gray-920 border-r border-none h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">In Transition</h3>
-        <button 
-          onClick={handlePreview}
-          className="group bg-fuchsia-900/50 px-2 py-1 rounded
-          hover:bg-orange-300 
-          focus:bg-orange-300
-          transition-colors"
-        >
-          <svg  className="w-6 h-6 text-gray-300 group-hover:text-gray-800 group-focus:text-gray-800 transition-colors" 
-                aria-hidden="true" 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" height="24" 
-                fill="currentColor" 
-                viewBox="0 0 24 24"
-          >
-            <path fill-rule="evenodd" d="M8.6 5.2A1 1 0 0 0 7 6v12a1 1 0 0 0 1.6.8l8-6a1 1 0 0 0 0-1.6l-8-6Z" clip-rule="evenodd"/>
-          </svg>
-
-        </button>
-      </div>
+    <div className="p-4 text-grey-400 bg-gray-920 border-r border-none h-full overflow-y-auto space-y-8">
       
-      {/* Type Selection */}
-      <div className="mb-4 space-y-2">
-        <label className="text-xs text-gray-400">TYPE</label>
-        <select 
-          value={element.inAnimation?.type || 'none'}
-          onChange={(e) => updateAnim('inAnimation', 'type', e.target.value)}
-          className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
-          focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
-          [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
-        >
-          <option value="none">None</option>
-          <option value="fade">Fade In</option>
-          <option value="slide-left">Slide from Left</option>
-          <option value="slide-right">Slide from Right</option>
-          <option value="slide-up">Slide from Bottom</option>
-          <option value="slide-down">Slide from Top</option>
-          <option value="scale">Pop In (Scale)</option>
-        </select>
+      {/* IN TRANSITION */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">In Transition</h3>
+          <button 
+            onClick={handlePreviewIn}
+            className="group bg-fuchsia-900/50 px-2 py-1 rounded
+            hover:bg-orange-300 
+            focus:bg-orange-300
+            transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-300 group-hover:text-gray-800 group-focus:text-gray-800 transition-colors" 
+                  aria-hidden="true" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="24" height="24" 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+            >
+              <path fillRule="evenodd" d="M8.6 5.2A1 1 0 0 0 7 6v12a1 1 0 0 0 1.6.8l8-6a1 1 0 0 0 0-1.6l-8-6Z" clipRule="evenodd"/>
+            </svg>
+          </button>
+        </div>
+        
+        {/* Type Selection */}
+        <div className="mb-4 space-y-2">
+          <label className="text-xs text-gray-400">TYPE</label>
+          <select 
+            value={element.inAnimation?.type || 'none'}
+            onChange={(e) => updateAnim('inAnimation', 'type', e.target.value)}
+            className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
+            focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
+            [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+          >
+            <option value="none">None</option>
+            <option value="fade">Fade In</option>
+            <option value="slide-left">Slide from Left</option>
+            <option value="slide-right">Slide from Right</option>
+            <option value="slide-up">Slide from Bottom</option>
+            <option value="slide-down">Slide from Top</option>
+            <option value="scale">Pop In (Scale)</option>
+          </select>
+        </div>
+
+        {/* Duration & Delay */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="space-y-1">
+            <label className="text-xs text-gray-400">DURATION (S)</label>
+            <input 
+              type="number" 
+              step="0.1"
+              value={element.inAnimation?.duration || 0.5}
+              onChange={(e) => updateAnim('inAnimation', 'duration', parseFloat(e.target.value))}
+              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">DELAY (S)</label>
+            <input 
+              type="number" 
+              step="0.1"
+              value={element.inAnimation?.delay || 0}
+              onChange={(e) => updateAnim('inAnimation', 'delay', parseFloat(e.target.value))}
+              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Duration & Delay */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <div className="space-y-1">
-          <label className="text-xs text-gray-400">DURATION (S)</label>
-          <input 
-            type="number" 
-            step="0.1"
-            value={element.inAnimation?.duration || 0.5}
-            onChange={(e) => updateAnim('inAnimation', 'duration', parseFloat(e.target.value))}
-            className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
-          />
+      {/* OUT TRANSITION */}
+      <div className="border-t border-gray-700 pt-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">Out Transition</h3>
+          <button 
+            onClick={handlePreviewOut}
+            className="group bg-fuchsia-900/50 px-2 py-1 rounded
+            hover:bg-orange-300 
+            focus:bg-orange-300
+            transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-300 group-hover:text-gray-800 group-focus:text-gray-800 transition-colors" 
+                  aria-hidden="true" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="24" height="24" 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+            >
+              <path fillRule="evenodd" d="M8.6 5.2A1 1 0 0 0 7 6v12a1 1 0 0 0 1.6.8l8-6a1 1 0 0 0 0-1.6l-8-6Z" clipRule="evenodd"/>
+            </svg>
+          </button>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs text-gray-500">DELAY (S)</label>
-          <input 
-            type="number" 
-            step="0.1"
-            value={element.inAnimation?.delay || 0}
-            onChange={(e) => updateAnim('inAnimation', 'delay', parseFloat(e.target.value))}
-            className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
-          />
+        
+        {/* Type Selection */}
+        <div className="mb-4 space-y-2">
+          <label className="text-xs text-gray-400">TYPE</label>
+          <select 
+            value={element.outAnimation?.type || 'none'}
+            onChange={(e) => updateAnim('outAnimation', 'type', e.target.value)}
+            className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
+            focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
+            [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+          >
+            <option value="none">None</option>
+            <option value="fade">Fade Out</option>
+            <option value="slide-left">Slide to Left</option>
+            <option value="slide-right">Slide to Right</option>
+            <option value="slide-up">Slide to Top</option>
+            <option value="slide-down">Slide to Bottom</option>
+            <option value="scale">Pop Out (Scale)</option>
+          </select>
+        </div>
+
+        {/* Duration & Delay */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="space-y-1">
+            <label className="text-xs text-gray-400">DURATION (S)</label>
+            <input 
+              type="number" 
+              step="0.1"
+              value={element.outAnimation?.duration || 0.5}
+              onChange={(e) => updateAnim('outAnimation', 'duration', parseFloat(e.target.value))}
+              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">DELAY (S)</label>
+            <input 
+              type="number" 
+              step="0.1"
+              value={element.outAnimation?.delay || 0}
+              onChange={(e) => updateAnim('outAnimation', 'delay', parseFloat(e.target.value))}
+              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+            />
+          </div>
         </div>
       </div>
     </div>
-  )}
+  );
+}
 };
