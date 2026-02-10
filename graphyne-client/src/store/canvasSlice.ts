@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import type { CanvasState, CanvasElement, CanvasConfig } from '../types/canvas';
+import undoable, { excludeAction, groupByActionTypes } from 'redux-undo';
 
 // Extend the state to track Metadata (Database IDs)
 interface ExtendedCanvasState extends CanvasState {
@@ -186,4 +187,23 @@ export const {
   setZoom
 } = canvasSlice.actions;
 
-export default canvasSlice.reducer;
+// export default canvasSlice.reducer;
+// Wrap the reducer with redux-undo
+const undoableReducer = undoable(canvasSlice.reducer, {
+  limit: 50,
+  
+  filter: excludeAction([
+    'canvas/selectElement',
+    'canvas/setSelection',
+    'canvas/toggleSelection',
+    'canvas/zoomIn',
+    'canvas/zoomOut',
+    'canvas/setZoom',
+    'canvas/setGraphicMeta',
+    'canvas/loadGraphic',
+  ]),
+  
+  groupBy: groupByActionTypes(['canvas/updateElementText']),
+});
+
+export default undoableReducer;
