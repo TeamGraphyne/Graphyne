@@ -225,7 +225,7 @@ export function PlayoutPage() {
   return (
     <div className="flex flex-col h-screen bg-[#140a24] text-white overflow-hidden font-sans">
       {/* HEADER */}
-      <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex items-center px-6 justify-between shadow-md z-10">
+      <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
           <MonitorPlay className="text-purple-400" size={24} />
           <h1 className="font-bold text-xl tracking-tight text-gray-100">
