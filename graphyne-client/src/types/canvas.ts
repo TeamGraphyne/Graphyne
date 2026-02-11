@@ -21,6 +21,8 @@ export interface CanvasElement {
   width: number;
   height: number;
   fill: string;
+  fillSecondary?: string;
+  fillType?: 'solid' | 'linear' | 'radial';
 
   rotation?: number;
   scaleX?: number;
