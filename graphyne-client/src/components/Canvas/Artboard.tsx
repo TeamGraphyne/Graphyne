@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectElement,
   updateElement,
-  updateElementText,
   toggleSelection,
   removeElement,
   setSelection,
@@ -13,18 +12,49 @@ import {
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 
+export interface CanvasElement{
+  id: string;
+  type: "rect" | "circle" | "text" | "image";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  fill?: string;
+  src?: string;
+  inVisible?: boolean;
+  isLocked?: boolean;
+  [key: string]: any;
+}
+
+export interface CanvasState{
+  elements: CanvasElement[];
+  selectedIds: string[];
+  config: {
+    width: number;
+    height: number;
+    zoom: number;
+  };
+}
+
+interface RootState{
+  canvas:{
+    present: CanvasState;
+    past: CanvasState[];
+    future: CanvasState[];
+  } | CanvasState;
+}
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config } = useAppSelector(
-    (state) => {
-      const canvasState = state.canvas as any;
-      if(canvasState.present){
-        return canvasState.present;
+    (state: RootState) => {
+      if('present' in state.canvas){
+        return state.canvas.present;
       }
-      return canvasState;
+      return state.canvas;
 });
 
   const trRef = useRef<Konva.Transformer>(null);
