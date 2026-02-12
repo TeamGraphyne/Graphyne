@@ -5,6 +5,8 @@ const SNAP_THRESHOLD = 5;
 const GUIDE_COLOR = '#00a1ff';
 const SPACING_GUIDE_COLOR = '#ff00ff';
 
+
+//Snap guides
 export function calculateSnapPoints (
     elements: CanvasElement[],
     excludeId: string
@@ -35,3 +37,26 @@ export function calculateSnapPoints (
 
         return { vertical, horizontal };
     }
+
+//Canvas guides
+export function CalculateCenterGuides (
+    canvasWidth: number,
+    canvasHeight: number
+): GuideLine[] {
+    return [
+        {
+            id: 'center-v',
+            type: 'vertical',
+            position: canvasWidth/2,
+            label: 'Center',
+            color: GUIDE_COLOR,
+        },
+        {
+            id: 'center-h',
+            type: 'horizontal',
+            position: canvasHeight/2,
+            label: 'Center',
+            color: GUIDE_COLOR,
+        },
+    ];
+}
