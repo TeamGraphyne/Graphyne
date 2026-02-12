@@ -1,6 +1,6 @@
 import { useState, useEffect, type RefObject } from 'react';
 
-export function useFullscreen(targetRef: RefObject<HTMLElement>) {
+export function useFullscreen(targetRef: RefObject<HTMLElement | null>) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // GO INTO FULLSCREEN

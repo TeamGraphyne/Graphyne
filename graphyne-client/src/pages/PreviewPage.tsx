@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../store/hooks";
+import { useFullscreen } from "../utils/useFullScreen";
 import { PreviewCanvas } from "../components/Canvas/PreviewCanvas";
 import {
   Play,
@@ -15,37 +16,22 @@ export function PreviewPage() {
   const navigate = useNavigate();
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 720 });
-  
-  // Get graphic name from Redux meta
-  const { meta } = useAppSelector(
-    (state) => state.canvas.present || state.canvas
+  // 2. Initialize the hook using your ref
+  const { isFullscreen, enterFullscreen, exitFullscreen } = useFullscreen(canvasContainerRef);
+
+  // ... (the rest of your component remains the same)
+
+  return (
+    <div className="flex-1 relative bg-gray-800 flex items-center justify-center p-8">
+      {/* ... canvas code ... */}
+      
+      <button
+        // 3. Use the functions exactly where you need them
+        onClick={isFullscreen ? exitFullscreen : enterFullscreen}
+        className="absolute bottom-6 right-6 ..."
+      >
+        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+      </button>
+    </div>
   );
-
-  useEffect(() => {
-    const updateCanvasSize = () => {
-      if (canvasContainerRef.current) {
-        const container = canvasContainerRef.current;
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-        
-        const aspectRatio = 16 / 9;
-        let width = containerWidth;
-        let height = width / aspectRatio;
-        
-        if (height > containerHeight) {
-          height = containerHeight;
-          width = height * aspectRatio;
-        }
-        
-        setCanvasSize({ width, height });
-      }
-    };
-    updateCanvasSize();
-    window.addEventListener('resize', updateCanvasSize);
-    return () => window.removeEventListener('resize', updateCanvasSize);
-  }, [isFullscreen]);
-  
-
 }
