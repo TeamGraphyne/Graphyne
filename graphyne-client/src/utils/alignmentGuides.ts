@@ -39,7 +39,7 @@ export function calculateSnapPoints (
     }
 
 //Canvas guides
-export function CalculateCenterGuides (
+export function calculateCenterGuides (
     canvasWidth: number,
     canvasHeight: number
 ): GuideLine[] {
