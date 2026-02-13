@@ -268,6 +268,22 @@ export const PropertiesPanel = () => {
                   </div>
                 </div>
 
+                {/* Secondary Color */}
+                {element.fillType && element.fillType !== 'solid' && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">End Color</label>
+                    <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                      <input 
+                        type="color" 
+                        value={element.fillSecondary}
+                        onChange={(e) => handleChange('fillSecondary', e.target.value)} 
+                        className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
+                      />
+                      <span className="text-xs text-gray-400 font-mono">{element.fillSecondary}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Stroke Width */}
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
