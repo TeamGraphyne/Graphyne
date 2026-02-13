@@ -174,7 +174,6 @@ export const Artboard = () => {
 
   const scale = 0.5;
   const checkerSize = 10;
-
   return (
     <div
       ref={containerRef}
