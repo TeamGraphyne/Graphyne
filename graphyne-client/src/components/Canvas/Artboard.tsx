@@ -58,6 +58,7 @@ export const Artboard = () => {
       if('present' in state.canvas){
         return state.canvas.present;
       }
+      return state.canvas as CanvasState;
     });
 
   const trRef = useRef<Konva.Transformer>(null);

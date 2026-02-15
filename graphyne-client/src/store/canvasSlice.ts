@@ -154,6 +154,10 @@ export const canvasSlice = createSlice({
         state.elements[index - 1] = temp;
       }
     },
+    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
+      const el = state.elements.find(e => e.id === action.payload.id);
+      if (el) el.name = action.payload.name;
+    },
 
     zoomIn: (state) => {
       state.config.zoom = Math.min(state.config.zoom + 0.1, 3);
@@ -185,6 +189,7 @@ export const {
   toggleLock, 
   moveLayerUp, 
   moveLayerDown,
+  renameElement,
   zoomIn,
   zoomOut,
   setZoom
