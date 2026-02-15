@@ -145,6 +145,46 @@ export const AnimationPanel = () => {
         </select>
       </div>
 
+      {/* {Interpolation} */}
+      <div>
+        <label className="text-[10px] text-gray-400 block mb-1 uppercase tracking-wider">
+          Keyframes
+        </label>
+        <select
+          value={element.inAnimation?.easing || 'power2.out'}
+          onChange={(e) => updateAnim('inAnimation', 'easing', e.target.value)}
+          className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+        >
+          <optgroup label="— Linear">
+            <option value="none">Linear</option>
+          </optgroup>
+          <optgroup label="— Ease In">
+            <option value="power1.in">Ease In (Weak)</option>
+            <option value="power2.in">Ease In</option>
+            <option value="power4.in">Ease In (Strong)</option>
+            <option value="back.in(1.7)">Ease In + Overshoot</option>
+          </optgroup>
+          <optgroup label="— Ease Out">
+            <option value="power1.out">Ease Out (Weak)</option>
+            <option value="power2.out">Ease Out</option>
+            <option value="power4.out">Ease Out (Strong)</option>
+            <option value="back.out(1.7)">Ease Out + Overshoot</option>
+          </optgroup>
+          <optgroup label="— Ease In-Out">
+            <option value="power1.inOut">Ease In-Out (Weak)</option>
+            <option value="power2.inOut">Ease In-Out</option>
+            <option value="power4.inOut">Ease In-Out (Strong)</option>
+          </optgroup>
+          <optgroup label="— Bezier / Special">
+            <option value="circ.out">Circular</option>
+            <option value="expo.out">Exponential</option>
+            <option value="elastic.out(1, 0.3)">Elastic</option>
+            <option value="bounce.out">Bounce</option>
+          </optgroup>
+        </select>
+      </div>  
+      
+
       {/* Duration & Delay */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className="space-y-1">
