@@ -10,6 +10,7 @@ export interface AnimationConfig {
   duration: number;
   delay: number;
   ease?: string;
+  easing?: string;
 }
 
 export interface CanvasElement {
