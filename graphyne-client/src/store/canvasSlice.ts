@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import type { CanvasState, CanvasElement, CanvasConfig } from '../types/canvas';
+import undoable, { excludeAction, groupByActionTypes } from 'redux-undo';
 
 // Extend the state to track Metadata (Database IDs)
 interface ExtendedCanvasState extends CanvasState {
@@ -26,6 +27,8 @@ const initialState: ExtendedCanvasState = {
     projectId: null
   }
 };
+
+
 
 export const canvasSlice = createSlice({
   name: 'canvas',
@@ -68,13 +71,26 @@ export const canvasSlice = createSlice({
       }
     },
 
+    //Separate action for text updates, this will be gruoped when user clickes undo :)
+    updateElementText: (state, action: PayloadAction<{ id: string; text: string }>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload.id);
+      if (index !== -1) {
+        state.elements[index].text = action.payload.text;
+      }
+    },
+
     updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
       action.payload.forEach(({ id, ...changes }) => {
         const index = state.elements.findIndex(el => el.id === id);
         if (index !== -1) {
           state.elements[index] = { ...state.elements[index], ...changes };
         }
-      });
+        if (element){
+          const element = state.elements.find((el) =>el.id === action.payload.id);
+          Object.assign(element,action.payload);
+        }
+      }
+    );
     },
 
     removeElement: (state, action: PayloadAction<string>) => {
@@ -153,15 +169,7 @@ export const canvasSlice = createSlice({
 
     setZoom: (state, action: PayloadAction<number>) => {
       state.config.zoom = Math.max(0.2, Math.min(3, action.payload));
-    },
-
-    // Add this to your canvasSlice reducers
-    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
-      const element = state.elements.find(el => el.id === action.payload.id);
-      if (element) {
-        element.name = action.payload.name;
-      }
-},
+    }
   }
 });
 
@@ -169,7 +177,8 @@ export const {
   setGraphicMeta,
   loadGraphic,
   addElement, 
-  updateElement, 
+  updateElement,
+  updateElementText, 
   updateElements, 
   removeElement,
   selectElement, 
@@ -182,8 +191,26 @@ export const {
   moveLayerDown,
   zoomIn,
   zoomOut,
-  setZoom,
-  renameElement
+  setZoom
 } = canvasSlice.actions;
 
-export default canvasSlice.reducer;
+// export default canvasSlice.reducer;
+// Wrap the reducer with redux-undo
+const undoableReducer = undoable(canvasSlice.reducer, {
+  limit: 50,
+  
+  filter: excludeAction([
+    'canvas/selectElement',
+    'canvas/setSelection',
+    'canvas/toggleSelection',
+    'canvas/zoomIn',
+    'canvas/zoomOut',
+    'canvas/setZoom',
+    'canvas/setGraphicMeta',
+    'canvas/loadGraphic',
+  ]),
+  
+  groupBy: groupByActionTypes(['canvas/updateElementText']),
+});
+
+export default undoableReducer;
