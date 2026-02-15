@@ -85,10 +85,6 @@ export const canvasSlice = createSlice({
         if (index !== -1) {
           state.elements[index] = { ...state.elements[index], ...changes };
         }
-        if (element){
-          const element = state.elements.find((el) =>el.id === action.payload.id);
-          Object.assign(element,action.payload);
-        }
       }
     );
     },

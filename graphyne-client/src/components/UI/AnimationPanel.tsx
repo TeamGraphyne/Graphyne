@@ -9,6 +9,17 @@ interface KonvaWindow extends Window {
   }
 }
 
+const DEFAULT_EASINGS: Record<string,string> ={
+  'none': 'none',
+  'fade': 'power2.inOut',
+  'slide-left': 'power2.out',
+  'slide-right': 'power2.out',
+  'slide-up':    'power2.out',
+  'slide-down':  'power2.out',
+  'scale':       'back.out(1.7)',
+};
+
+
 export const AnimationPanel = () => {
   const dispatch = useAppDispatch();
   
@@ -55,35 +66,37 @@ export const AnimationPanel = () => {
       const animType = element.inAnimation?.type || 'none';
       const duration = element.inAnimation?.duration || 0.5;
       const targetOpacity = element.opacity ?? 1;
+      const ease = element.inAnimation?.easing || DEFAULT_EASINGS[animType] || 'power2.out';
+
 
       // [FIXED] Updated logic to match exporter.ts definitions exactly
       if (animType === 'fade') {
         node.opacity(0);
-        gsap.to(node, { opacity: targetOpacity, duration });
+        gsap.to(node, { opacity: targetOpacity, duration,ease });
 
       } else if (animType === 'slide-left') {
         // Exporter: Enters FROM Left (-100 -> 0)
         node.x((element.x) - 100); 
         node.opacity(0);
-        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease });
 
       } else if (animType === 'slide-right') {
         // Exporter: Enters FROM Right (+100 -> 0)
         node.x((element.x) + 100); 
         node.opacity(0);
-        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease });
 
       } else if (animType === 'slide-up'){
         // Exporter: Enters FROM Bottom (+100 -> 0)
         node.y((element.y) + 100);
         node.opacity(0);
-        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease });
 
       } else if (animType === 'slide-down'){
         // Exporter: Enters FROM Top (-100 -> 0)
         node.y((element.y) - 100);
         node.opacity(0);
-        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease });
         
       } else if (animType === 'scale') {
         // [NEW] Added Scale preview
@@ -95,7 +108,7 @@ export const AnimationPanel = () => {
             scaleY: element.scaleY || 1, 
             opacity: targetOpacity, 
             duration, 
-            ease: 'back.out(1.7)' 
+            ease 
         });
       }
     }
@@ -174,12 +187,6 @@ export const AnimationPanel = () => {
             <option value="power1.inOut">Ease In-Out (Weak)</option>
             <option value="power2.inOut">Ease In-Out</option>
             <option value="power4.inOut">Ease In-Out (Strong)</option>
-          </optgroup>
-          <optgroup label="— Bezier / Special">
-            <option value="circ.out">Circular</option>
-            <option value="expo.out">Exponential</option>
-            <option value="elastic.out(1, 0.3)">Elastic</option>
-            <option value="bounce.out">Bounce</option>
           </optgroup>
         </select>
       </div>  
