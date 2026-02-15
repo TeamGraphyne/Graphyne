@@ -12,14 +12,53 @@ import {
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 
+// Define the shape of an individual element
+export interface CanvasElement {
+  id: string;
+  type: "rect" | "circle" | "text" | "image";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  fill?: string;
+  src?: string; // for images
+  isVisible?: boolean;
+  isLocked?: boolean;
+  [key: string]: any; // Allow for extra properties like fontSize, etc.
+}
+
+// Define the inner state
+export interface CanvasState {
+  elements: CanvasElement[];
+  selectedIds: string[];
+  config: {
+    width: number;
+    height: number;
+    zoom: number;
+  };
+}
+
+// Define the root state (assuming you use redux-undo)
+interface RootState {
+  canvas: {
+    present: CanvasState;
+    past: CanvasState[];
+    future: CanvasState[];
+  } | CanvasState; 
+}
+
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config } = useAppSelector(
-    (state) => state.canvas.present || state.canvas,
-  );
+    (state: RootState) =>{
+      if('present' in state.canvas){
+        return state.canvas.present;
+      }
+    });
 
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
