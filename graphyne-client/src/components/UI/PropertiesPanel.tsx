@@ -12,10 +12,11 @@ import type { RootState } from '../../store/store';
 import { updateElement } from '../../store/canvasSlice';
 import type { CanvasElement, ShadowEffect } from '../../types/canvas';
 import { AnimationPanel } from './AnimationPanel';
+import { DataBindingTab } from './DataBindingTab';
 
 export const PropertiesPanel = () => {
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState<'design' | 'animate'>('design');
+  const [activeTab, setActiveTab] = useState<'design' | 'animate' | 'data'>('design');
 
   // 1. Access state via .present because of redux-undo
   const selectedId = useSelector((state: RootState) => state.canvas.present.selectedIds[0]);
@@ -57,7 +58,7 @@ export const PropertiesPanel = () => {
   return (
     <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-white flex flex-col h-full z-20">
       
-      {/* --- Tab Navigation --- */}
+      {/* --- Tab Navigation (3 tabs now) --- */}
       <div className="flex border-b border-fuchsia-200/30">
         <button
           onClick={() => setActiveTab('design')}
@@ -79,6 +80,16 @@ export const PropertiesPanel = () => {
         >
           Animate
         </button>
+        <button
+          onClick={() => setActiveTab('data')}
+          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+            activeTab === 'data' 
+              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
+              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
+          }`}
+        >
+          Data
+        </button>
       </div>
 
       {/* --- Tab Content Area --- */}
@@ -88,7 +99,7 @@ export const PropertiesPanel = () => {
         {activeTab === 'design' && (
           <div className="p-4 space-y-6">
 
-            {/* [NEW] TYPOGRAPHY SECTION (Text Only) */}
+            {/* TYPOGRAPHY SECTION (Text Only) */}
             {element.type === 'text' && (
               <div className="border-b border-gray-800 pb-6">
                 <h2 className="font-bold mb-3 text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -249,7 +260,7 @@ export const PropertiesPanel = () => {
 
                 {/* Stroke Width */}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
                     <span>Stroke Width</span>
                   </label>
                   <input
@@ -279,7 +290,7 @@ export const PropertiesPanel = () => {
 
                 {/* Corner Radius*/}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
                     <span>Corner Radius</span>
                   </label>
                   <input
@@ -348,7 +359,6 @@ export const PropertiesPanel = () => {
                             [&::-webkit-slider-thumb]:rounded-full 
                             [&::-webkit-slider-thumb]:bg-white/50
                             hover:[&::-webkit-slider-thumb]:bg-orange-300"
-                            
                           />
                         </div>
                         
@@ -397,6 +407,11 @@ export const PropertiesPanel = () => {
           <div className="h-full p-4">
              <AnimationPanel />
           </div>
+        )}
+
+        {/* VIEW 3: DATA BINDING CONTROLS (NEW) */}
+        {activeTab === 'data' && (
+          <DataBindingTab />
         )}
 
       </div>

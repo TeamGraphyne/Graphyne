@@ -54,6 +54,9 @@ export interface CanvasElement {
   // Animation
   inAnimation?: AnimationConfig;
   outAnimation?: AnimationConfig;
+
+  // Data Binding
+  dataBindings?: DataBinding[];
 }
 
 export interface CanvasConfig {
@@ -67,4 +70,13 @@ export interface CanvasState {
   elements: CanvasElement[];
   selectedIds: string[];
   config: CanvasConfig;
+}
+
+// New!!!
+export interface DataBinding {
+  sourceId: string;      // Which data source (UUID)
+  sourceName: string;    // For UI display
+  fieldPath: string;     
+  targetProperty: string; 
+  format?: string;       // Optional
 }

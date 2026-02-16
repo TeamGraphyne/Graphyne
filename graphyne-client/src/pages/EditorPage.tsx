@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MonitorPlay, Loader2, Save, FolderOpen } from "lucide-react";
+import { MonitorPlay, Loader2, Save, FolderOpen, Database } from "lucide-react";
 
 // 1. Imports for Logic
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { setGraphicMeta } from "../store/canvasSlice";
+import { setSources, setLiveData, setError, updateSourceFields } from "../store/dataSlice";
 import { api } from "../services/api"; 
-import { compileGraphicToHTML } from "../utils/exporter"; 
+import { compileGraphicToHTML } from "../utils/exporter";
+import { socketService } from "../services/socket";
 
 // 2. Component Imports
 import { Artboard } from "../components/Canvas/Artboard";
@@ -14,6 +16,9 @@ import { LayersPanel } from "../components/UI/LayersPanel";
 import { Toolbar } from "../components/UI/Toolbar";
 import { PropertiesPanel } from "../components/UI/PropertiesPanel";
 import { ProjectManager } from "../components/UI/ProjectManager";
+import { DataSourceManager } from "../components/UI/DataSourceManager";
+
+import type { DataUpdatePayload, DataErrorPayload, DataField } from "../types/datasource";
 
 export function EditorPage() {
   const dispatch = useAppDispatch();
@@ -26,12 +31,47 @@ export function EditorPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
-  const [isProjectMgrOpen, setProjectMgrOpen] = useState(false); // State for Modal
+  const [isProjectMgrOpen, setProjectMgrOpen] = useState(false);
+  const [isDataMgrOpen, setDataMgrOpen] = useState(false); // NEW: Data Source Manager modal
 
-  // 4. Fetch Projects on Mount
+  // 4. Fetch Projects on Mount + Connect Socket for live data preview
   useEffect(() => {
     loadProjects();
-  }, []);
+    socketService.connect();
+
+    // Listen for live data updates (for preview in the Data tab)
+    const handleDataUpdate = (payload: DataUpdatePayload) => {
+      dispatch(setLiveData({ sourceId: payload.sourceId, data: payload.data }));
+    };
+    const handleDataError = (payload: DataErrorPayload) => {
+      dispatch(setError({ sourceId: payload.sourceId, error: payload.error }));
+    };
+    const handleDataFields = (payload: { sourceId: string; fields: DataField[] }) => {
+      dispatch(updateSourceFields({ sourceId: payload.sourceId, fields: payload.fields }));
+    };
+
+    socketService.on('data:update', handleDataUpdate);
+    socketService.on('data:error', handleDataError);
+    socketService.on('data:fields', handleDataFields);
+
+    return () => {
+      socketService.off('data:update');
+      socketService.off('data:error');
+      socketService.off('data:fields');
+      socketService.disconnect();
+    };
+  }, [dispatch]);
+
+  // Load data sources when project changes
+  useEffect(() => {
+    if (meta.projectId) {
+      api.getDataSources(meta.projectId).then(data => {
+        dispatch(setSources(data));
+      }).catch(console.error);
+    } else {
+      dispatch(setSources([]));
+    }
+  }, [meta.projectId, dispatch]);
 
   const loadProjects = () => {
     api.getProjects().then(data => {
@@ -90,13 +130,17 @@ export function EditorPage() {
   return (
     <div className="h-screen flex flex-col bg-neutral-950 text-gray-300 overflow-hidden">
       
-      {/* --- PROJECT MANAGER MODAL --- */}
+      {/* --- MODALS --- */}
       <ProjectManager 
          isOpen={isProjectMgrOpen} 
          onClose={() => {
              setProjectMgrOpen(false);
-             loadProjects(); // Refresh dropdown when modal closes
+             loadProjects();
          }} 
+       />
+      <DataSourceManager
+         isOpen={isDataMgrOpen}
+         onClose={() => setDataMgrOpen(false)}
        />
 
       {/* --- HEADER --- */}
@@ -123,13 +167,22 @@ export function EditorPage() {
             {/* Context & Actions */}
             <div className="flex gap-2">
               
-              {/* New Project Manager Button */}
+              {/* Project Manager Button */}
               <button 
                  onClick={() => setProjectMgrOpen(true)}
-                 className="flex items-center gap-2 px-3 py-1.5 bg-fuchsia-900/40 hover:bg-fuchsia-800 text-fuchsia-200 border border-fuchsia-800 rounded text-xs font-bold transition-colors mr-2"
+                 className="flex items-center gap-2 px-3 py-1.5 bg-fuchsia-900/40 hover:bg-fuchsia-800 text-fuchsia-200 border border-fuchsia-800 rounded text-xs font-bold transition-colors mr-1"
                >
                    <FolderOpen size={14} />
                    PROJECTS
+               </button>
+
+              {/* NEW: Data Source Manager Button */}
+              <button 
+                 onClick={() => setDataMgrOpen(true)}
+                 className="flex items-center gap-2 px-3 py-1.5 bg-orange-900/30 hover:bg-orange-800/50 text-orange-300 border border-orange-800/50 rounded text-xs font-bold transition-colors mr-2"
+               >
+                   <Database size={14} />
+                   DATA
                </button>
 
               {/* Project Selector (Quick Switcher) */}
