@@ -116,7 +116,6 @@ export function PlayoutPage() {
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
 
-<<<<<<< module/data-integration-dilhara
   // NEW: Refs and state for data binding
   const programIframeRef = useRef<HTMLIFrameElement>(null);
   const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
@@ -124,12 +123,10 @@ export function PlayoutPage() {
 
   // Store projectId so we can fetch data sources
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-=======
   // ========== FEATURE 3: DRAG AND DROP STATE ==========
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   // ==================================================
->>>>>>> dev
 
   // --- 1. System Startup ---
   useEffect(() => {
@@ -253,12 +250,8 @@ export function PlayoutPage() {
       // MODIFIED: Now also sends elements so the Output page can resolve bindings too
       console.log("🚀 Emitting TAKE:", fullUrl);
       socketService.emit("command:take", {
-<<<<<<< module/data-integration-dilhara
         url: fullUrl,
         elements: elements, // NEW: Send element data for binding resolution on output
-=======
-        url: fullUrl
->>>>>>> dev
       });
     }
   };
@@ -320,7 +313,6 @@ export function PlayoutPage() {
             <div className="text-sm font-bold text-gray-200">{projectName}</div>
           </div>
 
-<<<<<<< module/data-integration-dilhara
           {/* NEW: Data source count indicator */}
           {dataSources.length > 0 && (
             <div className="text-[10px] text-orange-400 font-bold px-2 py-1 bg-orange-950/30 border border-orange-900/30 rounded">
@@ -335,15 +327,6 @@ export function PlayoutPage() {
           >
             <ExternalLink size={14} /> OUTPUT
           </button>
-=======
-          {/* NEW: Open Output Button */}
-          <button 
-             onClick={openOutputWindow}
-             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-purple-300 border border-blue-900/30 hover:border-blue-500 transition-colors"
-           >
-             <ExternalLink size={14} /> OUTPUT
-           </button>
->>>>>>> dev
 
           <button
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700"
@@ -366,15 +349,6 @@ export function PlayoutPage() {
                 {previewItem ? previewItem.graphic.name : "IDLE"}
               </span>
             </div>
-<<<<<<< module/data-integration-dilhara
-            <div className="relative w-full aspect-video bg-gray-900 rounded-lg border-2 border-gray-700 overflow-hidden shadow-inner">
-              {/* Checkerboard */}
-              <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#6b7280 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-
-              {renderMonitorContent(previewItem, "Preview", true)}
-
-              <div className="absolute top-4 left-4 px-2 py-0.5 bg-blue-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
-=======
             <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
                {/* Checkerboard */}
                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
@@ -382,7 +356,6 @@ export function PlayoutPage() {
                {renderMonitorContent(previewItem, "Preview", true)} 
 
                <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
->>>>>>> dev
             </div>
           </div>
 
