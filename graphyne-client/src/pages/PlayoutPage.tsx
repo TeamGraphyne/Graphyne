@@ -34,6 +34,7 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef }: ScaledFrameProps) => {
   const localIframeRef = useRef<HTMLIFrameElement>(null);
   const activeRef = iframeRef || localIframeRef;
   const [scale, setScale] = useState(1);
+  const [hasError, setHasError] = useState(false);
 
   // 1. Handle Scaling
   useEffect(() => {
@@ -57,6 +58,17 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef }: ScaledFrameProps) => {
     }
   };
 
+  // Error UI
+  if (hasError) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-gray-400">
+        <AlertCircle size={48} className="mb-3 opacity-50" />
+        <div className="text-lg font-bold">{title}</div>
+        <div className="text-xs mt-1">Graphic preview unavailable</div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -76,6 +88,7 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef }: ScaledFrameProps) => {
           src={src}
           title={title}
           onLoad={handleLoad}
+          onError={() => setHasError(true)}
           className="w-full h-full border-0"
           sandbox="allow-scripts allow-same-origin"
         />
@@ -103,6 +116,7 @@ export function PlayoutPage() {
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
 
+<<<<<<< module/data-integration-dilhara
   // NEW: Refs and state for data binding
   const programIframeRef = useRef<HTMLIFrameElement>(null);
   const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
@@ -110,6 +124,12 @@ export function PlayoutPage() {
 
   // Store projectId so we can fetch data sources
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+=======
+  // ========== FEATURE 3: DRAG AND DROP STATE ==========
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // ==================================================
+>>>>>>> dev
 
   // --- 1. System Startup ---
   useEffect(() => {
@@ -179,6 +199,33 @@ export function PlayoutPage() {
     }
   };
 
+  // ========== FEATURE 3: DRAG AND DROP HANDLERS ==========
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (index: number) => {
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => {
+    if (dragIndex === null || dragIndex === index) return;
+    
+    const updated = [...playlist];
+    const [movedItem] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, movedItem);
+    
+    setPlaylist(updated);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+  // =====================================================
+
   // --- 2. Transport Controls ---
 
   // Helper to generate correct URL
@@ -206,8 +253,12 @@ export function PlayoutPage() {
       // MODIFIED: Now also sends elements so the Output page can resolve bindings too
       console.log("🚀 Emitting TAKE:", fullUrl);
       socketService.emit("command:take", {
+<<<<<<< module/data-integration-dilhara
         url: fullUrl,
         elements: elements, // NEW: Send element data for binding resolution on output
+=======
+        url: fullUrl
+>>>>>>> dev
       });
     }
   };
@@ -251,13 +302,13 @@ export function PlayoutPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden font-sans">
+    <div className="flex flex-col h-screen bg-[#140a24] text-white overflow-hidden font-sans">
       {/* HEADER */}
-      <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center px-6 justify-between shadow-md z-10">
+      <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
-          <MonitorPlay className="text-blue-500" size={24} />
+          <MonitorPlay className="text-purple-400" size={24} />
           <h1 className="font-bold text-xl tracking-tight text-gray-100">
-            Graphyne <span className="text-blue-500 font-light">PLAYOUT</span>
+            Graphyne <span className="text-purple-400 font-light">PLAYOUT</span>
           </h1>
         </div>
 
@@ -269,6 +320,7 @@ export function PlayoutPage() {
             <div className="text-sm font-bold text-gray-200">{projectName}</div>
           </div>
 
+<<<<<<< module/data-integration-dilhara
           {/* NEW: Data source count indicator */}
           {dataSources.length > 0 && (
             <div className="text-[10px] text-orange-400 font-bold px-2 py-1 bg-orange-950/30 border border-orange-900/30 rounded">
@@ -283,6 +335,15 @@ export function PlayoutPage() {
           >
             <ExternalLink size={14} /> OUTPUT
           </button>
+=======
+          {/* NEW: Open Output Button */}
+          <button 
+             onClick={openOutputWindow}
+             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-purple-300 border border-blue-900/30 hover:border-blue-500 transition-colors"
+           >
+             <ExternalLink size={14} /> OUTPUT
+           </button>
+>>>>>>> dev
 
           <button
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700"
@@ -301,10 +362,11 @@ export function PlayoutPage() {
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
               <span className="text-sm font-bold text-gray-400 tracking-wider">PREVIEW</span>
-              <span className="text-xs text-blue-400 font-mono">
+              <span className="text-xs text-purple-300 font-mono">
                 {previewItem ? previewItem.graphic.name : "IDLE"}
               </span>
             </div>
+<<<<<<< module/data-integration-dilhara
             <div className="relative w-full aspect-video bg-gray-900 rounded-lg border-2 border-gray-700 overflow-hidden shadow-inner">
               {/* Checkerboard */}
               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#6b7280 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
@@ -312,6 +374,15 @@ export function PlayoutPage() {
               {renderMonitorContent(previewItem, "Preview", true)}
 
               <div className="absolute top-4 left-4 px-2 py-0.5 bg-blue-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
+=======
+            <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
+               {/* Checkerboard */}
+               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
+               
+               {renderMonitorContent(previewItem, "Preview", true)} 
+
+               <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
+>>>>>>> dev
             </div>
           </div>
 
@@ -337,14 +408,14 @@ export function PlayoutPage() {
 
         {/* CONTROLS */}
         <div className="flex justify-center items-center py-2">
-          <div className="flex gap-4 p-2 bg-gray-900 rounded-xl border border-gray-800 shadow-xl">
+          <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl">
             <button
               onClick={handleTake}
               disabled={!previewItem}
               className={`
                 group relative overflow-hidden w-48 h-12 rounded-lg font-black tracking-[0.15em] transition-all duration-200
                 flex items-center justify-center gap-2
-                ${previewItem ? "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"}
+                ${previewItem ? "bg-purple-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"}
               `}
             >
               <Play size={18} className={previewItem ? "fill-current" : ""} />
@@ -366,9 +437,9 @@ export function PlayoutPage() {
           </div>
         </div>
 
-        {/* RUNDOWN LIST */}
-        <div className="flex-1 flex flex-col bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-lg min-h-0">
-          <div className="px-4 py-3 bg-gray-850 border-b border-gray-800 flex justify-between items-center">
+        {/* RUNDOWN LIST - WITH DRAG AND DROP */}
+        <div className="flex-1 flex flex-col bg-[#1a0f2e] border-purple-900/40 overflow-hidden shadow-lg min-h-0">
+          <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex justify-between items-center">
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
               RUNDOWN
@@ -388,13 +459,30 @@ export function PlayoutPage() {
               playlist.map((item, index) => {
                 const isPreview = previewItem?.id === item.id;
                 const isProgram = programItem?.id === item.id;
+                // ========== FEATURE 3: DRAG VISUAL FEEDBACK ==========
+                const isDragging = dragIndex === index;
+                const isDragOver = dragOverIndex === index;
+                // ==================================================
+                
                 return (
                   <div
                     key={item.id}
+                    // ========== FEATURE 3: DRAG HANDLERS ==========
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      handleDragOver(index);
+                    }}
+                    onDrop={() => handleDrop(index)}
+                    onDragEnd={handleDragEnd}
+                    // ============================================
                     onClick={() => handleLoadToPreview(item)}
                     className={`
                       group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
-                      ${isProgram ? "bg-red-950/30 border-red-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-blue-950/30 border-blue-600/50 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-gray-800/40 border-transparent hover:bg-gray-800 hover:border-gray-700"}
+                      ${isDragging ? "opacity-50" : ""}
+                      ${isDragOver ? "border-t-4 border-t-blue-500" : ""}
+                      ${isProgram ? "bg-pink-950/30 border-pink-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-purple-900/30 border-pruple-500 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-[#20123a] border-transparent hover:bg-gray-800 hover:border-gray-700"}
                     `}
                   >
                     {(isPreview || isProgram) && (<div className={`absolute left-0 top-0 bottom-0 w-1 ${isProgram ? "bg-red-500" : "bg-blue-500"}`} />)}
@@ -404,7 +492,7 @@ export function PlayoutPage() {
                       {!isProgram && isPreview && (<div className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,1)]" />)}
                     </div>
                     <div className="flex-1 flex flex-col justify-center">
-                      <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-blue-400" : "text-gray-200"}`}>{item.graphic.name}</span>
+                      <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"}`}>{item.graphic.name}</span>
                       <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide">HTML5 SOURCE</span>
                     </div>
                     <div className="w-20 text-right">
