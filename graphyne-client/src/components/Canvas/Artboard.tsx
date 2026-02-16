@@ -297,7 +297,13 @@ export const Artboard = () => {
 
             if (el.type === "text")
               return (
-                <Text key={el.id} {...commonProps} verticalAlign="middle" />
+                <Text 
+                  key={el.id} 
+                  {...commonProps} 
+                  verticalAlign="middle" 
+                  // COMBINE WEIGHT AND STYLE HERE
+                  fontStyle={`${el.fontStyle || 'normal'} ${el.fontWeight || 'normal'}`}
+                />
               );
 
             if (el.type === "image") {
