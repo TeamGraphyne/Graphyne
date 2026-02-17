@@ -99,6 +99,11 @@ export const canvasSlice = createSlice({
       }
     },
 
+    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
+      const el = state.elements.find(e => e.id === action.payload.id);
+      if (el) el.name = action.payload.name;
+    },
+
     setSelection: (state, action: PayloadAction<string[]>) => {
       state.selectedIds = action.payload;
     },
@@ -175,6 +180,7 @@ export const {
   updateElements, 
   removeElement,
   selectElement, 
+  renameElement,
   setSelection, 
   toggleSelection, 
   reorderElement,
