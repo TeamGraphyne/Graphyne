@@ -8,7 +8,7 @@ interface ExtendedCanvasState extends CanvasState {
   meta: {
     id: string | null;        // The Database ID of this graphic
     name: string;             // The name of the graphic
-    projectId: string | null; // The currently selected Project/Playlist ID
+    projectId: string | null;// The currently selected Project/Playlist ID
   };
 }
 
