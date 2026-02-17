@@ -11,19 +11,27 @@ import {
 } from "../../store/canvasSlice";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
-
+import {
+  setShowGrid,
+  setGridSize,
+  setGridStyle,
+  setSnapStyle,
+} from "../../store/canvasSlice";
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config, grid } = useAppSelector(
-    (state) => state.canvas.present || state.canvas,
+  (state) => state.canvas.present || state.canvas,
   );
+
 
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
   const stageRef = useRef<Konva.Stage>(null);
 
+  // --- SELECTION RECTANGLE STATE ---
   const [selectionBox, setSelectionBox] = useState<{
     x: number;
     y: number;
@@ -32,42 +40,11 @@ export const Artboard = () => {
     isSelecting: boolean;
   } | null>(null);
 
-  // =========================
-  // 🔥 SNAP FUNCTION
-  // =========================
-  const snapPosition = (
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    if (!grid.snap) return { x, y };
-
-    const size = grid.size;
-
-    if (grid.snapStyle === "centers") {
-      return {
-        x: Math.round(x / size) * size,
-        y: Math.round(y / size) * size,
-      };
-    }
-
-    // edges snap
-    return {
-      x:
-        Math.round((x + width / 2) / size) * size - width / 2,
-      y:
-        Math.round((y + height / 2) / size) * size - height / 2,
-    };
-  };
-
-  // =========================
-  // AUTO FIT
-  // =========================
+  // --- AUTO-FIT CANVAS ON MOUNT ---
   useEffect(() => {
     if (containerRef.current) {
       const container = containerRef.current;
-      const padding = 40;
+      const padding = 40; // padding around canvas
 
       const availableWidth = container.clientWidth - padding;
       const availableHeight = container.clientHeight - padding;
@@ -75,14 +52,14 @@ export const Artboard = () => {
       const scaleX = availableWidth / config.width;
       const scaleY = availableHeight / config.height;
 
-      const initialZoom = Math.min(scaleX, scaleY, 1);
+      // Use the smaller scale to fit both dimensions
+      const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+
       dispatch(setZoom(initialZoom));
     }
-  }, [config.width, config.height, dispatch]);
+  }, [config.width, config.height, dispatch]); // Only run once on mount
 
-  // =========================
-  // TRANSFORMER SYNC
-  // =========================
+  // --- TRANSFORMER SYNC ---
   useEffect(() => {
     if (trRef.current && layerRef.current) {
       const stage = trRef.current.getStage();
@@ -95,31 +72,29 @@ export const Artboard = () => {
     }
   }, [selectedIds, elements]);
 
-  // =========================
-  // DRAG HANDLERS WITH SNAP
-  // =========================
-  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target;
-    const snapped = snapPosition(
-      node.x(),
-      node.y(),
-      node.width(),
-      node.height()
-    );
-
-    node.position(snapped);
+  // --- DRAG HANDLERS ---
+  const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const id = e.target.id();
+    if (!selectedIds.includes(id)) {
+      dispatch(selectElement(id));
+    }
   };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
     const id = node.id();
 
-    const snapped = snapPosition(
-      node.x(),
-      node.y(),
-      node.width(),
-      node.height()
-    );
+    const snapped = snapBox({
+      x: node.x(),
+      y: node.y(),
+      width: node.width(),
+      height: node.height(),
+    });
+
+    node.position({
+      x: snapped.x,
+      y: snapped.y,
+    });
 
     dispatch(
       updateElement({
@@ -130,9 +105,101 @@ export const Artboard = () => {
     );
   };
 
-  // =========================
-  // KEYBOARD DELETE
-  // =========================
+  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+  if (!grid?.snap) return;
+
+  const node = e.target;
+  node.x(snap(node.x()));
+  node.y(snap(node.y()));
+};
+
+  // --- SNAP TO GRID HELPER ---
+  // ---------------- SNAP HELPERS ----------------
+
+const getGridSize = () => grid?.size || 20;
+
+const snap = (value: number) => {
+  if (!grid?.snap) return value;
+  const size = getGridSize();
+  return Math.round(value / size) * size;
+};
+
+const snapBox = (box: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}) => {
+  if (!grid?.snap) return box;
+
+  return {
+    x: snap(box.x),
+    y: snap(box.y),
+    width: Math.max(getGridSize(), snap(box.width)),
+    height: Math.max(getGridSize(), snap(box.height)),
+  };
+};
+
+  // --- SELECTION RECTANGLE LOGIC ---
+  const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const isBackground =
+      e.target === e.target.getStage() || e.target.name() === "background";
+
+    if (isBackground) {
+      const stage = e.target.getStage();
+      if (!stage) return;
+
+      dispatch(selectElement(null));
+
+      const pos = stage.getPointerPosition();
+      if (pos) {
+        setSelectionBox({
+          x: pos.x / config.zoom,
+          y: pos.y / config.zoom,
+          width: 0,
+          height: 0,
+          isSelecting: true,
+        });
+      }
+    }
+  };
+
+  const onMouseMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (!selectionBox?.isSelecting) return;
+
+    const stage = e.target.getStage();
+    const pos = stage?.getPointerPosition();
+
+    if (pos && selectionBox) {
+      setSelectionBox({
+        ...selectionBox,
+        width: pos.x / config.zoom - selectionBox.x,
+        height: pos.y / config.zoom - selectionBox.y,
+      });
+    }
+  };
+
+  const onMouseUp = () => {
+    if (selectionBox?.isSelecting && stageRef.current) {
+      const box = {
+        x: Math.min(selectionBox.x, selectionBox.x + selectionBox.width),
+        y: Math.min(selectionBox.y, selectionBox.y + selectionBox.height),
+        width: Math.abs(selectionBox.width),
+        height: Math.abs(selectionBox.height),
+      };
+
+      const shapes = stageRef.current.find(".rect, .circle, .text");
+      const selected = shapes.filter((shape) => {
+        return Konva.Util.haveIntersection(box, shape.getClientRect());
+      });
+
+      const ids = selected.map((s) => s.id());
+      dispatch(setSelection(ids));
+    }
+    setSelectionBox(null);
+  };
+
+  // --- KEYBOARD SHORTCUTS ---
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (
@@ -140,7 +207,6 @@ export const Artboard = () => {
         e.target instanceof HTMLTextAreaElement
       )
         return;
-
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIds.length > 0
@@ -157,47 +223,10 @@ export const Artboard = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // =========================
-  // GRID VISUAL
-  // =========================
-  const renderGrid = () => {
-    if (!grid.show) return null;
-
-    const lines = [];
-    const size = grid.size;
-
-    for (let i = 0; i < config.width; i += size) {
-      lines.push(
-        <Rect
-          key={"v" + i}
-          x={i}
-          y={0}
-          width={1}
-          height={config.height}
-          fill="rgba(0,0,0,0.08)"
-          listening={false}
-        />
-      );
-    }
-
-    for (let j = 0; j < config.height; j += size) {
-      lines.push(
-        <Rect
-          key={"h" + j}
-          x={0}
-          y={j}
-          width={config.width}
-          height={1}
-          fill="rgba(0,0,0,0.08)"
-          listening={false}
-        />
-      );
-    }
-
-    return lines;
-  };
-
   if (!config) return <div>Loading Canvas...</div>;
+
+  const scale = 0.5;
+  const checkerSize = 10;
 
   return (
     <div
@@ -218,46 +247,132 @@ export const Artboard = () => {
         height={config.height * config.zoom}
         scaleX={config.zoom}
         scaleY={config.zoom}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onTouchStart={onMouseDown}
+        onTouchMove={onMouseMove}
+        onTouchEnd={onMouseUp}
+        style={{
+          backgroundColor: "#ffffff",
+          backgroundImage: `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+             linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+             linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+             linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
+          backgroundSize: `${checkerSize / scale}px ${checkerSize / scale}px`,
+          backgroundPosition: `0 0, 0 ${checkerSize / (2 * scale)}px, ${checkerSize / (2 * scale)}px -${checkerSize / (2 * scale)}px, -${checkerSize / (2 * scale)}px 0px`,
+        }}
       >
         <Layer ref={layerRef}>
           <Rect
             name="background"
             width={config.width}
             height={config.height}
-            fill="white"
+            fill="transparent"
           />
 
-          {renderGrid()}
-
           {elements.map((el) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { zIndex, type, ...elementProps } = el;
 
             const commonProps = {
               ...elementProps,
+              name: el.type,
               draggable: !el.isLocked,
-              onClick: () => dispatch(selectElement(el.id)),
-              onDragMove,
-              onDragEnd,
+              listening: true,
+              onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+                e.cancelBubble = true;
+                if (e.evt.shiftKey) {
+                  dispatch(toggleSelection(el.id));
+                } else {
+                  if (!selectedIds.includes(el.id)) {
+                    dispatch(selectElement(el.id));
+                  }
+                }
+              },
+              onDragStart: onDragStart,
+              onDragEnd: onDragEnd,
+              onDragMove: onDragMove,
+              
+
+              // [UPDATED] Live Resize Logic (HTML-First)
+              // Instead of scaling, we calculate new width/height and reset scale to 1.
+              onTransform: (e: Konva.KonvaEventObject<Event>) => {
+                const node = e.target;
+                const scaleX = node.scaleX();
+                const scaleY = node.scaleY();
+
+                // Reset scale so it doesn't compound or distort
+                node.scaleX(1);
+                node.scaleY(1);
+
+                // Apply calculated size
+                // (Math.max prevents collapsing to 0)
+                node.width(Math.max(5, node.width() * scaleX));
+                node.height(Math.max(5, node.height() * scaleY));
+              },
+              
+
+              // [UPDATED] Save Final Dimensions
+              onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
+                const node = e.target;
+
+                const snapped = snapBox({
+                  x: node.x(),
+                  y: node.y(),
+                  width: node.width(),
+                  height: node.height(),
+                });
+
+                node.position({
+                  x: snapped.x,
+                  y: snapped.y,
+                });
+
+                node.width(snapped.width);
+                node.height(snapped.height);
+
+                dispatch(
+                  updateElement({
+                    id: el.id,
+                    x: snapped.x,
+                    y: snapped.y,
+                    rotation: node.rotation(),
+                    width: snapped.width,
+                    height: snapped.height,
+                    scaleX: 1,
+                    scaleY: 1,
+                  }),
+                );
+              },
             };
 
-            if (!el.isVisible) return null;
+            if (el.isVisible === false) return null;
 
             if (el.type === "rect")
               return <Rect key={el.id} {...commonProps} />;
 
+            // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
               return (
                 <Circle
                   key={el.id}
                   {...commonProps}
+                  // Konva Circle uses radius, not width/height.
+                  // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
                   radius={el.width / 2}
+                  // Fix offset because Rect origin is top-left, Circle is center
+                  offsetX={-el.width / 2}
+                  offsetY={-el.height / 2}
                 />
               );
 
             if (el.type === "text")
-              return <Text key={el.id} {...commonProps} />;
+              return (
+                <Text key={el.id} {...commonProps} verticalAlign="middle" />
+              );
 
-            if (el.type === "image")
+            if (el.type === "image") {
               return (
                 <CanvasImage
                   key={el.id}
@@ -265,11 +380,33 @@ export const Artboard = () => {
                   src={el.src}
                 />
               );
+            }
 
             return null;
           })}
 
-          <Transformer ref={trRef} />
+          {/* SELECTION RECTANGLE */}
+          {selectionBox && selectionBox.isSelecting && (
+            <Rect
+              x={selectionBox.x}
+              y={selectionBox.y}
+              width={selectionBox.width}
+              height={selectionBox.height}
+              fill="rgba(0, 161, 255, 0.3)"
+              stroke="#00a1ff"
+              strokeWidth={1 / config.zoom}
+            />
+          )}
+
+          <Transformer
+            ref={trRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5) {
+                return oldBox;
+              }
+              return newBox;
+            }}
+          />
         </Layer>
       </Stage>
     </div>
