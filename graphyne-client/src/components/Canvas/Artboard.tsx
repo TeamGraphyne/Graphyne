@@ -7,12 +7,11 @@ import {
   toggleSelection,
   removeElement,
   setSelection,
-  setZoom,
-  zoomIn,
-  zoomOut,
   nudgeElements,
   duplicateElements,
+  // REMOVED: zoomIn, zoomOut, setZoom — no longer in canvasSlice
 } from "../../store/canvasSlice";
+import { zoomIn, zoomOut, setZoom } from "../../store/viewSlice"; // NEW: Import from viewSlice
 import { ActionCreators } from "redux-undo";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
@@ -29,6 +28,9 @@ export const Artboard = () => {
   const { elements, selectedIds, config } = useAppSelector(
     (state) => state.canvas.present || state.canvas,
   );
+
+  // NEW: Read zoom from the separate view slice (not undoable)
+  const zoom = useAppSelector((state) => state.view.zoom);
 
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
@@ -110,8 +112,8 @@ export const Artboard = () => {
       const pos = stage.getPointerPosition();
       if (pos) {
         setSelectionBox({
-          x: pos.x / config.zoom,
-          y: pos.y / config.zoom,
+          x: pos.x / zoom, // MODIFIED: Use zoom from viewSlice
+          y: pos.y / zoom,
           width: 0,
           height: 0,
           isSelecting: true,
@@ -129,8 +131,8 @@ export const Artboard = () => {
     if (pos && selectionBox) {
       setSelectionBox({
         ...selectionBox,
-        width: pos.x / config.zoom - selectionBox.x,
-        height: pos.y / config.zoom - selectionBox.y,
+        width: pos.x / zoom - selectionBox.x, // MODIFIED: Use zoom from viewSlice
+        height: pos.y / zoom - selectionBox.y,
       });
     }
   };
@@ -179,7 +181,6 @@ export const Artboard = () => {
       }
 
       // ---------- ESCAPE — Deselect all ----------
-      // NEW: Quick deselect without clicking the background
       if (e.key === "Escape") {
         e.preventDefault();
         dispatch(selectElement(null));
@@ -203,33 +204,29 @@ export const Artboard = () => {
         }
 
         // ZOOM IN — Ctrl+"=" or Ctrl+"+"
-        // NOTE: The "+" key reports as "=" (its unshifted form) in most browsers.
-        // We match both to handle all keyboard layouts.
         if (e.key === "=" || e.key === "+") {
-          e.preventDefault(); // Prevent browser zoom
+          e.preventDefault();
           dispatch(zoomIn());
           return;
         }
 
         // ZOOM OUT — Ctrl+"-"
         if (e.key === "-") {
-          e.preventDefault(); // Prevent browser zoom
+          e.preventDefault();
           dispatch(zoomOut());
           return;
         }
 
         // ZOOM RESET (FIT) — Ctrl+0
-        // Recalculates the zoom level to fit the canvas within the container,
-        // identical to the logic in the auto-fit useEffect on mount.
         if (e.key === "0") {
-          e.preventDefault(); // Prevent browser zoom-reset
+          e.preventDefault();
           if (containerRef.current) {
             const container = containerRef.current;
             const padding = 40;
             const fitZoom = Math.min(
               (container.clientWidth - padding) / config.width,
               (container.clientHeight - padding) / config.height,
-              1, // Don't zoom beyond 100%
+              1,
             );
             dispatch(setZoom(fitZoom));
           }
@@ -237,9 +234,8 @@ export const Artboard = () => {
         }
 
         // SELECT ALL — Ctrl+A
-        // Only selects visible elements (hidden layers are excluded)
         if (e.key.toLowerCase() === "a") {
-          e.preventDefault(); // Prevent browser "select all text"
+          e.preventDefault();
           const allVisibleIds = elements
             .filter((el) => el.isVisible !== false)
             .map((el) => el.id);
@@ -248,21 +244,19 @@ export const Artboard = () => {
         }
 
         // DUPLICATE — Ctrl+D
-        // Clones selected elements with a 20px offset, single undo step
         if (e.key.toLowerCase() === "d" && selectedIds.length > 0) {
-          e.preventDefault(); // Prevent browser bookmark dialog
+          e.preventDefault();
           dispatch(duplicateElements(selectedIds));
           return;
         }
       }
 
       // ---------- ARROW KEYS — Nudge selected elements ----------
-      // Shift+Arrow = 10px, Arrow = 1px
       if (
         ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
         selectedIds.length > 0
       ) {
-        e.preventDefault(); // Prevent page scroll
+        e.preventDefault();
 
         const distance = e.shiftKey ? NUDGE_LARGE : NUDGE_SMALL;
         let dx = 0;
@@ -286,7 +280,7 @@ export const Artboard = () => {
         dispatch(nudgeElements({ ids: selectedIds, dx, dy }));
       }
     },
-    [selectedIds, elements, config.width, config.height, dispatch], // MODIFIED: Added elements, config.width, config.height
+    [selectedIds, elements, config.width, config.height, dispatch],
   );
 
   useEffect(() => {
@@ -314,10 +308,10 @@ export const Artboard = () => {
     >
       <Stage
         ref={stageRef}
-        width={config.width * config.zoom}
-        height={config.height * config.zoom}
-        scaleX={config.zoom}
-        scaleY={config.zoom}
+        width={config.width * zoom}       // MODIFIED: Use zoom from viewSlice
+        height={config.height * zoom}      // MODIFIED: Use zoom from viewSlice
+        scaleX={zoom}                      // MODIFIED: Use zoom from viewSlice
+        scaleY={zoom}                      // MODIFIED: Use zoom from viewSlice
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -452,7 +446,7 @@ export const Artboard = () => {
               height={selectionBox.height}
               fill="rgba(0, 161, 255, 0.3)"
               stroke="#00a1ff"
-              strokeWidth={1 / config.zoom}
+              strokeWidth={1 / zoom} // MODIFIED: Use zoom from viewSlice
             />
           )}
 

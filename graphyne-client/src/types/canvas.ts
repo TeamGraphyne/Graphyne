@@ -59,11 +59,11 @@ export interface CanvasElement {
   dataBindings?: DataBinding[];
 }
 
+// MODIFIED: Removed 'zoom' — zoom is view-only state, now lives in viewSlice.
 export interface CanvasConfig {
   width: number;
   height: number;
   background: string;
-  zoom:number;
 }
 
 export interface CanvasState {
