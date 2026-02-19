@@ -11,6 +11,7 @@ interface ExtendedCanvasState extends CanvasState {
   };
 }
 
+// MODIFIED: Removed 'zoom' from config — it now lives in viewSlice
 const initialState: ExtendedCanvasState = {
   elements: [],
   selectedIds: [],
@@ -18,7 +19,6 @@ const initialState: ExtendedCanvasState = {
     width: 1920,
     height: 1080,
     background: '#000000',
-    zoom: 1
   },
   meta: {
     id: null,
@@ -143,17 +143,7 @@ export const canvasSlice = createSlice({
       }
     },
 
-    zoomIn: (state) => {
-      state.config.zoom = Math.min(state.config.zoom + 0.1, 3);
-    },
-
-    zoomOut: (state) => {
-      state.config.zoom = Math.max(state.config.zoom - 0.1, 0.2);
-    },
-
-    setZoom: (state, action: PayloadAction<number>) => {
-      state.config.zoom = Math.max(0.2, Math.min(3, action.payload));
-    },
+    // REMOVED: zoomIn, zoomOut, setZoom — moved to viewSlice.ts
 
     // Add this to your canvasSlice reducers
     renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
@@ -216,12 +206,10 @@ export const {
   toggleLock, 
   moveLayerUp, 
   moveLayerDown,
-  zoomIn,
-  zoomOut,
-  setZoom,
   renameElement,
   nudgeElements,
   duplicateElements,
+  // REMOVED: zoomIn, zoomOut, setZoom — now exported from viewSlice.ts
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
