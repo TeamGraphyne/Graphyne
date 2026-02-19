@@ -8,9 +8,15 @@ import {
   removeElement,
   setSelection,
   setZoom,
+  nudgeElements, // NEW: Import nudge action
 } from "../../store/canvasSlice";
 import Konva from "konva";
+import { ActionCreators } from "redux-undo";
 import { CanvasImage } from "./CanvasImage";
+
+// NEW: Nudge distance constants (in canvas pixels)
+const NUDGE_SMALL = 1;  // Arrow key
+const NUDGE_LARGE = 10; // Shift + Arrow key
 
 export const Artboard = () => {
   const dispatch = useAppDispatch();
@@ -149,17 +155,55 @@ export const Artboard = () => {
   // --- KEYBOARD SHORTCUTS ---
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Guard: don't intercept when user is typing in an input
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       )
         return;
+
+      // NEW: Platform-agnostic modifier check (Ctrl on Win/Linux, Cmd on Mac)
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+      // DELETE / BACKSPACE — Remove selected elements
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIds.length > 0
       ) {
         e.preventDefault();
         selectedIds.forEach((id) => dispatch(removeElement(id)));
+      }
+
+      // NEW: REDO — Ctrl+Shift+Z / Cmd+Shift+Z (check BEFORE undo, more specific combo)
+      else if (isCtrlOrCmd && e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        dispatch(ActionCreators.redo());
+      }
+
+      // NEW: UNDO — Ctrl+Z / Cmd+Z
+      else if (isCtrlOrCmd && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        dispatch(ActionCreators.undo());
+      }
+
+      // ARROW KEYS — Nudge selected elements (already exists)
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
+        selectedIds.length > 0
+      ) {
+        e.preventDefault();
+        const distance = e.shiftKey ? NUDGE_LARGE : NUDGE_SMALL;
+        let dx = 0;
+        let dy = 0;
+
+        switch (e.key) {
+          case "ArrowUp":    dy = -distance; break;
+          case "ArrowDown":  dy = distance;  break;
+          case "ArrowLeft":  dx = -distance; break;
+          case "ArrowRight": dx = distance;  break;
+        }
+
+        dispatch(nudgeElements({ ids: selectedIds, dx, dy }));
       }
     },
     [selectedIds, dispatch],

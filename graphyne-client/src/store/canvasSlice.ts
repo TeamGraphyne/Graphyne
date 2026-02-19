@@ -161,7 +161,19 @@ export const canvasSlice = createSlice({
       if (element) {
         element.name = action.payload.name;
       }
-},
+    },
+
+    // NEW: Nudge selected elements by a delta. Skips locked elements.
+    nudgeElements: (state, action: PayloadAction<{ ids: string[]; dx: number; dy: number }>) => {
+      const { ids, dx, dy } = action.payload;
+      ids.forEach((id) => {
+        const el = state.elements.find(e => e.id === id);
+        if (el && !el.isLocked) {
+          el.x += dx;
+          el.y += dy;
+        }
+      });
+    },
   }
 });
 
@@ -183,7 +195,8 @@ export const {
   zoomIn,
   zoomOut,
   setZoom,
-  renameElement
+  renameElement,
+  nudgeElements,
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
