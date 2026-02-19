@@ -14,7 +14,6 @@ import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import {
   calculateSnapPoints,
-  calculateCenterGuides,
   findActiveGuides,
   detectSpacingGuides
 } from '../../utils/alignmentGuides';
@@ -264,9 +263,9 @@ export const Artboard = () => {
           />
 
           {elements.map((el) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             console.log('Rendering element:', el.id, 'width:', el.width, 'height:', el.height);
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { zIndex, type, ...elementProps } = el;
 
             const commonProps = {
