@@ -8,13 +8,16 @@ import {
   removeElement,
   setSelection,
   setZoom,
-  nudgeElements, // NEW: Import nudge action
+  zoomIn,
+  zoomOut,
+  nudgeElements,
+  duplicateElements,
 } from "../../store/canvasSlice";
-import Konva from "konva";
 import { ActionCreators } from "redux-undo";
+import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 
-// NEW: Nudge distance constants (in canvas pixels)
+// Nudge distance constants (in canvas pixels)
 const NUDGE_SMALL = 1;  // Arrow key
 const NUDGE_LARGE = 10; // Shift + Arrow key
 
@@ -152,7 +155,7 @@ export const Artboard = () => {
     setSelectionBox(null);
   };
 
-  // --- KEYBOARD SHORTCUTS ---
+  // ========== KEYBOARD SHORTCUTS ==========
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       // Guard: don't intercept when user is typing in an input
@@ -162,51 +165,128 @@ export const Artboard = () => {
       )
         return;
 
-      // NEW: Platform-agnostic modifier check (Ctrl on Win/Linux, Cmd on Mac)
+      // Platform-agnostic modifier check (Ctrl on Win/Linux, Cmd on Mac)
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
 
-      // DELETE / BACKSPACE — Remove selected elements
+      // ---------- DELETE / BACKSPACE — Remove selected elements ----------
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIds.length > 0
       ) {
         e.preventDefault();
         selectedIds.forEach((id) => dispatch(removeElement(id)));
+        return;
       }
 
-      // NEW: REDO — Ctrl+Shift+Z / Cmd+Shift+Z (check BEFORE undo, more specific combo)
-      else if (isCtrlOrCmd && e.shiftKey && e.key.toLowerCase() === "z") {
+      // ---------- ESCAPE — Deselect all ----------
+      // NEW: Quick deselect without clicking the background
+      if (e.key === "Escape") {
         e.preventDefault();
-        dispatch(ActionCreators.redo());
+        dispatch(selectElement(null));
+        return;
       }
 
-      // NEW: UNDO — Ctrl+Z / Cmd+Z
-      else if (isCtrlOrCmd && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        dispatch(ActionCreators.undo());
+      // ---------- MODIFIER SHORTCUTS (Ctrl/Cmd + key) ----------
+      if (isCtrlOrCmd) {
+        // REDO — Ctrl+Shift+Z (must be checked BEFORE Undo, more specific combo)
+        if (e.shiftKey && e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          dispatch(ActionCreators.redo());
+          return;
+        }
+
+        // UNDO — Ctrl+Z
+        if (e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          dispatch(ActionCreators.undo());
+          return;
+        }
+
+        // ZOOM IN — Ctrl+"=" or Ctrl+"+"
+        // NOTE: The "+" key reports as "=" (its unshifted form) in most browsers.
+        // We match both to handle all keyboard layouts.
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault(); // Prevent browser zoom
+          dispatch(zoomIn());
+          return;
+        }
+
+        // ZOOM OUT — Ctrl+"-"
+        if (e.key === "-") {
+          e.preventDefault(); // Prevent browser zoom
+          dispatch(zoomOut());
+          return;
+        }
+
+        // ZOOM RESET (FIT) — Ctrl+0
+        // Recalculates the zoom level to fit the canvas within the container,
+        // identical to the logic in the auto-fit useEffect on mount.
+        if (e.key === "0") {
+          e.preventDefault(); // Prevent browser zoom-reset
+          if (containerRef.current) {
+            const container = containerRef.current;
+            const padding = 40;
+            const fitZoom = Math.min(
+              (container.clientWidth - padding) / config.width,
+              (container.clientHeight - padding) / config.height,
+              1, // Don't zoom beyond 100%
+            );
+            dispatch(setZoom(fitZoom));
+          }
+          return;
+        }
+
+        // SELECT ALL — Ctrl+A
+        // Only selects visible elements (hidden layers are excluded)
+        if (e.key.toLowerCase() === "a") {
+          e.preventDefault(); // Prevent browser "select all text"
+          const allVisibleIds = elements
+            .filter((el) => el.isVisible !== false)
+            .map((el) => el.id);
+          dispatch(setSelection(allVisibleIds));
+          return;
+        }
+
+        // DUPLICATE — Ctrl+D
+        // Clones selected elements with a 20px offset, single undo step
+        if (e.key.toLowerCase() === "d" && selectedIds.length > 0) {
+          e.preventDefault(); // Prevent browser bookmark dialog
+          dispatch(duplicateElements(selectedIds));
+          return;
+        }
       }
 
-      // ARROW KEYS — Nudge selected elements (already exists)
+      // ---------- ARROW KEYS — Nudge selected elements ----------
+      // Shift+Arrow = 10px, Arrow = 1px
       if (
         ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
         selectedIds.length > 0
       ) {
-        e.preventDefault();
+        e.preventDefault(); // Prevent page scroll
+
         const distance = e.shiftKey ? NUDGE_LARGE : NUDGE_SMALL;
         let dx = 0;
         let dy = 0;
 
         switch (e.key) {
-          case "ArrowUp":    dy = -distance; break;
-          case "ArrowDown":  dy = distance;  break;
-          case "ArrowLeft":  dx = -distance; break;
-          case "ArrowRight": dx = distance;  break;
+          case "ArrowUp":
+            dy = -distance;
+            break;
+          case "ArrowDown":
+            dy = distance;
+            break;
+          case "ArrowLeft":
+            dx = -distance;
+            break;
+          case "ArrowRight":
+            dx = distance;
+            break;
         }
 
         dispatch(nudgeElements({ ids: selectedIds, dx, dy }));
       }
     },
-    [selectedIds, dispatch],
+    [selectedIds, elements, config.width, config.height, dispatch], // MODIFIED: Added elements, config.width, config.height
   );
 
   useEffect(() => {

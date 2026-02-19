@@ -174,6 +174,30 @@ export const canvasSlice = createSlice({
         }
       });
     },
+
+    // NEW: Duplicate selected elements as a single undo step.
+    // Clones each element with a new UUID and offsets position by 20px.
+    duplicateElements: (state, action: PayloadAction<string[]>) => {
+      const newIds: string[] = [];
+      action.payload.forEach((id) => {
+        const source = state.elements.find(el => el.id === id);
+        if (source) {
+          const newId = uuidv4();
+          const clone: CanvasElement = {
+            ...source,
+            id: newId,
+            name: `${source.name} Copy`,
+            x: source.x + 20,
+            y: source.y + 20,
+            zIndex: state.elements.length,
+          };
+          state.elements.push(clone);
+          newIds.push(newId);
+        }
+      });
+      // Auto-select the duplicated elements
+      state.selectedIds = newIds;
+    },
   }
 });
 
@@ -197,6 +221,7 @@ export const {
   setZoom,
   renameElement,
   nudgeElements,
+  duplicateElements,
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
