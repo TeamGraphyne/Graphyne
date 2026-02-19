@@ -269,6 +269,13 @@ export const Artboard = () => {
 
           {elements.map((el) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
+
+            void fill;
+            void fillType;
+            void fillSecondary;
+            void zIndex;
+            void type;
 
             const commonProps = {
               ...elementProps,
@@ -326,7 +333,7 @@ export const Artboard = () => {
             if (el.isVisible === false) return null;
 
             if (el.type === "rect")
-              return <Rect key={el.id} {...commonProps}/>;
+              return <Rect key={el.id} {...commonProps} {...getRectFillProps(el)}/>;
 
             // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
@@ -334,6 +341,7 @@ export const Artboard = () => {
                 <Circle
                   key={el.id}
                   {...commonProps}
+                  {...getCircleFillProps(el)}
                   // Konva Circle uses radius, not width/height.
                   // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
                   radius={el.width / 2}
