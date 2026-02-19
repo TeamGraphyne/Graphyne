@@ -199,6 +199,30 @@ export const Artboard = () => {
     return { fill: el.fill };
   };
 
+  //Fill properties: Circle
+  const getCircleFillProps = (el: CanvasElement) => {
+    const radius = el.width / 2;
+
+    if (el.fillType === "linear" && el.fillSecondary) {
+      return {
+        fillLinearGradientStartPoint: { x: -radius, y: 0 },
+        fillLinearGradientEndPoint: { x: radius, y: 0 },
+        fillLinearGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    } 
+
+    if (el.fillType === "radial" && el.fillSecondary) {
+      return {
+        fillRadialGradientStartPoint: { x: 0, y: 0 },
+        fillRadialGradientEndPoint: { x:0, y: 0 },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: radius,
+        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    return { fill: el.fill };
+  }
 
   return (
     <div
