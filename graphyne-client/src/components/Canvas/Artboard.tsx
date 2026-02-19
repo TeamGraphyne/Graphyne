@@ -11,6 +11,7 @@ import {
 } from "../../store/canvasSlice";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
+import type { CanvasElement } from "../../types/canvas";
 
 export const Artboard = () => {
   const dispatch = useAppDispatch();
@@ -174,6 +175,31 @@ export const Artboard = () => {
 
   const scale = 0.5;
   const checkerSize = 10;
+
+  //Fill properties: Rect
+  const getRectFillProps = (el: CanvasElement) => {
+    if (el.fillType === "linear" && el.fillSecondary) {
+      return {
+        fillLinearGradientStartPoint: { x: 0, y:0 },
+        fillLinearGradientEndPoint: { x: el.width, y: 0 },
+        fillLinearGradientColorStops: [ 0, el.fill, 1, el.fillSecondary ],
+      };
+    }
+
+    if (el.fillType == "radial" && el.fillSecondary) {
+      return {
+        fillRadialGradientStartPoint: { x: el.width / 2, y: el.height / 2 },
+        fillRadialGradientEndPoint: { x: el.width / 2, y: el.height / 2 },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: Math.max(el.width, el.height) / 2,
+        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    return { fill: el.fill };
+  };
+
+
   return (
     <div
       ref={containerRef}
@@ -214,12 +240,11 @@ export const Artboard = () => {
             name="background"
             width={config.width}
             height={config.height}
-            fill="transparent"
+            fill="transparent" 
           />
 
           {elements.map((el) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { zIndex, type, ...elementProps } = el;
 
             const commonProps = {
               ...elementProps,
@@ -277,7 +302,7 @@ export const Artboard = () => {
             if (el.isVisible === false) return null;
 
             if (el.type === "rect")
-              return <Rect key={el.id} {...commonProps} />;
+              return <Rect key={el.id} {...commonProps}/>;
 
             // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
@@ -301,11 +326,10 @@ export const Artboard = () => {
 
             if (el.type === "image") {
               return (
-                <CanvasImage
-                  key={el.id}
-                  {...commonProps}
-                  src={el.src}
-                />
+                <CanvasImage 
+                key={el.id} 
+                {...commonProps} 
+                src={el.src}/>
               );
             }
 
