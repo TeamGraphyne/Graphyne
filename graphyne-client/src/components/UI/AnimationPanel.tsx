@@ -9,6 +9,13 @@ interface KonvaWindow extends Window {
   }
 }
 
+const EASING_OPTIONS = [
+  { label: 'Linear', value: 'linear' },
+  { label: 'Ease In', value: 'power2.in' },
+  { label: 'Ease Out', value: 'power2.out' },
+  { label: 'Ease In Out', value: 'power2.inOut' },
+];
+
 export const AnimationPanel = () => {
   const dispatch = useAppDispatch();
   
@@ -24,6 +31,7 @@ export const AnimationPanel = () => {
   const updateAnim = (phase: 'inAnimation' | 'outAnimation', key: string, val: string | number) => {
     // Ensure the animation object exists before spreading, or provide default
     const currentAnim = element[phase] || { type: 'none', duration: 0.5, delay: 0 };
+    const easeOut = element.outAnimation?.easing || 'power2.in';
     
     dispatch(updateElement({
       id: element.id,
@@ -55,6 +63,7 @@ export const AnimationPanel = () => {
       const animType = element.inAnimation?.type || 'none';
       const duration = element.inAnimation?.duration || 0.5;
       const targetOpacity = element.opacity ?? 1;
+      const easeIn = element.inAnimation?.easing || 'power2.out';
 
       // [FIXED] Updated logic to match exporter.ts definitions exactly
       if (animType === 'fade') {
@@ -214,6 +223,24 @@ export const AnimationPanel = () => {
           </select>
         </div>
 
+        {/* Easing / Keyframes */}
+        {(element.inAnimation?.type && element.inAnimation.type !== 'none') && (
+          <div className="mb-4 space-y-2">
+            <label className="text-xs text-gray-400">EASING</label>
+            <select
+              value={element.inAnimation?.easing || 'power2.out'}
+              onChange={(e) => updateAnim('inAnimation', 'easing', e.target.value)}
+              className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
+              focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
+              [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+            >
+              {EASING_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Duration & Delay */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="space-y-1">
@@ -281,6 +308,24 @@ export const AnimationPanel = () => {
             <option value="scale">Pop Out (Scale)</option>
           </select>
         </div>
+
+        {/* Easing / Keyframes */}
+        {(element.outAnimation?.type && element.outAnimation.type !== 'none') && (
+          <div className="mb-4 space-y-2">
+            <label className="text-xs text-gray-400">EASING</label>
+            <select
+              value={element.outAnimation?.easing || 'power2.in'}
+              onChange={(e) => updateAnim('outAnimation', 'easing', e.target.value)}
+              className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
+              focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
+              [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+            >
+              {EASING_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Duration & Delay */}
         <div className="grid grid-cols-2 gap-2 mb-4">
