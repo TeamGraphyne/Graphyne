@@ -18,7 +18,7 @@ import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 import { useNavigate } from "react-router-dom";
 
 // Configuration
-const SERVER_URL = "http://localhost:3001";
+const SERVER_URL = `http://${window.location.hostname}:3001`;
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
 // MODIFIED: Now accepts an optional external iframeRef so the parent can postMessage into it
@@ -235,32 +235,58 @@ export function PlayoutPage() {
     setPreviewItem(item);
   };
 
-  const handleTake = () => {
+const handleTake = () => {
     if (previewItem) {
-      // 1. Move Preview to Program
-      setProgramItem(previewItem);
-
-      // NEW: Parse elements for data binding resolution
       const elements = parseGraphicElements(previewItem);
-      setProgramElements(elements);
-
       const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
 
-      // 2. Emit Socket command for external renderers (Output Window)
-      // MODIFIED: Now also sends elements so the Output page can resolve bindings too
-      console.log("🚀 Emitting TAKE:", fullUrl);
-      socketService.emit("command:take", {
-        url: fullUrl,
-        elements: elements, // NEW: Send element data for binding resolution on output
-      });
+      // If a graphic is currently on air, animate it out first
+      if (programItem) {
+        // 1. Trigger OUT animation on local Program monitor
+        if (programIframeRef.current?.contentWindow) {
+          programIframeRef.current.contentWindow.postMessage('out', '*');
+        }
+        
+        // 2. Trigger OUT animation on the external Output window
+        socketService.emit("command:clear");
+
+        // 3. Wait 1 second for the animation to finish, then swap and load the new slide
+        setTimeout(() => {
+          setProgramItem(previewItem);
+          setProgramElements(elements);
+          console.log("🚀 Emitting TAKE:", fullUrl);
+          socketService.emit("command:take", {
+            url: fullUrl,
+            elements: elements,
+          });
+        }, 1000);
+      } else {
+        // Immediate take if nothing is currently on air
+        setProgramItem(previewItem);
+        setProgramElements(elements);
+        console.log("🚀 Emitting TAKE:", fullUrl);
+        socketService.emit("command:take", {
+          url: fullUrl,
+          elements: elements,
+        });
+      }
     }
   };
-
-  const handleClearProgram = () => {
-    setProgramItem(null);
-    setProgramElements([]); // NEW: Clear cached elements
+const handleClearProgram = () => {
+    // 1. Trigger OUT animation locally
+    if (programIframeRef.current?.contentWindow) {
+      programIframeRef.current.contentWindow.postMessage('out', '*');
+    }
+    
+    // 2. Trigger OUT animation on the Output window
     console.log("🛑 Emitting CLEAR");
     socketService.emit("command:clear");
+
+    // 3. Delay unmounting the local Program monitor to let the animation finish
+    setTimeout(() => {
+      setProgramItem(null);
+      setProgramElements([]);
+    }, 1000); // 1-second delay
   };
 
   const openOutputWindow = () => {
