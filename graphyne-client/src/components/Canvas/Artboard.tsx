@@ -268,7 +268,6 @@ export const Artboard = () => {
           />
 
           {elements.map((el) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
 
             void fill;
@@ -361,7 +360,8 @@ export const Artboard = () => {
                 <CanvasImage 
                 key={el.id} 
                 {...commonProps} 
-                src={el.src}/>
+                src={el.src}
+                fill={el.fill}/>
               );
             }
 
