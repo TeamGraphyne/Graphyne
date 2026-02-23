@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   Play,
   Square,
-  MonitorPlay,
   AlertCircle,
   RefreshCw,
   VectorSquare,
@@ -16,6 +15,8 @@ import type { DataUpdatePayload } from "../types/datasource";
 import type { DataSourceData } from "../types/datasource";
 import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 import { useNavigate } from "react-router-dom";
+
+import transLogo from "../assets/TransLogo.png";
 
 // Configuration
 const SERVER_URL = `http://${window.location.hostname}:3001`;
@@ -177,7 +178,7 @@ export function PlayoutPage() {
       const projects = await api.getProjects();
       if (projects.length > 0) {
         // [FIXED] Use getProjectById to get items
-        const activeProject = await api.getProjectById(projects[0].id);
+        const activeProject = await api.getProjectById(projects[1].id);
         setProjectName(activeProject.name);
         setActiveProjectId(activeProject.id); // NEW: Track project ID
 
@@ -325,10 +326,11 @@ const handleClearProgram = () => {
       {/* HEADER */}
       <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
-          <MonitorPlay className="text-purple-400" size={24} />
-          <h1 className="font-bold text-xl tracking-tight text-gray-100">
-            Graphyne <span className="text-purple-400 font-light">PLAYOUT</span>
-          </h1>
+          {/* Logo & Info */}
+            <div className="flex items-center gap-4 justify-start">
+              <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
+<span className="text-purple-400 font-light">PLAYOUT</span>
+</div>
         </div>
 
         <div className="flex items-center gap-4">
