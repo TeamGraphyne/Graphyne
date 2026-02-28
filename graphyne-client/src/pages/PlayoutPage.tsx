@@ -1,3 +1,4 @@
+// MODIFIED: Added liveData tracking, CSV row UI controls, and keyboard shortcuts
 import { useState, useEffect, useRef } from "react";
 import {
   Play,
@@ -5,7 +6,9 @@ import {
   AlertCircle,
   RefreshCw,
   VectorSquare,
-  ExternalLink
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
@@ -22,7 +25,6 @@ import transLogo from "../assets/TransLogo.png";
 const SERVER_URL = `http://${window.location.hostname}:3001`;
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
-// MODIFIED: Now accepts an optional external iframeRef so the parent can postMessage into it
 interface ScaledFrameProps {
   src: string;
   title: string;
@@ -117,17 +119,19 @@ export function PlayoutPage() {
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
 
-  // NEW: Refs and state for data binding
+  // Refs and state for data binding
   const programIframeRef = useRef<HTMLIFrameElement>(null);
   const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
   const [dataSources, setDataSources] = useState<DataSourceData[]>([]);
+  
+  // NEW: Store live data objects to display current row state
+  const [liveData, setLiveData] = useState<Record<string, Record<string, unknown>>>({});
 
   // Store projectId so we can fetch data sources
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  // ========== FEATURE 3: DRAG AND DROP STATE ==========
+  // DRAG AND DROP STATE 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  // ==================================================
 
   // --- 1. System Startup ---
   useEffect(() => {
@@ -138,9 +142,15 @@ export function PlayoutPage() {
     };
   }, []);
 
-  // --- NEW: Listen for data:update events and push to program iframe ---
+  // --- Listen for data:update events and push to program iframe ---
   useEffect(() => {
     const handleDataUpdate = (payload: DataUpdatePayload) => {
+      // NEW: Save incoming data so we can read __currentRow / __rowCount
+      setLiveData(prev => ({
+        ...prev,
+        [payload.sourceId]: payload.data
+      }));
+
       if (programElements.length === 0) return;
 
       const updates = resolveBindings(programElements, payload.sourceId, payload.data);
@@ -153,7 +163,7 @@ export function PlayoutPage() {
     };
   }, [programElements]);
 
-  // --- NEW: When project loads, fetch its data sources and auto-start polling ---
+  // --- When project loads, fetch its data sources and auto-start polling ---
   useEffect(() => {
     if (!activeProjectId) return;
 
@@ -172,15 +182,45 @@ export function PlayoutPage() {
     });
   }, [activeProjectId]);
 
+  // --- NEW: Global Keyboard Shortcuts for Data Row Navigation ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts if the user is typing in an input
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) return;
+
+      const csvSources = dataSources.filter(s => s.type === 'csv-file');
+      if (csvSources.length === 0) return;
+
+      // By default, map shortcuts to the first CSV source in the list
+      const targetSource = csvSources[0];
+      const data = liveData[targetSource.id];
+      if (!data) return;
+
+      const currentRow = (data.__currentRow as number) ?? 0;
+      const rowCount = (data.__rowCount as number) ?? 1;
+
+      if (e.key === '[') {
+        const nextRow = Math.max(0, currentRow - 1);
+        socketService.emit('data:csv-row', { sourceId: targetSource.id, rowIndex: nextRow });
+      } else if (e.key === ']') {
+        const nextRow = Math.min(rowCount - 1, currentRow + 1);
+        socketService.emit('data:csv-row', { sourceId: targetSource.id, rowIndex: nextRow });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dataSources, liveData]);
+
+
   const loadRundown = async () => {
     setIsLoading(true);
     try {
       const projects = await api.getProjects();
       if (projects.length > 0) {
-        // [FIXED] Use getProjectById to get items
-        const activeProject = await api.getProjectById(projects[1].id);
+        const activeProject = await api.getProjectById(projects[0].id);
         setProjectName(activeProject.name);
-        setActiveProjectId(activeProject.id); // NEW: Track project ID
+        setActiveProjectId(activeProject.id); 
 
         // Sort items by order
         const items = activeProject.items || [];
@@ -197,32 +237,22 @@ export function PlayoutPage() {
     }
   };
 
-  // ========== FEATURE 3: DRAG AND DROP HANDLERS ==========
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-  };
-
-  const handleDragOver = (index: number) => {
-    setDragOverIndex(index);
-  };
-
+  // DRAG AND DROP HANDLERS 
+  const handleDragStart = (index: number) => setDragIndex(index);
+  const handleDragOver = (index: number) => setDragOverIndex(index);
   const handleDrop = (index: number) => {
     if (dragIndex === null || dragIndex === index) return;
-    
     const updated = [...playlist];
     const [movedItem] = updated.splice(dragIndex, 1);
     updated.splice(index, 0, movedItem);
-    
     setPlaylist(updated);
     setDragIndex(null);
     setDragOverIndex(null);
   };
-
   const handleDragEnd = () => {
     setDragIndex(null);
     setDragOverIndex(null);
   };
-  // =====================================================
 
   // --- 2. Transport Controls ---
 
@@ -236,22 +266,18 @@ export function PlayoutPage() {
     setPreviewItem(item);
   };
 
-const handleTake = () => {
+  const handleTake = () => {
     if (previewItem) {
       const elements = parseGraphicElements(previewItem);
       const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
 
-      // If a graphic is currently on air, animate it out first
       if (programItem) {
-        // 1. Trigger OUT animation on local Program monitor
         if (programIframeRef.current?.contentWindow) {
           programIframeRef.current.contentWindow.postMessage('out', '*');
         }
         
-        // 2. Trigger OUT animation on the external Output window
         socketService.emit("command:clear");
 
-        // 3. Wait 1 second for the animation to finish, then swap and load the new slide
         setTimeout(() => {
           setProgramItem(previewItem);
           setProgramElements(elements);
@@ -262,7 +288,6 @@ const handleTake = () => {
           });
         }, 1000);
       } else {
-        // Immediate take if nothing is currently on air
         setProgramItem(previewItem);
         setProgramElements(elements);
         console.log("🚀 Emitting TAKE:", fullUrl);
@@ -273,21 +298,19 @@ const handleTake = () => {
       }
     }
   };
-const handleClearProgram = () => {
-    // 1. Trigger OUT animation locally
+
+  const handleClearProgram = () => {
     if (programIframeRef.current?.contentWindow) {
       programIframeRef.current.contentWindow.postMessage('out', '*');
     }
     
-    // 2. Trigger OUT animation on the Output window
     console.log("🛑 Emitting CLEAR");
     socketService.emit("command:clear");
 
-    // 3. Delay unmounting the local Program monitor to let the animation finish
     setTimeout(() => {
       setProgramItem(null);
       setProgramElements([]);
-    }, 1000); // 1-second delay
+    }, 1000); 
   };
 
   const openOutputWindow = () => {
@@ -295,7 +318,6 @@ const handleClearProgram = () => {
   };
 
   // --- 3. Render Helper ---
-  // MODIFIED: Program monitor now passes the external iframe ref
   const renderMonitorContent = (
     item: PlaylistItem | null,
     label: string,
@@ -326,11 +348,10 @@ const handleClearProgram = () => {
       {/* HEADER */}
       <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
-          {/* Logo & Info */}
             <div className="flex items-center gap-4 justify-start">
               <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
-<span className="text-purple-400 font-light">PLAYOUT</span>
-</div>
+              <span className="text-purple-400 font-light">PLAYOUT</span>
+            </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -341,14 +362,12 @@ const handleClearProgram = () => {
             <div className="text-sm font-bold text-gray-200">{projectName}</div>
           </div>
 
-          {/* NEW: Data source count indicator */}
           {dataSources.length > 0 && (
             <div className="text-[10px] text-orange-400 font-bold px-2 py-1 bg-orange-950/30 border border-orange-900/30 rounded">
               📡 {dataSources.length} DATA SOURCE{dataSources.length !== 1 ? 'S' : ''}
             </div>
           )}
 
-          {/* Open Output Button */}
           <button
             onClick={openOutputWindow}
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-blue-400 border border-blue-900/30 hover:border-blue-500 transition-colors"
@@ -378,16 +397,13 @@ const handleClearProgram = () => {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
-               {/* Checkerboard */}
                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-               
                {renderMonitorContent(previewItem, "Preview", true)} 
-
                <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
             </div>
           </div>
 
-          {/* PROGRAM WINDOW — MODIFIED: passes programIframeRef */}
+          {/* PROGRAM WINDOW */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
               <span className="text-sm font-bold text-red-500 tracking-wider flex items-center gap-2">
@@ -399,17 +415,17 @@ const handleClearProgram = () => {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-
               {renderMonitorContent(programItem, "Program", true, programIframeRef)}
-
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>
           </div>
         </div>
 
-        {/* CONTROLS */}
-        <div className="flex justify-center items-center py-2">
-          <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl">
+        {/* CONTROLS AREA */}
+        <div className="flex justify-center items-center py-2 gap-8">
+          
+          {/* Main Transport */}
+          <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl rounded-lg">
             <button
               onClick={handleTake}
               disabled={!previewItem}
@@ -436,9 +452,45 @@ const handleClearProgram = () => {
               CLEAR
             </button>
           </div>
+
+          {/* NEW: Data Source Controls (CSV Pagination) */}
+          {dataSources.some(s => s.type === 'csv-file') && (
+            <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl rounded-lg">
+              {dataSources.filter(s => s.type === 'csv-file').map(source => {
+                const data = liveData[source.id] || {};
+                const currentRow = (data.__currentRow as number) ?? 0;
+                const rowCount = (data.__rowCount as number) ?? 0;
+                
+                return (
+                  <div key={source.id} className="flex items-center gap-3 px-3 py-1 bg-[#20123a] border border-purple-900/40 rounded">
+                    <span className="text-xs font-bold text-gray-300 min-w-[80px] truncate">📄 {source.name}</span>
+                    <div className="flex items-center bg-gray-900 rounded border border-gray-700 overflow-hidden">
+                      <button 
+                        onClick={() => socketService.emit('data:csv-row', { sourceId: source.id, rowIndex: Math.max(0, currentRow - 1) })}
+                        className="px-2 py-1.5 hover:bg-gray-700 transition-colors text-gray-400 hover:text-white"
+                        title="Previous Row (Shortcut: [ )"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="text-xs font-mono text-purple-300 min-w-[50px] text-center font-bold">
+                        {rowCount > 0 ? currentRow + 1 : 0} <span className="text-gray-600">/</span> {rowCount}
+                      </span>
+                      <button 
+                        onClick={() => socketService.emit('data:csv-row', { sourceId: source.id, rowIndex: Math.min(rowCount - 1, currentRow + 1) })}
+                        className="px-2 py-1.5 hover:bg-gray-700 transition-colors text-gray-400 hover:text-white"
+                        title="Next Row (Shortcut: ] )"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* RUNDOWN LIST - WITH DRAG AND DROP */}
+        {/* RUNDOWN LIST */}
         <div className="flex-1 flex flex-col bg-[#1a0f2e] border-purple-900/40 overflow-hidden shadow-lg min-h-0">
           <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex justify-between items-center">
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
@@ -460,15 +512,12 @@ const handleClearProgram = () => {
               playlist.map((item, index) => {
                 const isPreview = previewItem?.id === item.id;
                 const isProgram = programItem?.id === item.id;
-                // ========== FEATURE 3: DRAG VISUAL FEEDBACK ==========
                 const isDragging = dragIndex === index;
                 const isDragOver = dragOverIndex === index;
-                // ==================================================
                 
                 return (
                   <div
                     key={item.id}
-                    // ========== FEATURE 3: DRAG HANDLERS ==========
                     draggable
                     onDragStart={() => handleDragStart(index)}
                     onDragOver={(e) => {
@@ -477,7 +526,6 @@ const handleClearProgram = () => {
                     }}
                     onDrop={() => handleDrop(index)}
                     onDragEnd={handleDragEnd}
-                    // ============================================
                     onClick={() => handleLoadToPreview(item)}
                     className={`
                       group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
