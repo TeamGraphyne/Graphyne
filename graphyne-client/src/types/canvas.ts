@@ -6,10 +6,12 @@ export interface ShadowEffect {
 }
 
 export interface AnimationConfig {
+  [x: string]: string;
   type: string;
   duration: number;
   delay: number;
   ease?: string;
+  easing?: string;
 }
 
 export interface CanvasElement {

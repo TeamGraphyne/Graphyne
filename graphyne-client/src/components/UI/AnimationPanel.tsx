@@ -31,7 +31,6 @@ export const AnimationPanel = () => {
   const updateAnim = (phase: 'inAnimation' | 'outAnimation', key: string, val: string | number) => {
     // Ensure the animation object exists before spreading, or provide default
     const currentAnim = element[phase] || { type: 'none', duration: 0.5, delay: 0 };
-    const easeOut = element.outAnimation?.easing || 'power2.in';
     
     dispatch(updateElement({
       id: element.id,
@@ -104,7 +103,7 @@ export const AnimationPanel = () => {
               scaleY: element.scaleY || 1, 
               opacity: targetOpacity, 
               duration, 
-              ease: 'back.out(1.7)' 
+              ease: easeIn
           });
         }
       }
@@ -134,45 +133,48 @@ export const AnimationPanel = () => {
 
       const animType = element.outAnimation?.type || 'none';
       const duration = element.outAnimation?.duration || 0.5;
+      const easeOut = element.outAnimation?.easing || 'power2.in';
 
       // Animation logic 
       if (animType === 'fade') {
-        gsap.to(node, { opacity: 0, duration });
+        gsap.to(node, { opacity: 0, duration, ease: easeOut });
 
       } else if (animType === 'scale') {
         gsap.to(node, { 
-            scaleX: element.scaleX || 1, 
-            scaleY: element.scaleY || 1, 
+            scaleX: 0, 
+            scaleY: 0, 
             opacity: 0, 
             duration, 
-            ease: 'back.out(1.7)' 
+            ease: easeOut 
         });
 
     } else if (animType === 'slide-left'){
       gsap.to(node, {
         x: element.x-100, 
         opacity: 0,
-        duration,ease: 'power2.in'});
+        duration,
+        ease: easeOut});
 
     } else if (animType === 'slide-right'){
       gsap.to(node, {
         x: element.x+100, 
         opacity: 0,
-        duration,ease: 'power2.in'});
+        duration,
+        ease: easeOut});
 
     } else if (animType === 'slide-up'){
         gsap.to(node, { 
           y: element.y - 100, 
           opacity: 0, 
           duration, 
-          ease: 'power2.in' });
+          ease: easeOut });
 
     } else if (animType === 'slide-down'){
         gsap.to(node, { 
           y: element.y + 100, 
           opacity: 0, 
           duration, 
-          ease: 'power2.in' });
+          ease: easeOut });
     }
     }
   };
