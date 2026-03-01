@@ -103,17 +103,24 @@ export const AnimationPanel = () => {
         gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: easeIn });
         
         } else if (animType === 'scale') {
-          // Added Scale preview
           node.scaleX(0);
           node.scaleY(0);
           node.opacity(0);
-          gsap.to(node, { 
-              scaleX: element.scaleX || 1, 
-              scaleY: element.scaleY || 1, 
+
+          gsap.timeline()
+          .to(node, { 
+              scaleX: (element.scaleX || 1) * 1.15,
+              scaleY: (element.scaleY || 1) * 1.15,
               opacity: targetOpacity, 
-              duration, 
-              ease: easeIn,
-          });
+              duration: duration *0.65, 
+              ease: 'power4.out',
+          })
+          .to(node, {
+              scaleX: element.scaleX || 1,
+              scaleY: element.scaleY || 1,
+              duration: duration * 0.35,
+              ease: 'power2.inOut',
+            });
         }
       }
     };
@@ -184,7 +191,21 @@ export const AnimationPanel = () => {
           opacity: 0, 
           duration, 
           ease: easeOut });
-    }
+    } else if (animType === 'scale') {
+      gsap.timeline()
+        .to(node, {
+          scaleX: (element.scaleX || 1) * 1.08,
+          scaleY: (element.scaleY || 1) * 1.08,
+          duration: duration * 0.2,
+          ease: 'power2.out',
+        })
+        .to(node, {
+          scaleX: 0,
+          scaleY: 0,
+          opacity: 0,
+          duration: duration * 0.8,
+          ease: easeOut,
+        });
     }
   };
 
