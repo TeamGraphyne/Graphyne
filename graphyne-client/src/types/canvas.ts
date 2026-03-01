@@ -21,6 +21,8 @@ export interface CanvasElement {
   width: number;
   height: number;
   fill: string;
+  fillSecondary?: string;
+  fillType?: 'solid' | 'linear' | 'radial';
 
   rotation?: number;
   scaleX?: number;
@@ -54,17 +56,29 @@ export interface CanvasElement {
   // Animation
   inAnimation?: AnimationConfig;
   outAnimation?: AnimationConfig;
+
+  // Data Binding
+  dataBindings?: DataBinding[];
 }
 
+// MODIFIED: Removed 'zoom' — zoom is view-only state, now lives in viewSlice.
 export interface CanvasConfig {
   width: number;
   height: number;
   background: string;
-  zoom:number;
 }
 
 export interface CanvasState {
   elements: CanvasElement[];
   selectedIds: string[];
   config: CanvasConfig;
+}
+
+// New!!!
+export interface DataBinding {
+  sourceId: string;      // Which data source (UUID)
+  sourceName: string;    // For UI display
+  fieldPath: string;     
+  targetProperty: string; 
+  format?: string;       // Optional
 }

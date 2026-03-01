@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   Play,
   Square,
-  MonitorPlay,
   AlertCircle,
   RefreshCw,
   VectorSquare,
@@ -11,21 +10,30 @@ import {
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
 import type { PlaylistItem } from "../types/project";
+import type { CanvasElement } from "../types/canvas";
+import type { DataUpdatePayload } from "../types/datasource";
+import type { DataSourceData } from "../types/datasource";
+import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 import { useNavigate } from "react-router-dom";
 
+import transLogo from "../assets/TransLogo.png";
+
 // Configuration
-const SERVER_URL = "http://localhost:3001";
+const SERVER_URL = `http://${window.location.hostname}:3001`;
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
+// MODIFIED: Now accepts an optional external iframeRef so the parent can postMessage into it
 interface ScaledFrameProps {
   src: string;
   title: string;
   autoPlay?: boolean;
+  iframeRef?: React.RefObject<HTMLIFrameElement | null>;
 }
 
-const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
+const ScaledFrame = ({ src, title, autoPlay, iframeRef }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const localIframeRef = useRef<HTMLIFrameElement>(null);
+  const activeRef = iframeRef || localIframeRef;
   const [scale, setScale] = useState(1);
   const [hasError, setHasError] = useState(false);
 
@@ -45,9 +53,9 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
 
   // 2. Handle Auto-Play Logic
   const handleLoad = () => {
-    if (autoPlay && iframeRef.current?.contentWindow) {
+    if (autoPlay && activeRef.current?.contentWindow) {
       console.log(`▶️ Auto-playing ${title}`);
-      iframeRef.current.contentWindow.postMessage('play', '*');
+      activeRef.current.contentWindow.postMessage('play', '*');
     }
   };
 
@@ -77,7 +85,7 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
         className="absolute top-0 left-0"
       >
         <iframe
-          ref={iframeRef}
+          ref={activeRef}
           src={src}
           title={title}
           onLoad={handleLoad}
@@ -90,6 +98,17 @@ const ScaledFrame = ({ src, title, autoPlay }: ScaledFrameProps) => {
   );
 };
 
+// --- Helper: Parse rawJson from a PlaylistItem to get elements ---
+function parseGraphicElements(item: PlaylistItem): CanvasElement[] {
+  try {
+    const parsed = JSON.parse(item.graphic.rawJson);
+    return parsed.elements || [];
+  } catch {
+    console.warn('⚠️ Failed to parse rawJson for graphic:', item.graphic.name);
+    return [];
+  }
+}
+
 export function PlayoutPage() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PlaylistItem | null>(null);
@@ -98,6 +117,13 @@ export function PlayoutPage() {
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
 
+  // NEW: Refs and state for data binding
+  const programIframeRef = useRef<HTMLIFrameElement>(null);
+  const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
+  const [dataSources, setDataSources] = useState<DataSourceData[]>([]);
+
+  // Store projectId so we can fetch data sources
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   // ========== FEATURE 3: DRAG AND DROP STATE ==========
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -112,15 +138,50 @@ export function PlayoutPage() {
     };
   }, []);
 
+  // --- NEW: Listen for data:update events and push to program iframe ---
+  useEffect(() => {
+    const handleDataUpdate = (payload: DataUpdatePayload) => {
+      if (programElements.length === 0) return;
+
+      const updates = resolveBindings(programElements, payload.sourceId, payload.data);
+      pushUpdatesToIframe(programIframeRef.current, updates);
+    };
+
+    socketService.on('data:update', handleDataUpdate);
+    return () => {
+      socketService.off('data:update');
+    };
+  }, [programElements]);
+
+  // --- NEW: When project loads, fetch its data sources and auto-start polling ---
+  useEffect(() => {
+    if (!activeProjectId) return;
+
+    api.getDataSources(activeProjectId).then(sources => {
+      setDataSources(sources);
+
+      // Auto-start polling for sources that have autoStart enabled
+      sources.forEach(source => {
+        if (source.autoStart && source.pollingInterval > 0) {
+          console.log(`📡 Auto-starting poller: ${source.name}`);
+          socketService.emit('data:start-polling', { sourceId: source.id });
+        }
+      });
+    }).catch(err => {
+      console.error('Failed to load data sources:', err);
+    });
+  }, [activeProjectId]);
+
   const loadRundown = async () => {
     setIsLoading(true);
     try {
       const projects = await api.getProjects();
       if (projects.length > 0) {
         // [FIXED] Use getProjectById to get items
-        const activeProject = await api.getProjectById(projects[0].id);
+        const activeProject = await api.getProjectById(projects[1].id);
         setProjectName(activeProject.name);
-        
+        setActiveProjectId(activeProject.id); // NEW: Track project ID
+
         // Sort items by order
         const items = activeProject.items || [];
         const sorted = items.sort((a: PlaylistItem, b: PlaylistItem) => a.order - b.order);
@@ -167,8 +228,6 @@ export function PlayoutPage() {
 
   // Helper to generate correct URL
   const getGraphicUrl = (filePath: string) => {
-    // Assuming filePath is something like "/graphics/uuid.html"
-    // We append SERVER_URL if it's a relative path, or ensure it's correct
     const filename = filePath.split('/').pop();
     return `${SERVER_URL}/graphics/${filename}`;
   };
@@ -177,25 +236,58 @@ export function PlayoutPage() {
     setPreviewItem(item);
   };
 
-  const handleTake = () => {
+const handleTake = () => {
     if (previewItem) {
-      // 1. Move Preview to Program
-      setProgramItem(previewItem);
-      
+      const elements = parseGraphicElements(previewItem);
       const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
 
-      // 2. Emit Socket command for external renderers (Output Window)
-      console.log("🚀 Emitting TAKE:", fullUrl);
-      socketService.emit("command:take", {
-        url: fullUrl
-      });
+      // If a graphic is currently on air, animate it out first
+      if (programItem) {
+        // 1. Trigger OUT animation on local Program monitor
+        if (programIframeRef.current?.contentWindow) {
+          programIframeRef.current.contentWindow.postMessage('out', '*');
+        }
+        
+        // 2. Trigger OUT animation on the external Output window
+        socketService.emit("command:clear");
+
+        // 3. Wait 1 second for the animation to finish, then swap and load the new slide
+        setTimeout(() => {
+          setProgramItem(previewItem);
+          setProgramElements(elements);
+          console.log("🚀 Emitting TAKE:", fullUrl);
+          socketService.emit("command:take", {
+            url: fullUrl,
+            elements: elements,
+          });
+        }, 1000);
+      } else {
+        // Immediate take if nothing is currently on air
+        setProgramItem(previewItem);
+        setProgramElements(elements);
+        console.log("🚀 Emitting TAKE:", fullUrl);
+        socketService.emit("command:take", {
+          url: fullUrl,
+          elements: elements,
+        });
+      }
     }
   };
-
-  const handleClearProgram = () => {
-    setProgramItem(null);
+const handleClearProgram = () => {
+    // 1. Trigger OUT animation locally
+    if (programIframeRef.current?.contentWindow) {
+      programIframeRef.current.contentWindow.postMessage('out', '*');
+    }
+    
+    // 2. Trigger OUT animation on the Output window
     console.log("🛑 Emitting CLEAR");
     socketService.emit("command:clear");
+
+    // 3. Delay unmounting the local Program monitor to let the animation finish
+    setTimeout(() => {
+      setProgramItem(null);
+      setProgramElements([]);
+    }, 1000); // 1-second delay
   };
 
   const openOutputWindow = () => {
@@ -203,7 +295,13 @@ export function PlayoutPage() {
   };
 
   // --- 3. Render Helper ---
-  const renderMonitorContent = (item: PlaylistItem | null, label: string, shouldAutoPlay: boolean) => {
+  // MODIFIED: Program monitor now passes the external iframe ref
+  const renderMonitorContent = (
+    item: PlaylistItem | null,
+    label: string,
+    shouldAutoPlay: boolean,
+    externalIframeRef?: React.RefObject<HTMLIFrameElement | null>
+  ) => {
     if (!item) {
       return (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
@@ -214,10 +312,11 @@ export function PlayoutPage() {
     }
 
     return (
-      <ScaledFrame 
-        src={getGraphicUrl(item.graphic.filePath)} 
-        title={label} 
+      <ScaledFrame
+        src={getGraphicUrl(item.graphic.filePath)}
+        title={label}
         autoPlay={shouldAutoPlay}
+        iframeRef={externalIframeRef}
       />
     );
   };
@@ -227,10 +326,11 @@ export function PlayoutPage() {
       {/* HEADER */}
       <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
-          <MonitorPlay className="text-purple-400" size={24} />
-          <h1 className="font-bold text-xl tracking-tight text-gray-100">
-            Graphyne <span className="text-purple-400 font-light">PLAYOUT</span>
-          </h1>
+          {/* Logo & Info */}
+            <div className="flex items-center gap-4 justify-start">
+              <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
+<span className="text-purple-400 font-light">PLAYOUT</span>
+</div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -241,13 +341,20 @@ export function PlayoutPage() {
             <div className="text-sm font-bold text-gray-200">{projectName}</div>
           </div>
 
-          {/* NEW: Open Output Button */}
-          <button 
-             onClick={openOutputWindow}
-             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-purple-300 border border-blue-900/30 hover:border-blue-500 transition-colors"
-           >
-             <ExternalLink size={14} /> OUTPUT
-           </button>
+          {/* NEW: Data source count indicator */}
+          {dataSources.length > 0 && (
+            <div className="text-[10px] text-orange-400 font-bold px-2 py-1 bg-orange-950/30 border border-orange-900/30 rounded">
+              📡 {dataSources.length} DATA SOURCE{dataSources.length !== 1 ? 'S' : ''}
+            </div>
+          )}
+
+          {/* Open Output Button */}
+          <button
+            onClick={openOutputWindow}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-blue-400 border border-blue-900/30 hover:border-blue-500 transition-colors"
+          >
+            <ExternalLink size={14} /> OUTPUT
+          </button>
 
           <button
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-gray-300 border border-gray-700"
@@ -261,7 +368,7 @@ export function PlayoutPage() {
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col p-6 gap-6 max-w-[1920px] mx-auto w-full">
         <div className="grid grid-cols-2 gap-6 w-full">
-          
+
           {/* PREVIEW WINDOW */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
@@ -280,7 +387,7 @@ export function PlayoutPage() {
             </div>
           </div>
 
-          {/* PROGRAM WINDOW */}
+          {/* PROGRAM WINDOW — MODIFIED: passes programIframeRef */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
               <span className="text-sm font-bold text-red-500 tracking-wider flex items-center gap-2">
@@ -292,8 +399,8 @@ export function PlayoutPage() {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-              
-              {renderMonitorContent(programItem, "Program", true)}
+
+              {renderMonitorContent(programItem, "Program", true, programIframeRef)}
 
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>

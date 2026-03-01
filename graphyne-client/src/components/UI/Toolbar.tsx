@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import { useDispatch } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import { addElement, zoomIn, zoomOut } from "../../store/canvasSlice"; // Import the actions
+import { addElement } from "../../store/canvasSlice"; // MODIFIED: Removed zoomIn, zoomOut
+import { zoomIn, zoomOut } from "../../store/viewSlice"; // NEW: Import from viewSlice
 import {
   Square,
   Circle,

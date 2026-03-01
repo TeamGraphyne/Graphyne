@@ -28,6 +28,51 @@ const escapeHtml = (unsafe: string | undefined) => {
     .replace(/'/g, "&#039;");
 };
 
+// ✅ FIX: System/generic fonts that should NEVER be sent to Google Fonts
+const SYSTEM_FONTS = new Set([
+  'arial',
+  'helvetica',
+  'times new roman',
+  'times',
+  'courier new',
+  'courier',
+  'verdana',
+  'georgia',
+  'palatino',
+  'garamond',
+  'bookman',
+  'trebuchet ms',
+  'comic sans ms',
+  'impact',
+  'tahoma',
+  'lucida console',
+  'lucida sans unicode',
+  'sans-serif',
+  'serif',
+  'monospace',
+  'cursive',
+  'fantasy',
+  'system-ui',
+  'ui-serif',
+  'ui-sans-serif',
+  'ui-monospace',
+  'ui-rounded',
+]);
+
+// ✅ FIX: Extract the primary font name from a CSS font-family string
+// e.g. "'Roboto', sans-serif" → "Roboto", "Arial, sans-serif" → "Arial"
+const extractPrimaryFont = (fontFamily: string): string => {
+  const first = fontFamily.split(',')[0].trim();
+  // Remove surrounding quotes (single or double)
+  return first.replace(/^['"]|['"]$/g, '');
+};
+
+// ✅ FIX: Check whether a font is a system/generic font
+const isSystemFont = (fontFamily: string): boolean => {
+  const primary = extractPrimaryFont(fontFamily);
+  return SYSTEM_FONTS.has(primary.toLowerCase());
+};
+
 export const compileGraphicToHTML = async (
   config: CanvasConfig,
   elements: CanvasElement[]
@@ -42,16 +87,16 @@ export const compileGraphicToHTML = async (
     return newEl;
   }));
 
-  // Collect unique fonts
+  // ✅ FIX: Collect unique fonts, EXCLUDING system fonts
   const usedFonts = Array.from(new Set(
     processedElements
-      .filter(el => el.type === 'text' && el.fontFamily)
-      .map(el => el.fontFamily)
+      .filter(el => el.type === 'text' && el.fontFamily && !isSystemFont(el.fontFamily))
+      .map(el => extractPrimaryFont(el.fontFamily!))
   ));
 
-  // Create Google Fonts link
+  // Create Google Fonts link — only if there are actual Google Fonts to load
   const fontLink = usedFonts.length > 0
-    ? `<link href="https://fonts.googleapis.com/css2?family=${usedFonts.map(f => f?.replace(/ /g, '+')).join('&family=')}&display=swap" rel="stylesheet">`
+    ? `<link href="https://fonts.googleapis.com/css2?family=${usedFonts.map(f => f.replace(/ /g, '+')).join('&family=')}&display=swap" rel="stylesheet">`
     : '';
 
   // 1. GENERATE CSS (Positioning & Styling)
@@ -71,7 +116,10 @@ export const compileGraphicToHTML = async (
     let shadowCss = '';
     if (el.shadow) {
         const { color, blur, offsetX, offsetY } = el.shadow;
-        shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+        // ✅ FIX: Only generate shadow CSS if there's actual blur or offset
+        if (blur > 0 || offsetX !== 0 || offsetY !== 0) {
+            shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+        }
     }
 
     if (el.type === 'text') {
@@ -90,7 +138,7 @@ export const compileGraphicToHTML = async (
       css += `
         background-color: ${el.fill};
         border-radius: ${el.cornerRadius || 0}px;
-        ${el.stroke ? `border: ${el.strokeWidth || 1}px solid ${el.stroke};` : ''}
+        ${(el.stroke && el.strokeWidth && el.strokeWidth > 0) ? `border: ${el.strokeWidth}px solid ${el.stroke};` : ''}
         ${shadowCss ? `box-shadow: ${shadowCss};` : ''}
       `;
     }
@@ -198,9 +246,42 @@ export const compileGraphicToHTML = async (
     });
 
     window.addEventListener('message', (event) => {
+        // Handle animation commands (existing)
         const cmd = typeof event.data === 'string' ? event.data : event.data.command;
         if (cmd === 'play' || cmd === 'take') window.playIn();
         if (cmd === 'stop' || cmd === 'out' || cmd === 'clear') window.playOut();
+
+        // --- DATA BINDING LISTENER (NEW) ---
+        if (event.data && event.data.type === 'data:update') {
+            var updates = event.data.updates || [];
+            for (var i = 0; i < updates.length; i++) {
+                var u = updates[i];
+                var domEl = document.getElementById(u.elementId);
+                if (!domEl) continue;
+
+                switch (u.property) {
+                    case 'text':
+                        domEl.textContent = u.value;
+                        break;
+                    case 'fill':
+                        if (domEl.style.color) {
+                            domEl.style.color = u.value;
+                        } else {
+                            domEl.style.backgroundColor = u.value;
+                        }
+                        break;
+                    case 'src':
+                        domEl.style.backgroundImage = "url('" + u.value + "')";
+                        break;
+                    case 'opacity':
+                        domEl.style.opacity = u.value;
+                        break;
+                    case 'fontSize':
+                        domEl.style.fontSize = u.value + 'px';
+                        break;
+                }
+            }
+        }
     });
   `;
 
