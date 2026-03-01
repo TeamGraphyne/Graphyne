@@ -8,32 +8,21 @@ interface KonvaWindow extends Window {
     stages: Konva.Stage[];
   }
 }
-export type EasingValue =
-  | 'none'
-  | 'power4.in'
-  | 'power4.out'
-  | 'power4.inOut'
-  | 'back.in(1.7)'
-  | 'back.out(1.7)'
-  | 'back.inOut(1.7)'
-  | 'bounce.out'
-  | 'elastic.out(1, 0.3)'
-  | (string & {});
-
-  export type AnimationType =
-  | 'none'
-  | 'fade'
-  | 'slide-left'
-  | 'slide-right'
-  | 'slide-up'
-  | 'slide-down'
-  | 'scale';
 
 const EASING_OPTIONS = [
-  { label: 'Linear', value: 'linear' },
-  { label: 'Ease In', value: 'power2.in' },
-  { label: 'Ease Out', value: 'power2.out' },
-  { label: 'Ease In Out', value: 'power2.inOut' },
+  //Linear
+  { label: 'Linear', value: 'none' },
+  //Standart power curves(strong, perceptible)
+  { label: 'Ease In', value: 'power4.in' },
+  { label: 'Ease Out', value: 'power4.out' },
+  { label: 'Ease In Out', value: 'power4.inOut' },
+  //Overshoot
+  { label: 'Back In', value: 'back.in(1.7)' },
+  { label: 'Back Out', value: 'back.out(1.7)' },
+  { label: 'Back In Out', value: 'back.inOut(1.7)' },
+  //Physics-based
+  { label: 'Bounce Out', value: 'bounce.out' },
+  { label: 'Elastic Out', value: 'elastic.out(1,0.3)' },
 ];
 
 export const AnimationPanel = () => {
