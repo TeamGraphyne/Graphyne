@@ -8,6 +8,26 @@ interface KonvaWindow extends Window {
     stages: Konva.Stage[];
   }
 }
+export type EasingValue =
+  | 'none'
+  | 'power4.in'
+  | 'power4.out'
+  | 'power4.inOut'
+  | 'back.in(1.7)'
+  | 'back.out(1.7)'
+  | 'back.inOut(1.7)'
+  | 'bounce.out'
+  | 'elastic.out(1, 0.3)'
+  | (string & {});
+
+  export type AnimationType =
+  | 'none'
+  | 'fade'
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up'
+  | 'slide-down'
+  | 'scale';
 
 const EASING_OPTIONS = [
   { label: 'Linear', value: 'linear' },
@@ -62,7 +82,7 @@ export const AnimationPanel = () => {
       const animType = element.inAnimation?.type || 'none';
       const duration = element.inAnimation?.duration || 0.5;
       const targetOpacity = element.opacity ?? 1;
-      const easeIn = element.inAnimation?.easing || 'power2.out';
+      const easeIn = element.inAnimation?.easing || 'power4.out';
 
       // [FIXED] Updated logic to match exporter.ts definitions exactly
       if (animType === 'fade') {
@@ -133,7 +153,7 @@ export const AnimationPanel = () => {
 
       const animType = element.outAnimation?.type || 'none';
       const duration = element.outAnimation?.duration || 0.5;
-      const easeOut = element.outAnimation?.easing || 'power2.in';
+      const easeOut = element.outAnimation?.easing || 'power4.in';
 
       // Animation logic 
       if (animType === 'fade') {
