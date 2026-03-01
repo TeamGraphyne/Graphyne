@@ -67,31 +67,31 @@ export const AnimationPanel = () => {
       // [FIXED] Updated logic to match exporter.ts definitions exactly
       if (animType === 'fade') {
         node.opacity(0);
-        gsap.to(node, { opacity: targetOpacity, duration });
+        gsap.to(node, { opacity: targetOpacity, duration, ease: easeIn });
 
       } else if (animType === 'slide-left') {
         // Exporter: Enters FROM Left (-100 -> 0)
         node.x((element.x) - 100); 
         node.opacity(0);
-        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: easeIn });
 
       } else if (animType === 'slide-right') {
         // Exporter: Enters FROM Right (+100 -> 0)
         node.x((element.x) + 100); 
         node.opacity(0);
-        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: easeIn });
 
       } else if (animType === 'slide-up'){
         // Exporter: Enters FROM Bottom (+100 -> 0)
         node.y((element.y) + 100);
         node.opacity(0);
-        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: easeIn });
 
       } else if (animType === 'slide-down'){
         // Exporter: Enters FROM Top (-100 -> 0)
         node.y((element.y) - 100);
         node.opacity(0);
-        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: easeIn });
         
         } else if (animType === 'scale') {
           // Added Scale preview
@@ -103,7 +103,7 @@ export const AnimationPanel = () => {
               scaleY: element.scaleY || 1, 
               opacity: targetOpacity, 
               duration, 
-              ease: easeIn
+              ease: easeIn,
           });
         }
       }
