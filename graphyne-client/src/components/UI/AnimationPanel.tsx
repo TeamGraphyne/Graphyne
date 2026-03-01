@@ -25,6 +25,7 @@ const EASING_OPTIONS = [
   { label: 'Elastic Out', value: 'elastic.out(1,0.3)' },
 ];
 
+
 export const AnimationPanel = () => {
   const dispatch = useAppDispatch();
   
@@ -155,16 +156,7 @@ export const AnimationPanel = () => {
       if (animType === 'fade') {
         gsap.to(node, { opacity: 0, duration, ease: easeOut });
 
-      } else if (animType === 'scale') {
-        gsap.to(node, { 
-            scaleX: 0, 
-            scaleY: 0, 
-            opacity: 0, 
-            duration, 
-            ease: easeOut 
-        });
-
-    } else if (animType === 'slide-left'){
+      } else if (animType === 'slide-left'){
       gsap.to(node, {
         x: element.x-100, 
         opacity: 0,
@@ -191,7 +183,7 @@ export const AnimationPanel = () => {
           opacity: 0, 
           duration, 
           ease: easeOut });
-    } else if (animType === 'scale') {
+    } else if (animType === 'scale'){
       gsap.timeline()
         .to(node, {
           scaleX: (element.scaleX || 1) * 1.08,
@@ -206,6 +198,7 @@ export const AnimationPanel = () => {
           duration: duration * 0.8,
           ease: easeOut,
         });
+      }
     }
   };
 

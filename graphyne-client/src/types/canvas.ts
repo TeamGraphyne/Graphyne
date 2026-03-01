@@ -5,6 +5,27 @@ export interface ShadowEffect {
   offsetY: number;
 }
 
+export type EasingValue =
+  | 'none'
+  | 'power4.in'
+  | 'power4.out'
+  | 'power4.inOut'
+  | 'back.in(1.7)'
+  | 'back.out(1.7)'
+  | 'back.inOut(1.7)'
+  | 'bounce.out'
+  | 'elastic.out(1, 0.3)'
+  | (string & {});
+
+  export type AnimationType =
+  | 'none'
+  | 'fade'
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up'
+  | 'slide-down'
+  | 'scale';
+
 export interface AnimationConfig {
   type: AnimationType;
   duration: number;
