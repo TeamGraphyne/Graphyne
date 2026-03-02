@@ -1,6 +1,5 @@
-import React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Rect, Circle, Text, Transformer, Line } from "react-konva";
+import { Stage, Layer, Rect, Circle, Text, Transformer } from "react-konva";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectElement,
@@ -16,13 +15,6 @@ import { zoomIn, zoomOut, setZoom } from "../../store/viewSlice"; // NEW: Import
 import { ActionCreators } from "redux-undo";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
-import {
-  calculateSnapPoints,
-  findActiveGuides,
-  detectSpacingGuides
-} from '../../utils/alignmentGuides';
-import type {GuideLine} from '../../types/alignment';
-import type { CanvasElement } from "../../types/canvas";
 
 // Nudge distance constants (in canvas pixels)
 const NUDGE_SMALL = 1;  // Arrow key
@@ -52,10 +44,6 @@ export const Artboard = () => {
     height: number;
     isSelecting: boolean;
   } | null>(null);
-
-  // --- ALIGNMENT GUIDES STATE ---
-  const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
 
   // --- AUTO-FIT CANVAS ON MOUNT ---
   useEffect(() => {
@@ -95,37 +83,9 @@ export const Artboard = () => {
     if (!selectedIds.includes(id)) {
       dispatch(selectElement(id));
     }
-
-    setIsDragging(true);
   };
 
-    const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
-      console.log('onDragMove called');
-      const node = e.target;
-      const id = node.id();
-    
-      const element = elements.find(el => el.id === id);
-      if (!element) return;
-
-      const width = element.width || node.width() || 100;
-      const height = element.height || node.height() || 100;
-
-      const snapPoints = calculateSnapPoints(elements, id);
-
-      const alignmentGuides = findActiveGuides (
-        {x: node.x(), y: node.y(), width, height},
-        config.width,
-        config.height,
-        snapPoints
-      );
-
-      const spacingGuides = detectSpacingGuides(elements, id);
-
-      const allGuides = [...alignmentGuides, ...spacingGuides];
-      setActiveGuides(allGuides);
-    };
-
-    const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+  const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
     const id = node.id();
 
@@ -136,9 +96,6 @@ export const Artboard = () => {
         y: node.y(),
       }),
     );
-
-    setActiveGuides([]);
-    setIsDragging(false);
   };
 
   // --- SELECTION RECTANGLE LOGIC ---
@@ -336,55 +293,6 @@ export const Artboard = () => {
   const scale = 0.5;
   const checkerSize = 10;
 
-  console.log('Active guides:', activeGuides.length, 'isDragging:', isDragging);
-  //Fill properties: Rect
-  const getRectFillProps = (el: CanvasElement) => {
-    if (el.fillType === "linear" && el.fillSecondary) {
-      return {
-        fillLinearGradientStartPoint: { x: 0, y:0 },
-        fillLinearGradientEndPoint: { x: el.width, y: 0 },
-        fillLinearGradientColorStops: [ 0, el.fill, 1, el.fillSecondary ],
-      };
-    }
-
-    if (el.fillType == "radial" && el.fillSecondary) {
-      return {
-        fillRadialGradientStartPoint: { x: el.width / 2, y: el.height / 2 },
-        fillRadialGradientEndPoint: { x: el.width / 2, y: el.height / 2 },
-        fillRadialGradientStartRadius: 0,
-        fillRadialGradientEndRadius: Math.max(el.width, el.height) / 2,
-        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
-      };
-    }
-
-    return { fill: el.fill };
-  };
-
-  //Fill properties: Circle
-  const getCircleFillProps = (el: CanvasElement) => {
-    const radius = el.width / 2;
-
-    if (el.fillType === "linear" && el.fillSecondary) {
-      return {
-        fillLinearGradientStartPoint: { x: -radius, y: 0 },
-        fillLinearGradientEndPoint: { x: radius, y: 0 },
-        fillLinearGradientColorStops: [0, el.fill, 1, el.fillSecondary],
-      };
-    } 
-
-    if (el.fillType === "radial" && el.fillSecondary) {
-      return {
-        fillRadialGradientStartPoint: { x: 0, y: 0 },
-        fillRadialGradientEndPoint: { x:0, y: 0 },
-        fillRadialGradientStartRadius: 0,
-        fillRadialGradientEndRadius: radius,
-        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
-      };
-    }
-
-    return { fill: el.fill };
-  }
-
   return (
     <div
       ref={containerRef}
@@ -425,17 +333,12 @@ export const Artboard = () => {
             name="background"
             width={config.width}
             height={config.height}
-            fill="transparent" 
+            fill="transparent"
           />
 
           {elements.map((el) => {
-            const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
-
-            void fill;
-            void fillType;
-            void fillSecondary;
-            void zIndex;
-            void type;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { zIndex, type, ...elementProps } = el;
 
             const commonProps = {
               ...elementProps,
@@ -453,7 +356,6 @@ export const Artboard = () => {
                 }
               },
               onDragStart: onDragStart,
-              onDragMove: onDragMove,
               onDragEnd: onDragEnd,
 
               // [UPDATED] Live Resize Logic (HTML-First)
@@ -494,7 +396,7 @@ export const Artboard = () => {
             if (el.isVisible === false) return null;
 
             if (el.type === "rect")
-              return <Rect key={el.id} {...commonProps} {...getRectFillProps(el)}/>;
+              return <Rect key={el.id} {...commonProps} />;
 
             // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
@@ -502,7 +404,6 @@ export const Artboard = () => {
                 <Circle
                   key={el.id}
                   {...commonProps}
-                  {...getCircleFillProps(el)}
                   // Konva Circle uses radius, not width/height.
                   // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
                   radius={el.width / 2}
@@ -525,65 +426,15 @@ export const Artboard = () => {
 
             if (el.type === "image") {
               return (
-                <CanvasImage 
-                key={el.id} 
-                {...commonProps} 
-                src={el.src}
-                fill={el.fill}/>
+                <CanvasImage
+                  key={el.id}
+                  {...commonProps}
+                  src={el.src}
+                />
               );
             }
 
             return null;
-          })}
-          
-          {/* ALIGNMENT GUIDES */}
-          {activeGuides.map((guide) => {
-            if (guide.type === 'vertical') {
-              return (
-                <React.Fragment key={guide.id}>
-                  <Line 
-                    points={[guide.position, 0, guide.position, config.height]}
-                    stroke={guide.color || '#00a1ff'}
-                    strokeWidth={1}
-                    dash={[5, 5]}
-                    listening={false}
-                  />
-                  {guide.label && (
-                  <Text
-                    x={guide.position + 5}
-                    y={10}
-                    text={guide.label}
-                    fontSize={12}
-                    fill={guide.color || '#00a1ff'}
-                    listening={false}
-                  />
-                )}
-                </React.Fragment>
-              );
-            } else {
-              return (
-                <React.Fragment key={guide.id}>
-                  <Line
-                    points={[0, guide.position, config.width, guide.position]}
-                    stroke={guide.color || '#00a1ff'}
-                    strokeWidth={1}
-                    dash={[5, 5]}
-                    listening={false}
-                  />
-                  {guide.label && (
-                    <Text
-                      x={10}
-                      y={guide.position + 5}
-                      text={guide.label}
-                      fontSize={12}
-                      fill={guide.color || '#00a1ff'}
-                      listening={false}
-                    />
-                  )}
-
-                </React.Fragment>
-              );
-            }
           })}
 
           {/* SELECTION RECTANGLE */}

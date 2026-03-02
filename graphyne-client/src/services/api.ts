@@ -2,7 +2,7 @@ import axios from "axios";
 import type { ProjectData, GraphicData } from "../types/project";
 import type { DataSourceData, DataSourceConnectionConfig, DataField } from "../types/datasource";
 
-const API_URL = `http://${window.location.hostname}:3001/api`;
+const API_URL = "http://localhost:3001/api";
 const client = axios.create({ baseURL: API_URL });
 
 export const api = {
