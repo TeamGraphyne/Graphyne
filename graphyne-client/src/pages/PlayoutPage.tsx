@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   Play,
   Square,
-  MonitorPlay,
   AlertCircle,
   RefreshCw,
   VectorSquare,
@@ -13,8 +12,10 @@ import { socketService } from "../services/socket";
 import type { PlaylistItem } from "../types/project";
 import { useNavigate } from "react-router-dom";
 
+import transLogo from "../assets/TransLogo.png";
+
 // Configuration
-const SERVER_URL = "http://localhost:3001";
+const SERVER_URL = `http://${window.location.hostname}:3001`;
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
 interface ScaledFrameProps {
@@ -118,7 +119,7 @@ export function PlayoutPage() {
       const projects = await api.getProjects();
       if (projects.length > 0) {
         // [FIXED] Use getProjectById to get items
-        const activeProject = await api.getProjectById(projects[0].id);
+        const activeProject = await api.getProjectById(projects[1].id);
         setProjectName(activeProject.name);
         
         // Sort items by order
@@ -177,8 +178,9 @@ export function PlayoutPage() {
     setPreviewItem(item);
   };
 
-  const handleTake = () => {
+const handleTake = () => {
     if (previewItem) {
+<<<<<<< feature/new-keyframes-Sharon
       // 1. Move Preview to Program
       setProgramItem(previewItem);
       
@@ -194,8 +196,58 @@ export function PlayoutPage() {
 
   const handleClearProgram = () => {
     setProgramItem(null);
+=======
+      const elements = parseGraphicElements(previewItem);
+      const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
+
+      // If a graphic is currently on air, animate it out first
+      if (programItem) {
+        // 1. Trigger OUT animation on local Program monitor
+        if (programIframeRef.current?.contentWindow) {
+          programIframeRef.current.contentWindow.postMessage('out', '*');
+        }
+        
+        // 2. Trigger OUT animation on the external Output window
+        socketService.emit("command:clear");
+
+        // 3. Wait 1 second for the animation to finish, then swap and load the new slide
+        setTimeout(() => {
+          setProgramItem(previewItem);
+          setProgramElements(elements);
+          console.log("🚀 Emitting TAKE:", fullUrl);
+          socketService.emit("command:take", {
+            url: fullUrl,
+            elements: elements,
+          });
+        }, 1000);
+      } else {
+        // Immediate take if nothing is currently on air
+        setProgramItem(previewItem);
+        setProgramElements(elements);
+        console.log("🚀 Emitting TAKE:", fullUrl);
+        socketService.emit("command:take", {
+          url: fullUrl,
+          elements: elements,
+        });
+      }
+    }
+  };
+const handleClearProgram = () => {
+    // 1. Trigger OUT animation locally
+    if (programIframeRef.current?.contentWindow) {
+      programIframeRef.current.contentWindow.postMessage('out', '*');
+    }
+    
+    // 2. Trigger OUT animation on the Output window
+>>>>>>> dev
     console.log("🛑 Emitting CLEAR");
     socketService.emit("command:clear");
+
+    // 3. Delay unmounting the local Program monitor to let the animation finish
+    setTimeout(() => {
+      setProgramItem(null);
+      setProgramElements([]);
+    }, 1000); // 1-second delay
   };
 
   const openOutputWindow = () => {
@@ -227,10 +279,11 @@ export function PlayoutPage() {
       {/* HEADER */}
       <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
-          <MonitorPlay className="text-purple-400" size={24} />
-          <h1 className="font-bold text-xl tracking-tight text-gray-100">
-            Graphyne <span className="text-purple-400 font-light">PLAYOUT</span>
-          </h1>
+          {/* Logo & Info */}
+            <div className="flex items-center gap-4 justify-start">
+              <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
+<span className="text-purple-400 font-light">PLAYOUT</span>
+</div>
         </div>
 
         <div className="flex items-center gap-4">
