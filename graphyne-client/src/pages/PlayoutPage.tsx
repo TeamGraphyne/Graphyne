@@ -1,4 +1,3 @@
-// MODIFIED: Added liveData tracking, CSV row UI controls, and keyboard shortcuts
 import { useState, useEffect, useRef } from "react";
 import {
   Play,
@@ -8,7 +7,8 @@ import {
   VectorSquare,
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2     // NEW
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
@@ -30,9 +30,10 @@ interface ScaledFrameProps {
   title: string;
   autoPlay?: boolean;
   iframeRef?: React.RefObject<HTMLIFrameElement | null>;
+  onIframeLoad?: () => void; 
 }
 
-const ScaledFrame = ({ src, title, autoPlay, iframeRef }: ScaledFrameProps) => {
+const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const localIframeRef = useRef<HTMLIFrameElement>(null);
   const activeRef = iframeRef || localIframeRef;
@@ -55,8 +56,12 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef }: ScaledFrameProps) => {
 
   // 2. Handle Auto-Play Logic
   const handleLoad = () => {
+    if (onIframeLoad) {
+      onIframeLoad();
+    }
+
     if (autoPlay && activeRef.current?.contentWindow) {
-      console.log(`▶️ Auto-playing ${title}`);
+      console.log(`📺 [Iframe] Auto-playing ${title}`);
       activeRef.current.contentWindow.postMessage('play', '*');
     }
   };
@@ -122,13 +127,15 @@ export function PlayoutPage() {
   // Refs and state for data binding
   const programIframeRef = useRef<HTMLIFrameElement>(null);
   const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
-  const [dataSources, setDataSources] = useState<DataSourceData[]>([]);
   
-  // NEW: Store live data objects to display current row state
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [previewElements, setPreviewElements] = useState<CanvasElement[]>([]);
+
+  const [dataSources, setDataSources] = useState<DataSourceData[]>([]);
   const [liveData, setLiveData] = useState<Record<string, Record<string, unknown>>>({});
 
-  // Store projectId so we can fetch data sources
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  
   // DRAG AND DROP STATE 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -142,56 +149,53 @@ export function PlayoutPage() {
     };
   }, []);
 
-  // --- Listen for data:update events and push to program iframe ---
+  // --- Listen for data:update events ---
   useEffect(() => {
     const handleDataUpdate = (payload: DataUpdatePayload) => {
-      // NEW: Save incoming data so we can read __currentRow / __rowCount
       setLiveData(prev => ({
         ...prev,
         [payload.sourceId]: payload.data
       }));
 
-      if (programElements.length === 0) return;
+      if (programElements.length > 0) {
+        const updates = resolveBindings(programElements, payload.sourceId, payload.data);
+        pushUpdatesToIframe(programIframeRef.current, updates);
+      }
 
-      const updates = resolveBindings(programElements, payload.sourceId, payload.data);
-      pushUpdatesToIframe(programIframeRef.current, updates);
+      if (previewElements.length > 0) {
+        const previewUpdates = resolveBindings(previewElements, payload.sourceId, payload.data);
+        pushUpdatesToIframe(previewIframeRef.current, previewUpdates);
+      }
     };
 
     socketService.on('data:update', handleDataUpdate);
     return () => {
       socketService.off('data:update');
     };
-  }, [programElements]);
+  }, [programElements, previewElements]);
 
-  // --- When project loads, fetch its data sources and auto-start polling ---
+  // --- Fetch data sources ---
   useEffect(() => {
     if (!activeProjectId) return;
 
     api.getDataSources(activeProjectId).then(sources => {
       setDataSources(sources);
-
-      // Auto-start polling for sources that have autoStart enabled
       sources.forEach(source => {
         if (source.autoStart && source.pollingInterval > 0) {
-          console.log(`📡 Auto-starting poller: ${source.name}`);
           socketService.emit('data:start-polling', { sourceId: source.id });
         }
       });
-    }).catch(err => {
-      console.error('Failed to load data sources:', err);
-    });
+    }).catch(err => console.error('Failed to load data sources:', err));
   }, [activeProjectId]);
 
-  // --- NEW: Global Keyboard Shortcuts for Data Row Navigation ---
+  // --- Global Keyboard Shortcuts ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore shortcuts if the user is typing in an input
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) return;
 
       const csvSources = dataSources.filter(s => s.type === 'csv-file');
       if (csvSources.length === 0) return;
 
-      // By default, map shortcuts to the first CSV source in the list
       const targetSource = csvSources[0];
       const data = liveData[targetSource.id];
       if (!data) return;
@@ -222,7 +226,6 @@ export function PlayoutPage() {
         setProjectName(activeProject.name);
         setActiveProjectId(activeProject.id); 
 
-        // Sort items by order
         const items = activeProject.items || [];
         const sorted = items.sort((a: PlaylistItem, b: PlaylistItem) => a.order - b.order);
         setPlaylist(sorted);
@@ -237,18 +240,56 @@ export function PlayoutPage() {
     }
   };
 
+  const handleRemoveItem = async (e: React.MouseEvent, index: number) => {
+    e.stopPropagation(); // Prevent triggering the row selection
+    if (!activeProjectId) return;
+
+    // 1. Optimistic UI Update
+    const updated = [...playlist];
+    updated.splice(index, 1);
+    setPlaylist(updated);
+
+    // 2. Persist to Database
+    try {
+      const itemsToSave = updated.map((item, idx) => ({
+        graphicId: item.graphicId,
+        order: idx
+      }));
+      await api.updateProject(activeProjectId, projectName, itemsToSave);
+    } catch (err) {
+      console.error("Failed to remove item from database:", err);
+      loadRundown(); // Rollback on failure
+    }
+  };
+
   // DRAG AND DROP HANDLERS 
   const handleDragStart = (index: number) => setDragIndex(index);
   const handleDragOver = (index: number) => setDragOverIndex(index);
-  const handleDrop = (index: number) => {
-    if (dragIndex === null || dragIndex === index) return;
+  
+  // MODIFIED: handleDrop now persists the new order to the database
+  const handleDrop = async (index: number) => {
+    if (dragIndex === null || dragIndex === index || !activeProjectId) return;
+    
+    // 1. Optimistic UI Update
     const updated = [...playlist];
     const [movedItem] = updated.splice(dragIndex, 1);
     updated.splice(index, 0, movedItem);
     setPlaylist(updated);
     setDragIndex(null);
     setDragOverIndex(null);
+
+    // 2. Persist to Database
+    try {
+      const itemsToSave = updated.map((item, idx) => ({
+        graphicId: item.graphicId,
+        order: idx
+      }));
+      await api.updateProject(activeProjectId, projectName, itemsToSave);
+    } catch (err) {
+      console.error("Failed to save reordered items:", err);
+    }
   };
+  
   const handleDragEnd = () => {
     setDragIndex(null);
     setDragOverIndex(null);
@@ -256,7 +297,6 @@ export function PlayoutPage() {
 
   // --- 2. Transport Controls ---
 
-  // Helper to generate correct URL
   const getGraphicUrl = (filePath: string) => {
     const filename = filePath.split('/').pop();
     return `${SERVER_URL}/graphics/${filename}`;
@@ -264,6 +304,7 @@ export function PlayoutPage() {
 
   const handleLoadToPreview = (item: PlaylistItem) => {
     setPreviewItem(item);
+    setPreviewElements(parseGraphicElements(item));
   };
 
   const handleTake = () => {
@@ -285,8 +326,9 @@ export function PlayoutPage() {
           socketService.emit("command:take", {
             url: fullUrl,
             elements: elements,
+            liveData: liveData
           });
-        }, 1000);
+        }, 1500);
       } else {
         setProgramItem(previewItem);
         setProgramElements(elements);
@@ -294,6 +336,7 @@ export function PlayoutPage() {
         socketService.emit("command:take", {
           url: fullUrl,
           elements: elements,
+          liveData: liveData 
         });
       }
     }
@@ -317,12 +360,34 @@ export function PlayoutPage() {
     window.open('/output', 'GraphyneOutput', 'width=1920,height=1080,menubar=no,toolbar=no');
   };
 
+  const applyAllCachedData = (
+    iframeRef: React.RefObject<HTMLIFrameElement | null>, 
+    elements: CanvasElement[], 
+    currentLiveData: Record<string, Record<string, unknown>>
+  ) => {
+    if (!iframeRef.current || elements.length === 0) return;
+    let appliedUpdates = 0;
+
+    Object.entries(currentLiveData).forEach(([sourceId, data]) => {
+      const updates = resolveBindings(elements, sourceId, data);
+      if (updates.length > 0) {
+        pushUpdatesToIframe(iframeRef.current, updates);
+        appliedUpdates += updates.length;
+      }
+    });
+
+    if (appliedUpdates > 0) {
+      console.log(`⚡ [Pre-cache] Injected ${appliedUpdates} bindings before playback`);
+    }
+  };
+
   // --- 3. Render Helper ---
   const renderMonitorContent = (
     item: PlaylistItem | null,
     label: string,
     shouldAutoPlay: boolean,
-    externalIframeRef?: React.RefObject<HTMLIFrameElement | null>
+    externalIframeRef: React.RefObject<HTMLIFrameElement | null>,
+    elements: CanvasElement[]
   ) => {
     if (!item) {
       return (
@@ -339,6 +404,9 @@ export function PlayoutPage() {
         title={label}
         autoPlay={shouldAutoPlay}
         iframeRef={externalIframeRef}
+        onIframeLoad={() => {
+          applyAllCachedData(externalIframeRef, elements, liveData);
+        }}
       />
     );
   };
@@ -398,7 +466,7 @@ export function PlayoutPage() {
             </div>
             <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-               {renderMonitorContent(previewItem, "Preview", true)} 
+               {renderMonitorContent(previewItem, "Preview", true, previewIframeRef, previewElements)} 
                <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
             </div>
           </div>
@@ -415,7 +483,7 @@ export function PlayoutPage() {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-              {renderMonitorContent(programItem, "Program", true, programIframeRef)}
+              {renderMonitorContent(programItem, "Program", true, programIframeRef, programElements)}
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>
           </div>
@@ -453,7 +521,7 @@ export function PlayoutPage() {
             </button>
           </div>
 
-          {/* NEW: Data Source Controls (CSV Pagination) */}
+          {/* Data Source Controls (CSV Pagination) */}
           {dataSources.some(s => s.type === 'csv-file') && (
             <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl rounded-lg">
               {dataSources.filter(s => s.type === 'csv-file').map(source => {
@@ -497,9 +565,16 @@ export function PlayoutPage() {
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
               RUNDOWN
             </h3>
-            <button onClick={loadRundown} className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors" title="Refresh Rundown">
-              <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-            </button>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={loadRundown} 
+                className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors" 
+                title="Refresh Rundown"
+              >
+                <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -544,9 +619,19 @@ export function PlayoutPage() {
                       <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"}`}>{item.graphic.name}</span>
                       <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide">HTML5 SOURCE</span>
                     </div>
-                    <div className="w-20 text-right">
-                      <span className={`text-[10px] font-black tracking-wider ${isProgram ? "text-red-600" : isPreview ? "text-blue-600" : "hidden"}`}>{isProgram ? "ON AIR" : "NEXT"}</span>
+                    
+                    <div className="w-24 flex items-center justify-end gap-3">
+                      <span className={`text-[10px] font-black tracking-wider mr-2 ${isProgram ? "text-red-600" : isPreview ? "text-blue-600" : "hidden"}`}>{isProgram ? "ON AIR" : "NEXT"}</span>
+                      
+                      <button 
+                        onClick={(e) => handleRemoveItem(e, index)} 
+                        className="p-1.5 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove from Rundown"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
+
                   </div>
                 );
               })
