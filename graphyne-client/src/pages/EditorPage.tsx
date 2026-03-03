@@ -20,8 +20,6 @@ import { DataSourceManager } from "../components/UI/DataSourceManager";
 
 import type { DataUpdatePayload, DataErrorPayload, DataField } from "../types/datasource";
 
-import transLogo from "../assets/TransLogo.png";
-
 export function EditorPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -152,8 +150,10 @@ export function EditorPage() {
         <div className="flex items-center gap-6 px-4 py-2 w-full justify-between">  
           {/* Logo & Info */}
             <div className="flex items-center gap-4 justify-start">
-              <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
+              <h1 className="font-bold text-lg tracking-tight text-orange-300">
+                Graphyne{" "}
                 <span className="text-gray-400 text-xs font-normal">EDITOR</span>
+              </h1>
               
               {/* Quick Name Edit */}
               <input 

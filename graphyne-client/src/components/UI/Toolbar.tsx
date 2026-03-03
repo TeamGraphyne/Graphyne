@@ -14,13 +14,14 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import type { AnimationType } from "../../types/canvas";
 
 export const Toolbar = () => {
   const dispatch = useDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const defaultAnim = {
-    type: "fade",
+    type: "fade" as AnimationType,
     duration: 0.5,
     delay: 0,
     ease: "power1.out",

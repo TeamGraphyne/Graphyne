@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Play,
   Square,
+  MonitorPlay,
   AlertCircle,
   RefreshCw,
   VectorSquare,
@@ -13,16 +14,10 @@ import {
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
 import type { PlaylistItem } from "../types/project";
-import type { CanvasElement } from "../types/canvas";
-import type { DataUpdatePayload } from "../types/datasource";
-import type { DataSourceData } from "../types/datasource";
-import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 import { useNavigate } from "react-router-dom";
 
-import transLogo from "../assets/TransLogo.png";
-
 // Configuration
-const SERVER_URL = `http://${window.location.hostname}:3001`;
+const SERVER_URL = "http://localhost:3001";
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
 interface ScaledFrameProps {
@@ -35,8 +30,7 @@ interface ScaledFrameProps {
 
 const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const localIframeRef = useRef<HTMLIFrameElement>(null);
-  const activeRef = iframeRef || localIframeRef;
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
   const [hasError, setHasError] = useState(false);
 
@@ -92,7 +86,7 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
         className="absolute top-0 left-0"
       >
         <iframe
-          ref={activeRef}
+          ref={iframeRef}
           src={src}
           title={title}
           onLoad={handleLoad}
@@ -104,17 +98,6 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
     </div>
   );
 };
-
-// --- Helper: Parse rawJson from a PlaylistItem to get elements ---
-function parseGraphicElements(item: PlaylistItem): CanvasElement[] {
-  try {
-    const parsed = JSON.parse(item.graphic.rawJson);
-    return parsed.elements || [];
-  } catch {
-    console.warn('⚠️ Failed to parse rawJson for graphic:', item.graphic.name);
-    return [];
-  }
-}
 
 export function PlayoutPage() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
@@ -298,6 +281,8 @@ export function PlayoutPage() {
   // --- 2. Transport Controls ---
 
   const getGraphicUrl = (filePath: string) => {
+    // Assuming filePath is something like "/graphics/uuid.html"
+    // We append SERVER_URL if it's a relative path, or ensure it's correct
     const filename = filePath.split('/').pop();
     return `${SERVER_URL}/graphics/${filename}`;
   };
@@ -309,7 +294,9 @@ export function PlayoutPage() {
 
   const handleTake = () => {
     if (previewItem) {
-      const elements = parseGraphicElements(previewItem);
+      // 1. Move Preview to Program
+      setProgramItem(previewItem);
+      
       const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
 
       if (programItem) {
@@ -399,9 +386,9 @@ export function PlayoutPage() {
     }
 
     return (
-      <ScaledFrame
-        src={getGraphicUrl(item.graphic.filePath)}
-        title={label}
+      <ScaledFrame 
+        src={getGraphicUrl(item.graphic.filePath)} 
+        title={label} 
         autoPlay={shouldAutoPlay}
         iframeRef={externalIframeRef}
         onIframeLoad={() => {
@@ -455,7 +442,7 @@ export function PlayoutPage() {
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col p-6 gap-6 max-w-[1920px] mx-auto w-full">
         <div className="grid grid-cols-2 gap-6 w-full">
-
+          
           {/* PREVIEW WINDOW */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
