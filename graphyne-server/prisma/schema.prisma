@@ -3,7 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // MODIFIED: Switched from postgresql to sqlite for local-first deployment
+  // No Docker required — DB is a file at the path specified by DATABASE_URL
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -13,7 +15,7 @@ model Graphic {
   thumbnail String?
   filePath  String
 
-  rawJson String @db.Text // Stringified JSON source
+  rawJson String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -48,7 +50,7 @@ model PlaylistItem {
 }
 
 model DataSource {
-  id        String  @id @default(uuid())
+  id        String @id @default(uuid())
 
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
@@ -56,15 +58,15 @@ model DataSource {
   name      String   // label
   type      String   // "rest-api" | "json-file" | "csv-file"
 
-  // Connection configuration (varies by type, stored as JSON string)
-  config    String   @db.Text  // JSON
+  // MODIFIED: Removed @db.Text — not supported by SQLite provider
+  config String   // JSON string
 
   // Polling
   pollingInterval Int     @default(0)   // Seconds. 0 = manual refresh only
   autoStart       Boolean @default(false)
 
-  // Cached schema for UI dropdowns (auto-detected)
-  fields    String?  @db.Text
+  // MODIFIED: Removed @db.Text
+  fields String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
