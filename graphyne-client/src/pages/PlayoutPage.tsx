@@ -332,17 +332,61 @@ export function PlayoutPage() {
         </div>
 
         {/* RUNDOWN LIST - WITH DRAG AND DROP */}
-        <div className="flex-1 flex flex-col bg-[#1a0f2e] border-purple-900/40 overflow-hidden shadow-lg min-h-0">
-          <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex justify-between items-center">
+        
+        <div className="w-full bg-[#1a1033] rounded-lg mt-6">
+
+          {/* HEADER */}
+          <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex items-center">
+            
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
               RUNDOWN
             </h3>
-            <button onClick={loadRundown} className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors" title="Refresh Rundown">
-              <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-            </button>
+            
+            {/* REFERSH BUTTON and IMPORT BUTTON ON THE RIGHT SIDE  */}
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() =>
+                  document.getElementById("rundown-import-html")?.click()
+                }
+                className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600
+                          text-xs font-bold text-white rounded"
+              >
+                + IMPORT
+              </button>
+
+              <button
+                onClick={loadRundown}
+                className="p-1.5 bg-gray-800 hover:bg-gray-700
+                          rounded border border-gray-700"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </div>
+
           </div>
 
+          {/* BODY */}
+          <div className="p-6 text-center text-gray-500">
+            Rundown is empty or could not be loaded.
+          </div>
+
+          <input
+            type="file"
+            accept=".html"
+            id="rundown-import-html"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              // TEMP UI-ONLY action (we'll wire logic later)
+              console.log("Imported HTML:", file.name);
+
+              e.target.value = "";
+            }}
+          />
+        
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {playlist.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-2">
