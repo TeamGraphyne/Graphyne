@@ -7,7 +7,6 @@ Welcome to the Graphyne development team. This document is the single source of 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-    
 2. [Repository Structure](#repository-structure)
 3. [Architecture Rules](#architecture-rules)
 4. [Branching Strategy](#branching-strategy)
@@ -17,9 +16,7 @@ Welcome to the Graphyne development team. This document is the single source of 
 8. [Socket Event Contract](#socket-event-contract)
 9. [Daily Workflow](#daily-workflow)
 10. [Module Ownership](#module-ownership)
-    
 11. [Troubleshooting](#troubleshooting)
-    
 
 ---
 
@@ -95,17 +92,10 @@ The client runs at **http://localhost:5173** and proxies API calls to the server
 | `npm run build` | Build for production to `dist/` |
 | `npm run lint` | Run ESLint |
 
-# 4. Install client dependencies
-cd ../graphyne-client
-npm install
+---
 
-# 5. Start the backend server (terminal 1)
-cd ../graphyne-server
-npm run dev
+## Repository Structure
 
-# 6. Start the frontend dev server (terminal 2)
-cd ../graphyne-client
-npm run dev
 ```
 Graphyne/
 ├── graphyne-client/              # React 19 frontend (Vite + TypeScript)
@@ -264,14 +254,7 @@ main  (stable, represents last shipped version)
         └── chore/update-ci-cd-dilhara
 ```
 
-|URL|Purpose|
-|---|---|
-|`http://localhost:5173/editor`|WYSIWYG Graphics Editor|
-|`http://localhost:5173/playout`|Playout Controller|
-|`http://localhost:5173/output`|Broadcast Output|
-|`http://localhost:3001/api/...`|REST API|
-|`http://localhost:3001/graphics/`|Served HTML graphic files|
-|`http://localhost:3001/uploads/`|Served uploaded images|
+### Branch Naming Convention
 
 All branches must follow this pattern: `<type>/<short-description>-<your-name>`
 
@@ -283,7 +266,7 @@ All branches must follow this pattern: `<type>/<short-description>-<your-name>`
 | Documentation | `docs/<description>-<name>` | `docs/api-reference-nikini` |
 | Refactor | `refactor/<description>-<name>` | `refactor/redux-store-anudhi` |
 
-**Server (`graphyne-server/`):**
+### Branch Rules
 
 - ✅ Always branch from `dev`
 - ✅ Keep branch names lowercase with hyphens
@@ -291,7 +274,7 @@ All branches must follow this pattern: `<type>/<short-description>-<your-name>`
 - ❌ Never commit directly to `main` or `dev`
 - ❌ Never merge `main` into a feature branch — merge `dev` instead
 
-**Client (`graphyne-client/`):**
+### Common Branch Commands
 
 ```bash
 # Create and switch to a new feature branch
@@ -316,32 +299,11 @@ We follow the **Conventional Commits** specification.
 ### Format
 
 ```
-Graphyne/
-├── graphyne-client/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── EditorPage.tsx
-│   │   │   ├── PlayoutPage.tsx
-│   │   │   └── OutputPage.tsx
-│   │   ├── components/
-│   │   ├── store/
-│   │   ├── types/
-│   │   ├── services/
-│   │   ├── utils/
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── package.json
-├── graphyne-server/
-│   ├── src/
-│   ├── prisma/
-│   ├── data/
-│   ├── tsconfig.json
-│   └── package.json
-├── docs/
-├── docker-compose.yml
-└── .github/
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
 ```
 
 ### Types
@@ -394,8 +356,7 @@ missing matrix inversion in the hit detection calculation."
 # With issue reference
 git commit -m "fix(playout): prevent double-take on rapid button clicks
 
-// ❌ Wrong
-state.canvas.elements
+Fixes #42"
 ```
 
 ### Commit Best Practices
@@ -487,9 +448,7 @@ Closes #[issue number]
 - Respond to review comments within 24 hours
 - Do not force-push after review has started (use new commits)
 
-```ts
-// ✅
-id="gfx-${el.id}"
+#### As a Reviewer
 
 Use these comment prefixes so authors know what's required:
 
@@ -509,7 +468,7 @@ Use these comment prefixes so authors know what's required:
 - [ ] Socket events follow the established naming convention
 - [ ] No unrelated code has been changed
 
-### 7. Route Paths
+### Merging
 
 - Requires **1 approval** minimum
 - All CI checks must pass
@@ -686,14 +645,7 @@ This is the authoritative list of Socket.io events. **Do not add events without 
 
 ## Daily Workflow
 
-|Event|Description|
-|---|---|
-|`command:take`|Play graphic|
-|`command:clear`|Clear output|
-|`data:csv-row`|Select CSV row|
-|`data:start-polling`|Start polling|
-|`data:stop-polling`|Stop polling|
-|`join-session`|Join room|
+### Development Flow
 
 ```
 1. PICK TASK

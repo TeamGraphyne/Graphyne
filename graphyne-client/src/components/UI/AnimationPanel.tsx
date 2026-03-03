@@ -9,23 +9,6 @@ interface KonvaWindow extends Window {
   }
 }
 
-const EASING_OPTIONS = [
-  //Linear
-  { label: 'Linear', value: 'none' },
-  //Standart power curves(strong, perceptible)
-  { label: 'Ease In', value: 'power4.in' },
-  { label: 'Ease Out', value: 'power4.out' },
-  { label: 'Ease In Out', value: 'power4.inOut' },
-  //Overshoot
-  { label: 'Back In', value: 'back.in(1.7)' },
-  { label: 'Back Out', value: 'back.out(1.7)' },
-  { label: 'Back In Out', value: 'back.inOut(1.7)' },
-  //Physics-based
-  { label: 'Bounce Out', value: 'bounce.out' },
-  { label: 'Elastic Out', value: 'elastic.out(1,0.3)' },
-];
-
-
 export const AnimationPanel = () => {
   const dispatch = useAppDispatch();
   
@@ -72,56 +55,48 @@ export const AnimationPanel = () => {
       const animType = element.inAnimation?.type || 'none';
       const duration = element.inAnimation?.duration || 0.5;
       const targetOpacity = element.opacity ?? 1;
-      const easeIn = element.inAnimation?.easing || 'power4.out';
 
       // [FIXED] Updated logic to match exporter.ts definitions exactly
       if (animType === 'fade') {
         node.opacity(0);
-        gsap.to(node, { opacity: targetOpacity, duration, ease: easeIn });
+        gsap.to(node, { opacity: targetOpacity, duration });
 
       } else if (animType === 'slide-left') {
         // Exporter: Enters FROM Left (-100 -> 0)
         node.x((element.x) - 100); 
         node.opacity(0);
-        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: easeIn });
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
 
       } else if (animType === 'slide-right') {
         // Exporter: Enters FROM Right (+100 -> 0)
         node.x((element.x) + 100); 
         node.opacity(0);
-        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: easeIn });
+        gsap.to(node, { x: element.x, opacity: targetOpacity, duration, ease: 'power2.out' });
 
       } else if (animType === 'slide-up'){
         // Exporter: Enters FROM Bottom (+100 -> 0)
         node.y((element.y) + 100);
         node.opacity(0);
-        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: easeIn });
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
 
       } else if (animType === 'slide-down'){
         // Exporter: Enters FROM Top (-100 -> 0)
         node.y((element.y) - 100);
         node.opacity(0);
-        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: easeIn });
+        gsap.to(node, { y: element.y, opacity: targetOpacity, duration, ease: 'power2.out' });
         
         } else if (animType === 'scale') {
+          // Added Scale preview
           node.scaleX(0);
           node.scaleY(0);
           node.opacity(0);
-
-          gsap.timeline()
-          .to(node, { 
-              scaleX: (element.scaleX || 1) * 1.15,
-              scaleY: (element.scaleY || 1) * 1.15,
+          gsap.to(node, { 
+              scaleX: element.scaleX || 1, 
+              scaleY: element.scaleY || 1, 
               opacity: targetOpacity, 
-              duration: duration *0.65, 
-              ease: 'power4.out',
-          })
-          .to(node, {
-              scaleX: element.scaleX || 1,
-              scaleY: element.scaleY || 1,
-              duration: duration * 0.35,
-              ease: 'power2.inOut',
-            });
+              duration, 
+              ease: 'back.out(1.7)' 
+          });
         }
       }
     };
@@ -150,55 +125,46 @@ export const AnimationPanel = () => {
 
       const animType = element.outAnimation?.type || 'none';
       const duration = element.outAnimation?.duration || 0.5;
-      const easeOut = element.outAnimation?.easing || 'power4.in';
 
       // Animation logic 
       if (animType === 'fade') {
-        gsap.to(node, { opacity: 0, duration, ease: easeOut });
+        gsap.to(node, { opacity: 0, duration });
 
-      } else if (animType === 'slide-left'){
+      } else if (animType === 'scale') {
+        gsap.to(node, { 
+            scaleX: element.scaleX || 1, 
+            scaleY: element.scaleY || 1, 
+            opacity: 0, 
+            duration, 
+            ease: 'back.out(1.7)' 
+        });
+
+    } else if (animType === 'slide-left'){
       gsap.to(node, {
         x: element.x-100, 
         opacity: 0,
-        duration,
-        ease: easeOut});
+        duration,ease: 'power2.in'});
 
     } else if (animType === 'slide-right'){
       gsap.to(node, {
         x: element.x+100, 
         opacity: 0,
-        duration,
-        ease: easeOut});
+        duration,ease: 'power2.in'});
 
     } else if (animType === 'slide-up'){
         gsap.to(node, { 
           y: element.y - 100, 
           opacity: 0, 
           duration, 
-          ease: easeOut });
+          ease: 'power2.in' });
 
     } else if (animType === 'slide-down'){
         gsap.to(node, { 
           y: element.y + 100, 
           opacity: 0, 
           duration, 
-          ease: easeOut });
-    } else if (animType === 'scale'){
-      gsap.timeline()
-        .to(node, {
-          scaleX: (element.scaleX || 1) * 1.08,
-          scaleY: (element.scaleY || 1) * 1.08,
-          duration: duration * 0.2,
-          ease: 'power2.out',
-        })
-        .to(node, {
-          scaleX: 0,
-          scaleY: 0,
-          opacity: 0,
-          duration: duration * 0.8,
-          ease: easeOut,
-        });
-      }
+          ease: 'power2.in' });
+    }
     }
   };
 
@@ -247,24 +213,6 @@ export const AnimationPanel = () => {
             <option value="scale">Pop In (Scale)</option>
           </select>
         </div>
-
-        {/* Easing / Keyframes */}
-        {(element.inAnimation?.type && element.inAnimation.type !== 'none') && (
-          <div className="mb-4 space-y-2">
-            <label className="text-xs text-gray-400">EASING</label>
-            <select
-              value={element.inAnimation?.easing || 'power2.out'}
-              onChange={(e) => updateAnim('inAnimation', 'easing', e.target.value)}
-              className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
-              focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
-              [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
-            >
-              {EASING_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* Duration & Delay */}
         <div className="grid grid-cols-2 gap-2 mb-4">
@@ -333,24 +281,6 @@ export const AnimationPanel = () => {
             <option value="scale">Pop Out (Scale)</option>
           </select>
         </div>
-
-        {/* Easing / Keyframes */}
-        {(element.outAnimation?.type && element.outAnimation.type !== 'none') && (
-          <div className="mb-4 space-y-2">
-            <label className="text-xs text-gray-400">EASING</label>
-            <select
-              value={element.outAnimation?.easing || 'power2.in'}
-              onChange={(e) => updateAnim('outAnimation', 'easing', e.target.value)}
-              className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
-              focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
-              [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
-            >
-              {EASING_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* Duration & Delay */}
         <div className="grid grid-cols-2 gap-2 mb-4">
