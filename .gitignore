@@ -41,5 +41,4 @@ projects/
 !projects/.keep
 /graphyne-server/src/generated/prisma
 
-/graphyne-server/data/graphics
-/graphyne-server/data/uploads
+/graphyne-server/data/
