@@ -1,3 +1,4 @@
+// MODIFIED: Added csvRowState tracking and setCsvRow method
 import { Server } from 'socket.io';
 import fs from 'fs-extra';
 import path from 'path';
@@ -78,6 +79,8 @@ function detectFields(data: Record<string, unknown>): { path: string; type: stri
 // --- The Poller Service ---
 export class DataPollerService {
     private activePollers: Map<string, ActivePoller> = new Map();
+    // NEW: Track the currently selected row for CSV files
+    private csvRowState: Map<string, number> = new Map();
     private io: Server;
 
     constructor(io: Server) {
@@ -100,8 +103,14 @@ export class DataPollerService {
         } else if (config.type === 'csv-file' && config.filePath) {
             const content = await fs.readFile(config.filePath, 'utf-8');
             const rows = parseCsv(content);
-            // For CSV we expose the first row as the data + a __rows array
-            rawData = rows.length > 0 ? { ...rows[0], __rowCount: rows.length } : {};
+            
+            // MODIFIED: Fetch the currently selected row instead of always row 0
+            const requestedIndex = this.csvRowState.get(config.id) || 0;
+            const validIndex = rows.length > 0 ? Math.max(0, Math.min(requestedIndex, rows.length - 1)) : 0;
+            const row = rows.length > 0 ? rows[validIndex] : {};
+            
+            // Inject metadata into the object
+            rawData = { ...row, __rowCount: rows.length, __currentRow: validIndex };
         } else {
             throw new Error(`Invalid source config: type=${config.type}`);
         }
@@ -167,6 +176,22 @@ export class DataPollerService {
     stopAll() {
         for (const [id] of this.activePollers) {
             this.stop(id);
+        }
+    }
+
+    // NEW: Update active row and immediately push data
+    async setCsvRow(sourceId: string, rowIndex: number) {
+        this.csvRowState.set(sourceId, rowIndex);
+        const poller = this.activePollers.get(sourceId);
+        
+        if (poller) {
+            console.log(`📄 Switching CSV row for ${sourceId} to ${rowIndex}`);
+            try {
+                const { flat } = await this.fetchOnce(poller.config);
+                this.io.emit('data:update', { sourceId, data: flat });
+            } catch (err) {
+                console.error(`❌ Failed to fetch new CSV row for ${sourceId}:`, err);
+            }
         }
     }
 

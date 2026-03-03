@@ -243,10 +243,31 @@ export const PropertiesPanel = () => {
             <div>
               <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Appearance</h2>
               <div className="space-y-3">
-                
-                {/* Fill Color */}
+
+                {/* Fill Type */}
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Fill Color</label>
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">Fill Type</label>
+                  <select 
+                    value={element.fillType || 'solid'}
+                    onChange={(e) => {
+                      handleChange('fillType', e.target.value);
+                      if (!element.fillSecondary) {
+                        handleChange('fillSecondary', "#62a0ea");
+                      }
+                    }}
+                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300" 
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="linear">Linear Gradient</option>
+                    <option value="radial">Radial Gradient</option>
+                  </select>
+                </div>
+
+                {/* Solid Fill */}
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                    {element.fillType && element.fillType !== 'solid' ? 'Start Color' : 'Fill Color'}
+                  </label>
                   <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
                     <input 
                       type="color" 
@@ -257,6 +278,22 @@ export const PropertiesPanel = () => {
                     <span className="text-xs text-gray-400 font-mono">{element.fill}</span>
                   </div>
                 </div>
+
+                {/* Secondary Color */}
+                {element.fillType && element.fillType !== 'solid' && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">End Color</label>
+                    <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                      <input 
+                        type="color" 
+                        value={element.fillSecondary || "#62a0ea"}
+                        onChange={(e) => handleChange('fillSecondary', e.target.value)} 
+                        className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
+                      />
+                      <span className="text-xs text-gray-400 font-mono">{element.fillSecondary}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Stroke Width */}
                 <div>

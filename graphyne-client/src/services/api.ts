@@ -2,7 +2,7 @@ import axios from "axios";
 import type { ProjectData, GraphicData } from "../types/project";
 import type { DataSourceData, DataSourceConnectionConfig, DataField } from "../types/datasource";
 
-const API_URL = "http://localhost:3001/api";
+const API_URL = `http://${window.location.hostname}:3001/api`;
 const client = axios.create({ baseURL: API_URL });
 
 export const api = {
@@ -42,6 +42,16 @@ export const api = {
       "/projects",
       { name },
     );
+    return response.data;
+  },
+
+  // NEW: Added updateProject to save re-ordered or removed rundown items to the DB
+  updateProject: async (id: string, name: string, items: { graphicId: string; order: number }[]) => {
+    const response = await client.post<{ success: boolean; id: string }>("/projects", {
+      id,
+      name,
+      items,
+    });
     return response.data;
   },
 

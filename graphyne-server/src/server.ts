@@ -1,3 +1,4 @@
+// MODIFIED: Added socket.on('data:csv-row')
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
@@ -99,6 +100,11 @@ io.on('connection', (socket) => {
 
     socket.on('data:stop-polling', (payload: { sourceId: string }) => {
         dataPoller.stop(payload.sourceId);
+    });
+
+    // NEW: Listen for CSV row change requests
+    socket.on('data:csv-row', (payload: { sourceId: string; rowIndex: number }) => {
+        dataPoller.setCsvRow(payload.sourceId, payload.rowIndex);
     });
 
     // Manual fetch request (single poll)
