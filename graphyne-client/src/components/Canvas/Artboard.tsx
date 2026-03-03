@@ -19,7 +19,8 @@ import { CanvasImage } from "./CanvasImage";
 import {
   calculateSnapPoints,
   findActiveGuides,
-  detectSpacingGuides
+  detectSpacingGuides,
+  snapToGuide
 } from '../../utils/alignmentGuides';
 import type {GuideLine} from '../../types/alignment';
 import type { CanvasElement } from "../../types/canvas";
@@ -123,6 +124,12 @@ export const Artboard = () => {
 
       const allGuides = [...alignmentGuides, ...spacingGuides];
       setActiveGuides(allGuides);
+
+      const snappedX = snapToGuide(node.x(), allGuides, true);
+      const snappedY = snapToGuide(node.y(), allGuides, false);
+      
+      if (snappedX !== node.x()) node.x(snappedX);
+      if (snappedY !== node.y()) node.y(snappedY);
     };
 
     const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {

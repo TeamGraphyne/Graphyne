@@ -1,7 +1,7 @@
 import type { GuideLine, SnapPoint } from '../types/alignment';
 import type { CanvasElement } from '../types/canvas'; 
 
-const SNAP_THRESHOLD = 5;
+const SNAP_THRESHOLD = 15;
 const GUIDE_COLOR = '#00a1ff';
 const SPACING_GUIDE_COLOR = '#ff00ff';
 
@@ -242,4 +242,22 @@ export function detectSpacingGuides (
         }
     }
     return guides;
+}
+
+export function snapToGuide(
+  position: number,
+  guides: GuideLine[],
+  isVertical: boolean
+): number {
+  const relevantGuides = guides.filter(g => 
+    isVertical ? g.type === 'vertical' : g.type === 'horizontal'
+  );
+
+  for (const guide of relevantGuides) {
+    if (Math.abs(position - guide.position) < SNAP_THRESHOLD) {
+      return guide.position;
+    }
+  }
+
+  return position;
 }
