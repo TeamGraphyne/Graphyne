@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Rect, Circle, Text, Transformer } from "react-konva";
+import React from "react";
+import { Stage, Layer, Rect, Circle, Text, Transformer, Line } from "react-konva";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectElement,
@@ -15,6 +16,13 @@ import { zoomIn, zoomOut, setZoom } from "../../store/viewSlice"; // NEW: Import
 import { ActionCreators } from "redux-undo";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
+import {
+  calculateSnapPoints,
+  findActiveGuides,
+  detectSpacingGuides,
+  snapToGuide
+} from '../../utils/alignmentGuides';
+import type {GuideLine} from '../../types/alignment';
 import type { CanvasElement } from "../../types/canvas";
 
 // Nudge distance constants (in canvas pixels)
@@ -45,6 +53,11 @@ export const Artboard = () => {
     height: number;
     isSelecting: boolean;
   } | null>(null);
+
+
+  // --- ALIGNMENT GUIDES STATE ---
+  const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // --- AUTO-FIT CANVAS ON MOUNT ---
   useEffect(() => {
@@ -84,7 +97,41 @@ export const Artboard = () => {
     if (!selectedIds.includes(id)) {
       dispatch(selectElement(id));
     }
+
+    setIsDragging(true);
   };
+
+    const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+      console.log('onDragMove called');
+      const node = e.target;
+      const id = node.id();
+    
+      const element = elements.find(el => el.id === id);
+      if (!element) return;
+
+      const width = element.width || node.width() || 100;
+      const height = element.height || node.height() || 100;
+
+      const snapPoints = calculateSnapPoints(elements, id);
+
+      const alignmentGuides = findActiveGuides (
+        {x: node.x(), y: node.y(), width, height},
+        config.width,
+        config.height,
+        snapPoints
+      );
+
+      const spacingGuides = detectSpacingGuides(elements, id);
+
+      const allGuides = [...alignmentGuides, ...spacingGuides];
+      setActiveGuides(allGuides);
+
+      const snappedX = snapToGuide(node.x(), allGuides, true);
+      const snappedY = snapToGuide(node.y(), allGuides, false);
+      
+      if (snappedX !== node.x()) node.x(snappedX);
+      if (snappedY !== node.y()) node.y(snappedY);
+    };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
@@ -97,6 +144,8 @@ export const Artboard = () => {
         y: node.y(),
       }),
     );
+    setActiveGuides([]);
+    setIsDragging(false);
   };
 
   // --- SELECTION RECTANGLE LOGIC ---
@@ -293,6 +342,8 @@ export const Artboard = () => {
 
   const scale = 0.5;
   const checkerSize = 10;
+  
+  console.log('Active guides:', activeGuides.length, 'isDragging:', isDragging);
 
   //Fill properties: Rect
   const getRectFillProps = (el: CanvasElement) => {
@@ -410,6 +461,7 @@ export const Artboard = () => {
                 }
               },
               onDragStart: onDragStart,
+              onDragMove: onDragMove,
               onDragEnd: onDragEnd,
 
               // [UPDATED] Live Resize Logic (HTML-First)
@@ -490,6 +542,56 @@ export const Artboard = () => {
             }
 
             return null;
+          })}
+
+          {/* ALIGNMENT GUIDES */}
+          {activeGuides.map((guide) => {
+            if (guide.type === 'vertical') {
+              return (
+                <React.Fragment key={guide.id}>
+                  <Line 
+                    points={[guide.position, 0, guide.position, config.height]}
+                    stroke={guide.color || '#00a1ff'}
+                    strokeWidth={1}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                  {guide.label && (
+                  <Text
+                    x={guide.position + 5}
+                    y={10}
+                    text={guide.label}
+                    fontSize={12}
+                    fill={guide.color || '#00a1ff'}
+                    listening={false}
+                  />
+                )}
+                </React.Fragment>
+              );
+            } else {
+              return (
+                <React.Fragment key={guide.id}>
+                  <Line
+                    points={[0, guide.position, config.width, guide.position]}
+                    stroke={guide.color || '#00a1ff'}
+                    strokeWidth={1}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                  {guide.label && (
+                    <Text
+                      x={10}
+                      y={guide.position + 5}
+                      text={guide.label}
+                      fontSize={12}
+                      fill={guide.color || '#00a1ff'}
+                      listening={false}
+                    />
+                  )}
+
+                </React.Fragment>
+              );
+            }
           })}
 
           {/* SELECTION RECTANGLE */}
