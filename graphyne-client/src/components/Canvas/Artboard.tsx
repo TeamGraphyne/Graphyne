@@ -1,5 +1,5 @@
-import React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import React from "react";
 import { Stage, Layer, Rect, Circle, Text, Transformer, Line } from "react-konva";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -53,6 +53,7 @@ export const Artboard = () => {
     height: number;
     isSelecting: boolean;
   } | null>(null);
+
 
   // --- ALIGNMENT GUIDES STATE ---
   const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
@@ -132,7 +133,7 @@ export const Artboard = () => {
       if (snappedY !== node.y()) node.y(snappedY);
     };
 
-    const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+  const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
     const id = node.id();
 
@@ -143,7 +144,6 @@ export const Artboard = () => {
         y: node.y(),
       }),
     );
-
     setActiveGuides([]);
     setIsDragging(false);
   };
@@ -342,8 +342,9 @@ export const Artboard = () => {
 
   const scale = 0.5;
   const checkerSize = 10;
-
+  
   console.log('Active guides:', activeGuides.length, 'isDragging:', isDragging);
+
   //Fill properties: Rect
   const getRectFillProps = (el: CanvasElement) => {
     if (el.fillType === "linear" && el.fillSecondary) {
@@ -542,7 +543,7 @@ export const Artboard = () => {
 
             return null;
           })}
-          
+
           {/* ALIGNMENT GUIDES */}
           {activeGuides.map((guide) => {
             if (guide.type === 'vertical') {
