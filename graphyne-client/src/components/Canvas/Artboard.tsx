@@ -7,8 +7,12 @@ import {
   toggleSelection,
   removeElement,
   setSelection,
-  setZoom,
+  nudgeElements,
+  duplicateElements,
+  // REMOVED: zoomIn, zoomOut, setZoom — no longer in canvasSlice
 } from "../../store/canvasSlice";
+import { zoomIn, zoomOut, setZoom } from "../../store/viewSlice"; // NEW: Import from viewSlice
+import { ActionCreators } from "redux-undo";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import {
@@ -17,6 +21,12 @@ import {
   setGridStyle,
   setSnapStyle,
 } from "../../store/canvasSlice";
+import type { CanvasElement } from "../../types/canvas";
+
+// Nudge distance constants (in canvas pixels)
+const NUDGE_SMALL = 1;  // Arrow key
+const NUDGE_LARGE = 10; // Shift + Arrow key
+
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,6 +36,8 @@ export const Artboard = () => {
   (state) => state.canvas.present || state.canvas,
   );
 
+  // NEW: Read zoom from the separate view slice (not undoable)
+  const zoom = useAppSelector((state) => state.view.zoom);
 
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
@@ -154,8 +166,8 @@ const snapBox = (box: {
       const pos = stage.getPointerPosition();
       if (pos) {
         setSelectionBox({
-          x: pos.x / config.zoom,
-          y: pos.y / config.zoom,
+          x: pos.x / zoom, // MODIFIED: Use zoom from viewSlice
+          y: pos.y / zoom,
           width: 0,
           height: 0,
           isSelecting: true,
@@ -173,8 +185,8 @@ const snapBox = (box: {
     if (pos && selectionBox) {
       setSelectionBox({
         ...selectionBox,
-        width: pos.x / config.zoom - selectionBox.x,
-        height: pos.y / config.zoom - selectionBox.y,
+        width: pos.x / zoom - selectionBox.x, // MODIFIED: Use zoom from viewSlice
+        height: pos.y / zoom - selectionBox.y,
       });
     }
   };
@@ -199,23 +211,130 @@ const snapBox = (box: {
     setSelectionBox(null);
   };
 
-  // --- KEYBOARD SHORTCUTS ---
+  // ========== KEYBOARD SHORTCUTS ==========
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Guard: don't intercept when user is typing in an input
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
       )
         return;
+
+      // Platform-agnostic modifier check (Ctrl on Win/Linux, Cmd on Mac)
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+      // ---------- DELETE / BACKSPACE — Remove selected elements ----------
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIds.length > 0
       ) {
         e.preventDefault();
         selectedIds.forEach((id) => dispatch(removeElement(id)));
+        return;
+      }
+
+      // ---------- ESCAPE — Deselect all ----------
+      if (e.key === "Escape") {
+        e.preventDefault();
+        dispatch(selectElement(null));
+        return;
+      }
+
+      // ---------- MODIFIER SHORTCUTS (Ctrl/Cmd + key) ----------
+      if (isCtrlOrCmd) {
+        // REDO — Ctrl+Shift+Z (must be checked BEFORE Undo, more specific combo)
+        if (e.shiftKey && e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          dispatch(ActionCreators.redo());
+          return;
+        }
+
+        // UNDO — Ctrl+Z
+        if (e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          dispatch(ActionCreators.undo());
+          return;
+        }
+
+        // ZOOM IN — Ctrl+"=" or Ctrl+"+"
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          dispatch(zoomIn());
+          return;
+        }
+
+        // ZOOM OUT — Ctrl+"-"
+        if (e.key === "-") {
+          e.preventDefault();
+          dispatch(zoomOut());
+          return;
+        }
+
+        // ZOOM RESET (FIT) — Ctrl+0
+        if (e.key === "0") {
+          e.preventDefault();
+          if (containerRef.current) {
+            const container = containerRef.current;
+            const padding = 40;
+            const fitZoom = Math.min(
+              (container.clientWidth - padding) / config.width,
+              (container.clientHeight - padding) / config.height,
+              1,
+            );
+            dispatch(setZoom(fitZoom));
+          }
+          return;
+        }
+
+        // SELECT ALL — Ctrl+A
+        if (e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          const allVisibleIds = elements
+            .filter((el) => el.isVisible !== false)
+            .map((el) => el.id);
+          dispatch(setSelection(allVisibleIds));
+          return;
+        }
+
+        // DUPLICATE — Ctrl+D
+        if (e.key.toLowerCase() === "d" && selectedIds.length > 0) {
+          e.preventDefault();
+          dispatch(duplicateElements(selectedIds));
+          return;
+        }
+      }
+
+      // ---------- ARROW KEYS — Nudge selected elements ----------
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
+        selectedIds.length > 0
+      ) {
+        e.preventDefault();
+
+        const distance = e.shiftKey ? NUDGE_LARGE : NUDGE_SMALL;
+        let dx = 0;
+        let dy = 0;
+
+        switch (e.key) {
+          case "ArrowUp":
+            dy = -distance;
+            break;
+          case "ArrowDown":
+            dy = distance;
+            break;
+          case "ArrowLeft":
+            dx = -distance;
+            break;
+          case "ArrowRight":
+            dx = distance;
+            break;
+        }
+
+        dispatch(nudgeElements({ ids: selectedIds, dx, dy }));
       }
     },
-    [selectedIds, dispatch],
+    [selectedIds, elements, config.width, config.height, dispatch],
   );
 
   useEffect(() => {
@@ -227,6 +346,54 @@ const snapBox = (box: {
 
   const scale = 0.5;
   const checkerSize = 10;
+
+  //Fill properties: Rect
+  const getRectFillProps = (el: CanvasElement) => {
+    if (el.fillType === "linear" && el.fillSecondary) {
+      return {
+        fillLinearGradientStartPoint: { x: 0, y:0 },
+        fillLinearGradientEndPoint: { x: el.width, y: 0 },
+        fillLinearGradientColorStops: [ 0, el.fill, 1, el.fillSecondary ],
+      };
+    }
+
+    if (el.fillType == "radial" && el.fillSecondary) {
+      return {
+        fillRadialGradientStartPoint: { x: el.width / 2, y: el.height / 2 },
+        fillRadialGradientEndPoint: { x: el.width / 2, y: el.height / 2 },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: Math.max(el.width, el.height) / 2,
+        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    return { fill: el.fill };
+  };
+
+  //Fill properties: Circle
+  const getCircleFillProps = (el: CanvasElement) => {
+    const radius = el.width / 2;
+
+    if (el.fillType === "linear" && el.fillSecondary) {
+      return {
+        fillLinearGradientStartPoint: { x: -radius, y: 0 },
+        fillLinearGradientEndPoint: { x: radius, y: 0 },
+        fillLinearGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    } 
+
+    if (el.fillType === "radial" && el.fillSecondary) {
+      return {
+        fillRadialGradientStartPoint: { x: 0, y: 0 },
+        fillRadialGradientEndPoint: { x:0, y: 0 },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: radius,
+        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    return { fill: el.fill };
+  }
 
   return (
     <div
@@ -243,10 +410,10 @@ const snapBox = (box: {
     >
       <Stage
         ref={stageRef}
-        width={config.width * config.zoom}
-        height={config.height * config.zoom}
-        scaleX={config.zoom}
-        scaleY={config.zoom}
+        width={config.width * zoom}       // MODIFIED: Use zoom from viewSlice
+        height={config.height * zoom}      // MODIFIED: Use zoom from viewSlice
+        scaleX={zoom}                      // MODIFIED: Use zoom from viewSlice
+        scaleY={zoom}                      // MODIFIED: Use zoom from viewSlice
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -268,12 +435,17 @@ const snapBox = (box: {
             name="background"
             width={config.width}
             height={config.height}
-            fill="transparent"
+            fill="transparent" 
           />
 
           {elements.map((el) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { zIndex, type, ...elementProps } = el;
+            const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
+
+            void fill;
+            void fillType;
+            void fillSecondary;
+            void zIndex;
+            void type;
 
             const commonProps = {
               ...elementProps,
@@ -350,7 +522,7 @@ const snapBox = (box: {
             if (el.isVisible === false) return null;
 
             if (el.type === "rect")
-              return <Rect key={el.id} {...commonProps} />;
+              return <Rect key={el.id} {...commonProps} {...getRectFillProps(el)}/>;
 
             // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
@@ -358,6 +530,7 @@ const snapBox = (box: {
                 <Circle
                   key={el.id}
                   {...commonProps}
+                  {...getCircleFillProps(el)}
                   // Konva Circle uses radius, not width/height.
                   // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
                   radius={el.width / 2}
@@ -369,16 +542,22 @@ const snapBox = (box: {
 
             if (el.type === "text")
               return (
-                <Text key={el.id} {...commonProps} verticalAlign="middle" />
+                <Text 
+                  key={el.id} 
+                  {...commonProps} 
+                  verticalAlign="middle" 
+                  // COMBINE WEIGHT AND STYLE HERE
+                  fontStyle={`${el.fontStyle || 'normal'} ${el.fontWeight || 'normal'}`}
+                />
               );
 
             if (el.type === "image") {
               return (
-                <CanvasImage
-                  key={el.id}
-                  {...commonProps}
-                  src={el.src}
-                />
+                <CanvasImage 
+                key={el.id} 
+                {...commonProps} 
+                src={el.src}
+                fill={el.fill}/>
               );
             }
 
@@ -394,7 +573,7 @@ const snapBox = (box: {
               height={selectionBox.height}
               fill="rgba(0, 161, 255, 0.3)"
               stroke="#00a1ff"
-              strokeWidth={1 / config.zoom}
+              strokeWidth={1 / zoom} // MODIFIED: Use zoom from viewSlice
             />
           )}
 
