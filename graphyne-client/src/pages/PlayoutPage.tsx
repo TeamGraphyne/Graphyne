@@ -101,8 +101,7 @@ export function PlayoutPage() {
   // ========== FEATURE 3: DRAG AND DROP STATE ==========
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  // ==================================================
-
+  
   // --- 1. System Startup ---
   useEffect(() => {
     socketService.connect();
@@ -129,7 +128,7 @@ export function PlayoutPage() {
         setProjectName("No Projects Found");
       }
     } catch (err) {
-      console.error("❌ Failed to load rundown:", err);
+      console.error("Failed to load rundown:", err);
       setProjectName("Connection Error");
     } finally {
       setIsLoading(false);
@@ -167,8 +166,11 @@ export function PlayoutPage() {
 
   // Helper to generate correct URL
   const getGraphicUrl = (filePath: string) => {
-    // Assuming filePath is something like "/graphics/uuid.html"
-    // We append SERVER_URL if it's a relative path, or ensure it's correct
+    // If it's already a blob/local URL → return as is
+    if (filePath.startsWith("blob:")) {
+      return filePath;
+    }
+
     const filename = filePath.split('/').pop();
     return `${SERVER_URL}/graphics/${filename}`;
   };
@@ -194,7 +196,7 @@ export function PlayoutPage() {
 
   const handleClearProgram = () => {
     setProgramItem(null);
-    console.log("🛑 Emitting CLEAR");
+    console.log("Emitting CLEAR");
     socketService.emit("command:clear");
   };
 
@@ -203,22 +205,28 @@ export function PlayoutPage() {
   };
 
   // --- 3. Render Helper ---
-  const renderMonitorContent = (item: PlaylistItem | null, label: string, shouldAutoPlay: boolean) => {
-    if (!item) {
+  const renderMonitorContent = (
+  item: PlaylistItem | null,
+  label: string,
+  shouldAutoPlay: boolean
+  ) => {
+    //  If a normal playlist item is selected → use existing logic
+    if (item) {
       return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
-          <Square size={48} className="mb-2 opacity-50" />
-          <span className="text-sm font-medium">NO SOURCE</span>
-        </div>
+        <ScaledFrame
+          src={getGraphicUrl(item.graphic.filePath)}
+          title={label}
+          autoPlay={shouldAutoPlay}
+        />
       );
     }
 
+    // Nothing selected
     return (
-      <ScaledFrame 
-        src={getGraphicUrl(item.graphic.filePath)} 
-        title={label} 
-        autoPlay={shouldAutoPlay}
-      />
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
+        <Square size={48} className="mb-2 opacity-50" />
+        <span className="text-sm font-medium">NO SOURCE</span>
+      </div>
     );
   };
 
@@ -366,11 +374,6 @@ export function PlayoutPage() {
 
           </div>
 
-          {/* BODY */}
-          <div className="p-6 text-center text-gray-500">
-            Rundown is empty or could not be loaded.
-          </div>
-
           <input
             type="file"
             accept=".html"
@@ -380,9 +383,30 @@ export function PlayoutPage() {
               const file = e.target.files?.[0];
               if (!file) return;
 
-              // TEMP UI-ONLY action (we'll wire logic later)
-              console.log("Imported HTML:", file.name);
+              const reader = new FileReader();
 
+              reader.onload = (event) => {
+                const htmlContent = event.target?.result as string;
+
+                // to create temporary blob URL
+                const blob = new Blob([htmlContent], { type: "text/html" });
+                const blobUrl = URL.createObjectURL(blob);
+
+                // to create a PlaylistItem compatible with your structure
+                const newItem: PlaylistItem = {
+                  id: `local-${Date.now()}`,
+                  order: playlist.length,
+                  graphic: {
+                    id: `local-${Date.now()}`,
+                    name: file.name,
+                    filePath: blobUrl //  THIS is the key
+                  }
+                };
+
+                setPlaylist(prev => [...prev, newItem]);
+              };
+
+              reader.readAsText(file);
               e.target.value = "";
             }}
           />
