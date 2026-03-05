@@ -11,12 +11,7 @@ import {
 } from "../../store/canvasSlice";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
-import {
-  setShowGrid,
-  setGridSize,
-  setGridStyle,
-  setSnapStyle,
-} from "../../store/canvasSlice";
+
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -114,31 +109,28 @@ export const Artboard = () => {
 };
 
   // --- SNAP TO GRID HELPER ---
-  // ---------------- SNAP HELPERS ----------------
+  const GRID_SIZE = 20;
 
-const getGridSize = () => grid?.size || 20;
-
-const snap = (value: number) => {
-  if (!grid?.snap) return value;
-  const size = getGridSize();
-  return Math.round(value / size) * size;
-};
-
-const snapBox = (box: {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}) => {
-  if (!grid?.snap) return box;
-
-  return {
-    x: snap(box.x),
-    y: snap(box.y),
-    width: Math.max(getGridSize(), snap(box.width)),
-    height: Math.max(getGridSize(), snap(box.height)),
+  const snap = (value: number) => {
+    if (!grid?.snap) return value;
+    return Math.round(value / GRID_SIZE) * GRID_SIZE;
   };
-};
+
+  const snapBox = (box: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => {
+    if (!grid?.snap) return box;
+
+    return {
+      x: snap(box.x),
+      y: snap(box.y),
+      width: Math.max(GRID_SIZE, snap(box.width)),
+      height: Math.max(GRID_SIZE, snap(box.height)),
+    };
+  };
 
   // --- SELECTION RECTANGLE LOGIC ---
   const onMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
