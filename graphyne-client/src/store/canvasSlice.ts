@@ -21,6 +21,7 @@ interface ExtendedCanvasState extends CanvasState {
   grid: GridState;
 }
 
+// MODIFIED: Removed 'zoom' from config — it now lives in viewSlice
 const initialState: ExtendedCanvasState = {
   elements: [],
   selectedIds: [],
@@ -28,7 +29,6 @@ const initialState: ExtendedCanvasState = {
     width: 1920,
     height: 1080,
     background: '#000000',
-    zoom: 1
   },
   meta: {
     id: null,
@@ -228,6 +228,51 @@ export const canvasSlice = createSlice({
     ) => {
       state.grid.style = action.payload;
     }
+    // REMOVED: zoomIn, zoomOut, setZoom — moved to viewSlice.ts
+
+    // Add this to your canvasSlice reducers
+    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
+      const element = state.elements.find(el => el.id === action.payload.id);
+      if (element) {
+        element.name = action.payload.name;
+      }
+    },
+
+    // NEW: Nudge selected elements by a delta. Skips locked elements.
+    nudgeElements: (state, action: PayloadAction<{ ids: string[]; dx: number; dy: number }>) => {
+      const { ids, dx, dy } = action.payload;
+      ids.forEach((id) => {
+        const el = state.elements.find(e => e.id === id);
+        if (el && !el.isLocked) {
+          el.x += dx;
+          el.y += dy;
+        }
+      });
+    },
+
+    // NEW: Duplicate selected elements as a single undo step.
+    // Clones each element with a new UUID and offsets position by 20px.
+    duplicateElements: (state, action: PayloadAction<string[]>) => {
+      const newIds: string[] = [];
+      action.payload.forEach((id) => {
+        const source = state.elements.find(el => el.id === id);
+        if (source) {
+          const newId = uuidv4();
+          const clone: CanvasElement = {
+            ...source,
+            id: newId,
+            name: `${source.name} Copy`,
+            x: source.x + 20,
+            y: source.y + 20,
+            zIndex: state.elements.length,
+          };
+          state.elements.push(clone);
+          newIds.push(newId);
+        }
+      });
+      // Auto-select the duplicated elements
+      state.selectedIds = newIds;
+    },
   }
 });
 
@@ -255,6 +300,10 @@ export const {
   setGridSize,
   setSnapStyle,
   setGridStyle
+  renameElement,
+  nudgeElements,
+  duplicateElements,
+  // REMOVED: zoomIn, zoomOut, setZoom — now exported from viewSlice.ts
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

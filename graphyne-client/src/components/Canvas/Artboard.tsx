@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Rect, Circle, Text, Transformer } from "react-konva";
+import React from "react";
+import { Stage, Layer, Rect, Circle, Text, Transformer, Line } from "react-konva";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectElement,
@@ -7,18 +8,42 @@ import {
   toggleSelection,
   removeElement,
   setSelection,
-  setZoom,
+  nudgeElements,
+  duplicateElements,
+  setShowGrid,
+  setGridSize,
+  setGridStyle,
+  setSnapStyle,
 } from "../../store/canvasSlice";
+import { zoomIn, zoomOut, setZoom } from "../../store/viewSlice";
+import { ActionCreators } from "redux-undo";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
+
+import {
+  calculateSnapPoints,
+  findActiveGuides,
+  detectSpacingGuides,
+  snapToGuide
+} from '../../utils/alignmentGuides';
+import type { GuideLine } from '../../types/alignment';
+import type { CanvasElement } from "../../types/canvas";
+
+// Nudge distance constants (in canvas pixels)
+const NUDGE_SMALL = 1;  // Arrow key
+const NUDGE_LARGE = 10; // Shift + Arrow key
+
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config, grid } = useAppSelector(
-  (state) => state.canvas.present || state.canvas,
+    (state) => state.canvas.present || state.canvas,
   );
+
+  // Read zoom from the separate view slice (not undoable)
+  const zoom = useAppSelector((state) => state.view.zoom);
 
   const trRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
@@ -32,6 +57,10 @@ export const Artboard = () => {
     height: number;
     isSelecting: boolean;
   } | null>(null);
+
+  // --- ALIGNMENT GUIDES STATE ---
+  const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // --- AUTO-FIT CANVAS ON MOUNT ---
   useEffect(() => {
@@ -65,12 +94,78 @@ export const Artboard = () => {
     }
   }, [selectedIds, elements]);
 
+  // ---------------- SNAP HELPERS ----------------
+  const getGridSize = () => grid?.size || 20;
+
+  const snap = (value: number) => {
+    if (!grid?.snap) return value;
+    const size = getGridSize();
+    return Math.round(value / size) * size;
+  };
+
+  const snapBox = (box: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => {
+    if (!grid?.snap) return box;
+
+    return {
+      x: snap(box.x),
+      y: snap(box.y),
+      width: Math.max(getGridSize(), snap(box.width)),
+      height: Math.max(getGridSize(), snap(box.height)),
+    };
+  };
+
   // --- DRAG HANDLERS ---
   const onDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
     const id = e.target.id();
     if (!selectedIds.includes(id)) {
       dispatch(selectElement(id));
     }
+    setIsDragging(true);
+  };
+
+  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    const id = node.id();
+
+    // 1. Grid Snapping (Takes priority if enabled)
+    if (grid?.snap) {
+      node.x(snap(node.x()));
+      node.y(snap(node.y()));
+      setActiveGuides([]); // Hide alignment guides when snapping to grid
+      return;
+    }
+
+    // 2. Alignment Guides (Fallback if grid snap is off)
+    const element = elements.find(el => el.id === id);
+    if (!element) return;
+
+    const width = element.width || node.width() || 100;
+    const height = element.height || node.height() || 100;
+
+    const snapPoints = calculateSnapPoints(elements, id);
+
+    const alignmentGuides = findActiveGuides(
+      { x: node.x(), y: node.y(), width, height },
+      config.width,
+      config.height,
+      snapPoints
+    );
+
+    const spacingGuides = detectSpacingGuides(elements, id);
+
+    const allGuides = [...alignmentGuides, ...spacingGuides];
+    setActiveGuides(allGuides);
+
+    const snappedX = snapToGuide(node.x(), allGuides, true);
+    const snappedY = snapToGuide(node.y(), allGuides, false);
+
+    if (snappedX !== node.x()) node.x(snappedX);
+    if (snappedY !== node.y()) node.y(snappedY);
   };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -96,41 +191,9 @@ export const Artboard = () => {
         y: snapped.y,
       }),
     );
-  };
-
-  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
-  if (!grid?.snap) return;
-
-  const node = e.target;
-  node.x(snap(node.x()));
-  node.y(snap(node.y()));
-};
-
-  // --- SNAP TO GRID HELPER ---
-  // ---------------- SNAP HELPERS ----------------
-
-  const getGridSize = () => grid?.size || 20;
-
-  const snap = (value: number) => {
-    if (!grid?.snap) return value;
-    const size = getGridSize();
-    return Math.round(value / size) * size;
-  };
-
-  const snapBox = (box: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }) => {
-    if (!grid?.snap) return box;
-
-    return {
-      x: snap(box.x),
-      y: snap(box.y),
-      width: Math.max(getGridSize(), snap(box.width)),
-      height: Math.max(getGridSize(), snap(box.height)),
-    };
+    
+    setActiveGuides([]);
+    setIsDragging(false);
   };
 
   // --- SELECTION RECTANGLE LOGIC ---
@@ -147,8 +210,8 @@ export const Artboard = () => {
       const pos = stage.getPointerPosition();
       if (pos) {
         setSelectionBox({
-          x: pos.x / config.zoom,
-          y: pos.y / config.zoom,
+          x: pos.x / zoom,
+          y: pos.y / zoom,
           width: 0,
           height: 0,
           isSelecting: true,
@@ -166,8 +229,8 @@ export const Artboard = () => {
     if (pos && selectionBox) {
       setSelectionBox({
         ...selectionBox,
-        width: pos.x / config.zoom - selectionBox.x,
-        height: pos.y / config.zoom - selectionBox.y,
+        width: pos.x / zoom - selectionBox.x,
+        height: pos.y / zoom - selectionBox.y,
       });
     }
   };
@@ -192,7 +255,7 @@ export const Artboard = () => {
     setSelectionBox(null);
   };
 
-  // --- KEYBOARD SHORTCUTS ---
+  // ========== KEYBOARD SHORTCUTS ==========
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (
@@ -200,15 +263,109 @@ export const Artboard = () => {
         e.target instanceof HTMLTextAreaElement
       )
         return;
+
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
         selectedIds.length > 0
       ) {
         e.preventDefault();
         selectedIds.forEach((id) => dispatch(removeElement(id)));
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        dispatch(selectElement(null));
+        return;
+      }
+
+      if (isCtrlOrCmd) {
+        if (e.shiftKey && e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          dispatch(ActionCreators.redo());
+          return;
+        }
+
+        if (e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          dispatch(ActionCreators.undo());
+          return;
+        }
+
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          dispatch(zoomIn());
+          return;
+        }
+
+        if (e.key === "-") {
+          e.preventDefault();
+          dispatch(zoomOut());
+          return;
+        }
+
+        if (e.key === "0") {
+          e.preventDefault();
+          if (containerRef.current) {
+            const container = containerRef.current;
+            const padding = 40;
+            const fitZoom = Math.min(
+              (container.clientWidth - padding) / config.width,
+              (container.clientHeight - padding) / config.height,
+              1,
+            );
+            dispatch(setZoom(fitZoom));
+          }
+          return;
+        }
+
+        if (e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          const allVisibleIds = elements
+            .filter((el) => el.isVisible !== false)
+            .map((el) => el.id);
+          dispatch(setSelection(allVisibleIds));
+          return;
+        }
+
+        if (e.key.toLowerCase() === "d" && selectedIds.length > 0) {
+          e.preventDefault();
+          dispatch(duplicateElements(selectedIds));
+          return;
+        }
+      }
+
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
+        selectedIds.length > 0
+      ) {
+        e.preventDefault();
+
+        const distance = e.shiftKey ? NUDGE_LARGE : NUDGE_SMALL;
+        let dx = 0;
+        let dy = 0;
+
+        switch (e.key) {
+          case "ArrowUp":
+            dy = -distance;
+            break;
+          case "ArrowDown":
+            dy = distance;
+            break;
+          case "ArrowLeft":
+            dx = -distance;
+            break;
+          case "ArrowRight":
+            dx = distance;
+            break;
+        }
+
+        dispatch(nudgeElements({ ids: selectedIds, dx, dy }));
       }
     },
-    [selectedIds, dispatch],
+    [selectedIds, elements, config.width, config.height, dispatch],
   );
 
   useEffect(() => {
@@ -220,6 +377,54 @@ export const Artboard = () => {
 
   const scale = 0.5;
   const checkerSize = 10;
+
+  //Fill properties: Rect
+  const getRectFillProps = (el: CanvasElement) => {
+    if (el.fillType === "linear" && el.fillSecondary) {
+      return {
+        fillLinearGradientStartPoint: { x: 0, y: 0 },
+        fillLinearGradientEndPoint: { x: el.width, y: 0 },
+        fillLinearGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    if (el.fillType === "radial" && el.fillSecondary) {
+      return {
+        fillRadialGradientStartPoint: { x: el.width / 2, y: el.height / 2 },
+        fillRadialGradientEndPoint: { x: el.width / 2, y: el.height / 2 },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: Math.max(el.width, el.height) / 2,
+        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    return { fill: el.fill };
+  };
+
+  //Fill properties: Circle
+  const getCircleFillProps = (el: CanvasElement) => {
+    const radius = el.width / 2;
+
+    if (el.fillType === "linear" && el.fillSecondary) {
+      return {
+        fillLinearGradientStartPoint: { x: -radius, y: 0 },
+        fillLinearGradientEndPoint: { x: radius, y: 0 },
+        fillLinearGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    if (el.fillType === "radial" && el.fillSecondary) {
+      return {
+        fillRadialGradientStartPoint: { x: 0, y: 0 },
+        fillRadialGradientEndPoint: { x: 0, y: 0 },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: radius,
+        fillRadialGradientColorStops: [0, el.fill, 1, el.fillSecondary],
+      };
+    }
+
+    return { fill: el.fill };
+  }
 
   return (
     <div
@@ -236,10 +441,10 @@ export const Artboard = () => {
     >
       <Stage
         ref={stageRef}
-        width={config.width * config.zoom}
-        height={config.height * config.zoom}
-        scaleX={config.zoom}
-        scaleY={config.zoom}
+        width={config.width * zoom}
+        height={config.height * zoom}
+        scaleX={zoom}
+        scaleY={zoom}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -265,8 +470,7 @@ export const Artboard = () => {
           />
 
           {elements.map((el) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { zIndex, type, ...elementProps } = el;
+            const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
 
             const commonProps = {
               ...elementProps,
@@ -284,12 +488,10 @@ export const Artboard = () => {
                 }
               },
               onDragStart: onDragStart,
-              onDragEnd: onDragEnd,
               onDragMove: onDragMove,
-              
+              onDragEnd: onDragEnd,
 
               // [UPDATED] Live Resize Logic (HTML-First)
-              // Instead of scaling, we calculate new width/height and reset scale to 1.
               onTransform: (e: Konva.KonvaEventObject<Event>) => {
                 const node = e.target;
                 const scaleX = node.scaleX();
@@ -300,11 +502,9 @@ export const Artboard = () => {
                 node.scaleY(1);
 
                 // Apply calculated size
-                // (Math.max prevents collapsing to 0)
                 node.width(Math.max(5, node.width() * scaleX));
                 node.height(Math.max(5, node.height() * scaleY));
               },
-              
 
               // [UPDATED] Save Final Dimensions
               onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
@@ -343,18 +543,15 @@ export const Artboard = () => {
             if (el.isVisible === false) return null;
 
             if (el.type === "rect")
-              return <Rect key={el.id} {...commonProps} />;
+              return <Rect key={el.id} {...commonProps} {...getRectFillProps(el)} />;
 
-            // [UPDATED] Circle Adapter: Map Width to Radius to support resizing
             if (el.type === "circle")
               return (
                 <Circle
                   key={el.id}
                   {...commonProps}
-                  // Konva Circle uses radius, not width/height.
-                  // We map width to radius (assuming aspect ratio 1:1 or circle fits inside box)
+                  {...getCircleFillProps(el)}
                   radius={el.width / 2}
-                  // Fix offset because Rect origin is top-left, Circle is center
                   offsetX={-el.width / 2}
                   offsetY={-el.height / 2}
                 />
@@ -362,7 +559,12 @@ export const Artboard = () => {
 
             if (el.type === "text")
               return (
-                <Text key={el.id} {...commonProps} verticalAlign="middle" />
+                <Text
+                  key={el.id}
+                  {...commonProps}
+                  verticalAlign="middle"
+                  fontStyle={`${el.fontStyle || 'normal'} ${el.fontWeight || 'normal'}`}
+                />
               );
 
             if (el.type === "image") {
@@ -371,11 +573,60 @@ export const Artboard = () => {
                   key={el.id}
                   {...commonProps}
                   src={el.src}
-                />
+                  fill={el.fill} />
               );
             }
 
             return null;
+          })}
+
+          {/* ALIGNMENT GUIDES */}
+          {activeGuides.map((guide) => {
+            if (guide.type === 'vertical') {
+              return (
+                <React.Fragment key={guide.id}>
+                  <Line
+                    points={[guide.position, 0, guide.position, config.height]}
+                    stroke={guide.color || '#00a1ff'}
+                    strokeWidth={1}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                  {guide.label && (
+                    <Text
+                      x={guide.position + 5}
+                      y={10}
+                      text={guide.label}
+                      fontSize={12}
+                      fill={guide.color || '#00a1ff'}
+                      listening={false}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            } else {
+              return (
+                <React.Fragment key={guide.id}>
+                  <Line
+                    points={[0, guide.position, config.width, guide.position]}
+                    stroke={guide.color || '#00a1ff'}
+                    strokeWidth={1}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                  {guide.label && (
+                    <Text
+                      x={10}
+                      y={guide.position + 5}
+                      text={guide.label}
+                      fontSize={12}
+                      fill={guide.color || '#00a1ff'}
+                      listening={false}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            }
           })}
 
           {/* SELECTION RECTANGLE */}
@@ -387,7 +638,7 @@ export const Artboard = () => {
               height={selectionBox.height}
               fill="rgba(0, 161, 255, 0.3)"
               stroke="#00a1ff"
-              strokeWidth={1 / config.zoom}
+              strokeWidth={1 / zoom}
             />
           )}
 
