@@ -1,7 +1,14 @@
 import { useRef, useState } from "react";
-import { useDispatch } from "react-redux";
 import { ActionCreators } from "redux-undo";
-import { addElement, zoomIn, zoomOut } from "../../store/canvasSlice";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  addElement,
+  zoomIn,
+  zoomOut,
+  setShowGrid,
+  setSnap,
+  setGridStyle
+} from "../../store/canvasSlice";
 import {
   Square,
   Circle,
@@ -17,19 +24,17 @@ import {
 } from "lucide-react";
 
 export const Toolbar = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ---------------- GRID SETTINGS ---------------- */
+  // --- CONNECT TO REDUX GRID STATE ---
+  const grid = useAppSelector((state) => (state.canvas.present || state.canvas).grid);
   const [showGridMenu, setShowGridMenu] = useState(false);
-  const [showGrid, setShowGrid] = useState(true);
-  const [snapEnabled, setSnapEnabled] = useState(true);
-  const [gridSize, setGridSize] = useState(20);
-  const [snapStyle, setSnapStyle] = useState<"centers" | "edges">("centers");
-  const [gridStyle, setGridStyle] = useState<"lines" | "graph">("lines");
+  
 
+  // Hardcode snap size to 20 for newly added elements
   const snap = (value: number) =>
-    snapEnabled ? Math.round(value / gridSize) * gridSize : value;
+    grid.snap ? Math.round(value / 20) * 20 : value;
   /* ------------------------------------------------ */
 
   const defaultAnim = {
@@ -184,67 +189,44 @@ export const Toolbar = () => {
       <div className="relative border-r pr-4">
         <button
           onClick={() => setShowGridMenu(!showGridMenu)}
-          className="flex items-center gap-2 p-2 hover:bg-orange-300 rounded"
+          className={`flex items-center gap-2 p-2 hover:bg-orange-300 rounded ${showGridMenu ? 'bg-orange-300 text-fuchsia-950' : ''}`}
         >
           <Grid3X3 size={20} />
           <ChevronDown size={14} />
         </button>
 
         {showGridMenu && (
-          <div className="absolute top-12 left-0 w-56 bg-fuchsia-950 border border-indigo-800 shadow-lg rounded text-sm p-2 space-y-2 z-50">
+          <div className="absolute top-12 left-0 w-56 bg-fuchsia-950 border border-indigo-800 shadow-lg rounded text-sm p-3 space-y-3 z-50">
             
-            <label className="flex items-center justify-between cursor-pointer">
-              <span>Show Grid</span>
+            <label className="flex items-center justify-between cursor-pointer hover:text-white">
+              <span>Show Background Grid</span>
               <input
                 type="checkbox"
-                checked={showGrid}
-                onChange={() => setShowGrid(!showGrid)}
+                checked={grid.show}
+                onChange={() => dispatch(setShowGrid(!grid.show))}
+                className="accent-orange-400 w-4 h-4 cursor-pointer"
               />
             </label>
 
-            <label className="flex items-center justify-between cursor-pointer">
+            <label className="flex items-center justify-between cursor-pointer hover:text-white">
               <span>Snap To Grid</span>
               <input
                 type="checkbox"
-                checked={snapEnabled}
-                onChange={() => setSnapEnabled(!snapEnabled)}
+                checked={grid.snap}
+                onChange={() => dispatch(setSnap(!grid.snap))}
+                className="accent-orange-400 w-4 h-4 cursor-pointer"
               />
             </label>
 
-            <div className="flex items-center justify-between">
-              <span>Grid Size</span>
-              <input
-                type="number"
-                value={gridSize}
-                onChange={(e) => setGridSize(Number(e.target.value))}
-                className="w-16 bg-indigo-900 rounded px-1"
-              />
-            </div>
-
-            <div>
-              <span className="block mb-1">Snap Style</span>
+            <div className="pt-1">
+              <span className="block mb-1 text-gray-400 text-xs uppercase">Grid Style</span>
               <select
-                value={snapStyle}
-                onChange={(e) =>
-                  setSnapStyle(e.target.value as "centers" | "edges")
-                }
-                className="w-full bg-indigo-900 rounded px-2 py-1"
-              >
-                <option value="centers">Centers</option>
-                <option value="edges">Edges</option>
-              </select>
-            </div>
-
-            <div>
-              <span className="block mb-1">Style</span>
-              <select
-                value={gridStyle}
-                onChange={(e) =>
-                  setGridStyle(e.target.value as "lines" | "graph")
-                }
-                className="w-full bg-indigo-900 rounded px-2 py-1"
+                value={grid.style}
+                onChange={(e) => dispatch(setGridStyle(e.target.value as "lines" | "dots" | "graph"))}
+                className="w-full bg-indigo-900 rounded px-2 py-1.5 outline-none cursor-pointer"
               >
                 <option value="lines">Lines</option>
+                <option value="dots">Dots</option>
                 <option value="graph">Graph Paper</option>
               </select>
             </div>
