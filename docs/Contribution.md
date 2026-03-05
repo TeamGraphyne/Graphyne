@@ -1,6 +1,6 @@
-# Graphyne Contributor Reference
+# Graphyne Contributor Reference Card
 
-Welcome to the Graphyne development team. This document is the single source of truth for our development workflow, coding standards, architecture rules, and collaboration practices. Read it fully before writing your first line of code.
+Welcome to the Graphyne development team! This document contains everything you need to know about our development workflow, coding standards, and collaboration practices.
 
 ---
 
@@ -8,13 +8,13 @@ Welcome to the Graphyne development team. This document is the single source of 
 
 1. [Quick Start](#quick-start)
 2. [Repository Structure](#repository-structure)
-3. [Architecture Rules](#architecture-rules)
-4. [Branching Strategy](#branching-strategy)
-5. [Commit Message Format](#commit-message-format)
-6. [Pull Request Workflow](#pull-request-workflow)
+3. [Branching Strategy](#branching-strategy)
+4. [Commit Message Format](#commit-message-format)
+5. [Pull Request Workflow](#pull-request-workflow)
+6. [Issue Management](#issue-management)
 7. [Code Standards](#code-standards)
-8. [Socket Event Contract](#socket-event-contract)
-9. [Daily Workflow](#daily-workflow)
+8. [Daily Workflow](#daily-workflow)
+9. [Communication Guidelines](#communication-guidelines)
 10. [Module Ownership](#module-ownership)
 11. [Troubleshooting](#troubleshooting)
 
@@ -22,279 +22,139 @@ Welcome to the Graphyne development team. This document is the single source of 
 
 ## Quick Start
 
-### Prerequisites
-
-- **Node.js** v20+ ([nodejs.org](https://nodejs.org))
-- **Git**
-- **Google Chrome** (primary development and output rendering browser)
-
-> No Docker required. The database is SQLite — it's a file that lives in `graphyne-server/data/`.
-
 ### First Time Setup
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/TeamGraphyne/Graphyne.git
-cd Graphyne
+git clone https://github.com/your-org/graphyne.git
+cd graphyne
 
-# 2. Install server dependencies
-cd graphyne-server
-npm install
+# 2. Install dependencies (we use pnpm)
+pnpm install
 
-# 3. Generate Prisma client and run migrations
-npx prisma generate
-npx prisma migrate dev --name init
+# 3. Setup environment variables
+cp .env.example .env
 
-# 4. Install client dependencies
-cd ../graphyne-client
-npm install
+# 4. Start the database (Docker required)
+docker-compose up -d
 
-# 5. Start the backend server (terminal 1)
-cd ../graphyne-server
-npm run dev
+# 5. Run database migrations
+pnpm db:migrate
 
-# 6. Start the frontend dev server (terminal 2)
-cd ../graphyne-client
-npm run dev
+# 6. Start development servers
+pnpm dev
 ```
-
-The client runs at **http://localhost:5173** and proxies API calls to the server at **http://localhost:3001**.
-
-### Key URLs (Development)
-
-| URL | Purpose |
-|-----|---------|
-| `http://localhost:5173/editor` | WYSIWYG Graphics Editor |
-| `http://localhost:5173/playout` | Playout Controller |
-| `http://localhost:5173/output` | Broadcast Output (captured by OBS/vMix) |
-| `http://localhost:3001/api/...` | REST API |
-| `http://localhost:3001/graphics/` | Served HTML graphic files |
-| `http://localhost:3001/uploads/` | Served uploaded images |
 
 ### Useful Commands
 
-**Server (`graphyne-server/`):**
-
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start server with hot reload (`tsx watch`) |
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm start` | Run compiled server (`node dist/server.js`) |
-| `npx prisma studio` | Open Prisma DB browser |
-| `npx prisma migrate dev` | Run pending migrations |
-| `npx prisma generate` | Regenerate Prisma client after schema changes |
-
-**Client (`graphyne-client/`):**
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Vite dev server with HMR |
-| `npm run build` | Build for production to `dist/` |
-| `npm run lint` | Run ESLint |
+| `pnpm dev` | Start all development servers |
+| `pnpm dev: web` | Start frontend only |
+| `pnpm dev:server` | Start backend only |
+| `pnpm build` | Build all packages |
+| `pnpm test` | Run all tests |
+| `pnpm lint` | Run linter |
+| `pnpm type-check` | Run TypeScript checks |
+| `pnpm db:migrate` | Run database migrations |
+| `pnpm db:studio` | Open Prisma Studio |
 
 ---
 
 ## Repository Structure
 
 ```
-Graphyne/
-├── graphyne-client/              # React 19 frontend (Vite + TypeScript)
-│   ├── src/
-│   │   ├── pages/                # Route-level page components
-│   │   │   ├── EditorPage.tsx    # /editor — WYSIWYG canvas editor
-│   │   │   ├── PlayoutPage.tsx   # /playout — playout controller
-│   │   │   └── OutputPage.tsx    # /output — broadcast output (OBS source)
-│   │   ├── components/           # Reusable UI components
-│   │   ├── store/                # Redux Toolkit + redux-undo state
-│   │   │   ├── store.ts          # Store configuration
-│   │   │   ├── canvasSlice.ts    # Canvas elements state (wrapped with undoable())
-│   │   │   ├── dataSlice.ts      # Data sources state
-│   │   │   ├── viewSlice.ts      # View-only state (zoom, etc.)
-│   │   │   ├── undoConfig.ts     # Undo filter and groupBy configuration
-│   │   │   └── hooks.ts          # useAppSelector / useAppDispatch
-│   │   ├── types/                # TypeScript type definitions
-│   │   │   └── canvas.ts         # CanvasElement, CanvasConfig, AnimationConfig, etc.
-│   │   ├── services/             # Client-side services
-│   │   │   └── socketService.ts  # Socket.io singleton wrapper
-│   │   ├── utils/                # Helper functions
-│   │   │   ├── exporter.ts       # Compiles Redux state → standalone .html file
-│   │   │   ├── importer.ts       # Parses .html file → rehydrates Redux state
-│   │   │   └── dataResolver.ts   # Resolves data bindings → pushes to iframe
-│   │   ├── App.tsx               # Router setup (BrowserRouter)
-│   │   └── main.tsx              # React entry point
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── package.json
+graphyne/
+├── apps/
+│   ├── web/                    # React frontend (Vite + TypeScript)
+│   │   ├── src/
+│   │   │   ├── components/     # Reusable UI components
+│   │   │   ├── features/       # Feature-based modules
+│   │   │   │   ├── editor/     # Canvas, layers, tools
+│   │   │   │   ├── data/       # Data source configuration
+│   │   │   │   ├── preview/    # Preview functionality
+│   │   │   │   └── playback/   # Playout engine
+│   │   │   ├── stores/         # Redux state management
+│   │   │   ├── hooks/          # Custom React hooks
+│   │   │   ├── utils/          # Helper functions
+│   │   │   └── types/          # TypeScript definitions
+│   │   └── package.json
+│   │
+│   └── server/                 # Node.js backend (Fastify)
+│       ├── src/
+│       │   ├── routes/         # API endpoints
+│       │   ├── services/       # Business logic
+│       │   ├── sockets/        # Socket.io handlers
+│       │   ├── prisma/         # Database schema & migrations
+│       │   └── utils/          # Server utilities
+│       └── package.json
 │
-├── graphyne-server/              # Node.js + Fastify backend
-│   ├── src/
-│   │   ├── server.ts             # Fastify app, Socket.io, static file serving
-│   │   ├── routes/               # API route handlers
-│   │   │   ├── graphics.ts       # /api/graphics — save, load, list graphics
-│   │   │   ├── projects.ts       # /api/projects — project/playlist management
-│   │   │   └── datasources.ts    # /api/datasources — data source CRUD
-│   │   ├── services/
-│   │   │   └── dataPoller.ts     # Polling service — fetches data, emits data:update
-│   │   ├── lib/
-│   │   │   └── prisma.ts         # Prisma client singleton
-│   │   └── types/                # Shared server-side TypeScript types
-│   │       ├── canvas.ts
-│   │       └── project.ts
-│   ├── prisma/
-│   │   └── schema.prisma         # Database schema (SQLite)
-│   ├── data/                     # Runtime data (git-ignored)
-│   │   ├── graphics/             # Compiled .html graphic files
-│   │   └── uploads/              # Uploaded image files
-│   ├── tsconfig.json
-│   └── package.json
+├── packages/
+│   ├── shared/                 # Shared types & utilities
+│   └── graphics-engine/        # Core GSAP/Konva rendering logic
 │
-├── docs/                         # Project documentation
-│   └── Contribution.md           # This file
-├── docker-compose.yml            # Legacy — kept for reference only, not used
-└── .github/                      # GitHub Actions workflows
+├── docs/                       # Documentation
+└── . github/                    # GitHub configuration
 ```
-
----
-
-## Architecture Rules
-
-These are **non-negotiable**. All PRs that violate these will be blocked.
-
-### 1. The Factory Pattern
-The system has four distinct roles. Never mix them:
-
-| Role | What it is | Where |
-|------|-----------|-------|
-| **Editor (Factory)** | React app that manipulates Redux state | `graphyne-client/` |
-| **Asset (Product)** | A standalone `.html` file on disk | `graphyne-server/data/graphics/` |
-| **Playout (Consumer)** | Dashboard loading graphics into `<iframe>` | `/playout` page |
-| **Output (Broadcast)** | Dedicated page listened to by OBS/vMix | `/output` page |
-
-### 2. Redux Undo — Always Use `state.canvas.present`
-The canvas slice is wrapped with `redux-undo`. **Never** access `state.canvas.elements` directly.
-
-```typescript
-// ✅ Correct
-const elements = useAppSelector((state) => state.canvas.present.elements);
-
-// ❌ Wrong — will be undefined
-const elements = useAppSelector((state) => state.canvas.elements);
-```
-
-### 3. Socket.io — Never Access the Raw Socket
-Always use the `socketService` singleton. Never import or access the raw socket instance directly.
-
-```typescript
-// ✅ Correct
-import { socketService } from '../services/socketService';
-socketService.emit('command:take', { url });
-socketService.on('render:take', handler);
-
-// ❌ Wrong
-import { io } from 'socket.io-client';
-const socket = io(...); // Do not do this
-socket.emit(...);       // Do not do this
-```
-
-### 4. The GFX Prefix Rule (Exporter)
-UUIDs can start with numbers, which makes invalid CSS selectors. In `exporter.ts`, all element IDs **must** be prefixed with `gfx-`:
-
-```typescript
-// ✅ Correct
-`<div id="gfx-${el.id}">`
-`gsap.to("#gfx-" + el.id, ...)`
-
-// ❌ Wrong
-`<div id="${el.id}">`
-```
-
-### 5. Image Handling
-- Images in Redux state are stored as `blob:` URLs
-- The exporter **must** convert `blob:` URLs to Base64 before writing to the `.html` file
-- Image elements **must** always have `fill: 'transparent'` to satisfy the `CanvasElement` type
-- Use the `CanvasImage` wrapper component in the Artboard — never use raw `Konva.Image`
-
-### 6. Iframe Communication
-To control a graphic loaded inside an `<iframe>`, use `postMessage` — never try to call functions directly:
-
-```typescript
-// Play in animation
-iframe.contentWindow?.postMessage('play', '*');
-
-// Play out animation
-iframe.contentWindow?.postMessage('out', '*');
-
-// Push data binding update
-iframe.contentWindow?.postMessage({ type: 'data-update', sourceId, data }, '*');
-```
-
-### 7. Route Paths
-These are fixed. Do not change them without a team discussion:
-
-| Path | Purpose |
-|------|---------|
-| `/editor` | WYSIWYG Graphics Editor |
-| `/playout` | Playout Controller |
-| `/output` | Broadcast Output (OBS Browser Source) |
 
 ---
 
 ## Branching Strategy
 
-We use a `main` / `dev` two-branch model with short-lived feature branches.
+We follow **GitHub Flow** with a `develop` integration branch. 
 
 ```
-main  (stable, represents last shipped version)
+main (production-ready, protected)
   │
-  └── dev  (integration branch — all PRs target this)
+  └── develop (integration branch, protected)
         │
-        ├── feature/canvas-fit-anudhi
-        ├── feature/snap-to-grid-nikini
-        ├── fix/text-styling-bold-nikini
-        └── chore/update-ci-cd-dilhara
+        ├── feature/editor-canvas-setup
+        ├── feature/layer-management
+        ├── fix/canvas-resize-bug
+        └── chore/update-dependencies
 ```
 
 ### Branch Naming Convention
 
-All branches must follow this pattern: `<type>/<short-description>-<your-name>`
-
 | Type | Pattern | Example |
 |------|---------|---------|
-| Feature | `feature/<description>-<name>` | `feature/layer-drag-drop-parami` |
-| Bug Fix | `fix/<description>-<name>` | `fix/canvas-resize-issue-sharon` |
-| Chore | `chore/<description>-<name>` | `chore/update-dependencies-dilhara` |
-| Documentation | `docs/<description>-<name>` | `docs/api-reference-nikini` |
-| Refactor | `refactor/<description>-<name>` | `refactor/redux-store-anudhi` |
+| Feature | `feature/<description>` | `feature/layer-drag-drop` |
+| Bug Fix | `fix/<description>` | `fix/canvas-resize-issue` |
+| Chore | `chore/<description>` | `chore/update-dependencies` |
+| Documentation | `docs/<description>` | `docs/api-reference` |
+| Refactor | `refactor/<description>` | `refactor/redux-store` |
 
 ### Branch Rules
 
-- ✅ Always branch from `dev`
+- ✅ Always branch from `develop`
 - ✅ Keep branch names lowercase with hyphens
-- ✅ Always include your name suffix
-- ❌ Never commit directly to `main` or `dev`
-- ❌ Never merge `main` into a feature branch — merge `dev` instead
+- ✅ Use descriptive but concise names
+- ❌ Never commit directly to `main` or `develop`
+- ❌ Avoid special characters in branch names
 
 ### Common Branch Commands
 
 ```bash
 # Create and switch to a new feature branch
-git checkout dev
-git pull origin dev
-git checkout -b feature/your-feature-name-yourname
+git checkout develop
+git pull origin develop
+git checkout -b feature/your-feature-name
 
-# Keep your branch updated with dev
-git fetch origin
-git merge origin/dev
+# Keep your branch updated with develop
+git checkout develop
+git pull origin develop
+git checkout feature/your-feature-name
+git merge develop
 
 # Push your branch
-git push origin feature/your-feature-name-yourname
+git push origin feature/your-feature-name
 ```
 
 ---
 
 ## Commit Message Format
 
-We follow the **Conventional Commits** specification.
+We follow the **Conventional Commits** specification. 
 
 ### Format
 
@@ -312,49 +172,55 @@ We follow the **Conventional Commits** specification.
 |------|-------------|---------|
 | `feat` | New feature | `feat(editor): add shape rotation handles` |
 | `fix` | Bug fix | `fix(canvas): resolve layer z-index bug` |
-| `docs` | Documentation only | `docs(contributing): update setup instructions` |
-| `style` | Formatting, no logic change | `style(components): fix indentation` |
-| `refactor` | Code restructure, no new feature/fix | `refactor(store): simplify canvas reducer` |
-| `chore` | Maintenance tasks | `chore(deps): update React to 19.2` |
-| `perf` | Performance improvement | `perf(canvas): optimise Konva render loop` |
+| `docs` | Documentation only | `docs(readme): update setup instructions` |
+| `style` | Formatting, no code change | `style(components): fix indentation` |
+| `refactor` | Code change, no new feature/fix | `refactor(store): simplify layer reducer` |
+| `test` | Adding or updating tests | `test(utils): add formatTime tests` |
+| `chore` | Maintenance tasks | `chore(deps): update React to 18.3` |
+| `perf` | Performance improvement | `perf(canvas): optimize render loop` |
 | `ci` | CI/CD changes | `ci(actions): add build caching` |
 
 ### Scopes
 
-| Scope | What it covers |
-|-------|---------------|
-| `editor` | EditorPage, canvas tools, toolbar |
-| `canvas` | Konva Artboard, element rendering |
-| `layers` | Layer panel, z-index management |
-| `animations` | GSAP animation config, in/out panels |
-| `exporter` | `exporter.ts` — compiles state to HTML |
-| `importer` | `importer.ts` — parses HTML back to state |
-| `playout` | PlayoutPage, playlist, take/clear |
-| `output` | OutputPage, broadcast rendering |
-| `data` | Data sources, polling, CSV/JSON/REST |
-| `sockets` | Socket.io events, socketService |
-| `api` | Fastify routes, REST endpoints |
-| `db` | Prisma schema, migrations |
-| `store` | Redux slices, undo config |
-| `types` | TypeScript type definitions |
-| `ui` | Shared UI components |
-| `config` | Vite, TSConfig, ESLint config |
-| `deps` | Dependency updates |
+| Scope | Description |
+|-------|-------------|
+| `editor` | Editor/Creator module |
+| `canvas` | Konva canvas functionality |
+| `layers` | Layer management |
+| `toolbar` | Toolbar components |
+| `properties` | Properties panel |
+| `data` | Data configuration module |
+| `preview` | Preview module |
+| `playback` | Playback engine |
+| `api` | Backend API routes |
+| `db` | Database/Prisma |
+| `sockets` | WebSocket functionality |
+| `ui` | General UI components |
+| `store` | Redux state management |
+| `deps` | Dependencies |
+| `config` | Configuration files |
 
 ### Examples
 
 ```bash
 # Feature
-git commit -m "feat(exporter): add Base64 conversion for blob image URLs"
+git commit -m "feat(editor): add drag-and-drop layer reordering"
 
-# Bug fix with explanation
-git commit -m "fix(canvas): correct transform handle position on rotated elements
+# Bug fix with body
+git commit -m "fix(canvas): resolve handle positioning on rotated objects
 
-Handles were offset when rotation exceeded 90 degrees due to
-missing matrix inversion in the hit detection calculation."
+The transform handles were incorrectly positioned when objects
+were rotated more than 90 degrees.  Fixed by applying rotation
+matrix to handle coordinates."
+
+# Breaking change
+git commit -m "feat(api)! : change project save endpoint structure
+
+BREAKING CHANGE: The /api/projects endpoint now requires
+a 'version' field in the request body."
 
 # With issue reference
-git commit -m "fix(playout): prevent double-take on rapid button clicks
+git commit -m "fix(playback): stop memory leak in animation loop
 
 Fixes #42"
 ```
@@ -362,118 +228,241 @@ Fixes #42"
 ### Commit Best Practices
 
 - ✅ Use present tense ("add feature" not "added feature")
-- ✅ Use imperative mood ("fix bug" not "fixes bug")
-- ✅ Keep the subject line under 72 characters
-- ✅ Reference GitHub issues when applicable (`Fixes #42`)
-- ✅ Make atomic commits — one logical change per commit
-- ❌ Do not end the subject line with a period
-- ❌ Do not push raw `wip:` commits to a PR for review
+- ✅ Use imperative mood ("move cursor" not "moves cursor")
+- ✅ Keep first line under 72 characters
+- ✅ Reference issues when applicable
+- ✅ Make atomic commits (one logical change per commit)
+- ❌ Don't end the subject line with a period
+- ❌ Don't include "WIP" commits in final PR
 
 ---
 
 ## Pull Request Workflow
 
-### Step 1: Prepare Your Branch
+### Creating a Pull Request
+
+#### Step 1: Prepare Your Branch
 
 ```bash
-# Make sure you're up to date
-git fetch origin
-git merge origin/dev
+# Ensure your branch is up to date
+git checkout develop
+git pull origin develop
+git checkout feature/your-feature
+git merge develop
 
-# Run checks locally before pushing
-cd graphyne-client && npm run lint
-cd ../graphyne-server && npm run build  # catches TypeScript errors
+# Run checks locally
+pnpm lint
+pnpm type-check
+pnpm test
 
-# Push
-git push origin feature/your-feature-name-yourname
+# Push your branch
+git push origin feature/your-feature
 ```
 
-### Step 2: Open the PR
+#### Step 2: Create the PR
 
-- Go to GitHub → Pull Requests → New Pull Request
-- **Base branch:** `dev`
-- **Compare branch:** your feature branch
-- Fill out the PR template fully
+1. Go to GitHub repository
+2. Click "Compare & pull request" or go to Pull Requests → New
+3. Set base branch to `develop`
+4. Fill out the PR template completely
 
-### PR Template
+#### Step 3: PR Template
 
 ```markdown
 ## Description
-<!-- What does this PR do? Why is it needed? -->
+<!-- What does this PR do?  Provide context.  -->
+
+Implements the layer drag-and-drop reordering feature, allowing users
+to reorganize layers by dragging them in the layers panel.
 
 ## Related Issue
-Closes #[issue number]
+Closes #23
 
 ## Type of Change
-- [ ] Feature (new functionality)
-- [ ] Bug fix
-- [ ] Refactor (no functional change)
+- [x] Feature (new functionality)
+- [ ] Bug fix (non-breaking fix)
+- [ ] Refactor (code improvement, no functional change)
 - [ ] Documentation
-- [ ] Chore (deps, config, CI)
+- [ ] Chore (dependencies, config, etc.)
 
 ## Module Affected
-- [ ] Editor / Canvas
-- [ ] Animations / Exporter
-- [ ] Playout Controller
-- [ ] Output Page
-- [ ] Data Sources / Polling
-- [ ] Backend API
-- [ ] Database / Prisma
-- [ ] Socket.io / Real-time
+- [x] Editor (Creator)
+- [ ] Data Configuration
+- [ ] Preview
+- [ ] Playback
+- [ ] Backend/API
+- [ ] Shared/Core
 
-## Architecture Rules Checklist
-- [ ] All canvas selectors use `state.canvas.present`
-- [ ] Socket events go through `socketService`, not raw socket
-- [ ] Exported HTML IDs are prefixed with `gfx-`
-- [ ] Image elements have `fill: 'transparent'`
-- [ ] No `any` types introduced
-- [ ] No inline `style={}` objects (unless dynamic values)
+## Checklist
+- [x] My code follows the project's style guidelines
+- [x] I have performed a self-review
+- [x] I have added comments where necessary
+- [x] I have updated documentation if needed
+- [x] My changes generate no new warnings
+- [x] I have added tests that prove my fix/feature works
+- [x] All tests pass locally
 
-## General Checklist
-- [ ] Self-reviewed my own code
-- [ ] Added comments where the logic is non-obvious
-- [ ] TypeScript compiles with no new errors
-- [ ] No new ESLint warnings
-- [ ] Updated docs if behaviour changed
+## Screenshots/Demo
+<!-- If UI changes, add before/after screenshots or a video -->
 
-## Screenshots / Demo
-<!-- For UI changes: before/after screenshots or a short screen recording -->
+| Before | After |
+|--------|-------|
+| ![before](url) | ![after](url) |
+
+## Testing Instructions
+1. Open the editor
+2. Create multiple layers
+3. Drag a layer to a new position
+4. Verify the layer order updates correctly
 ```
 
-### Review Process
+### PR Review Process
 
-#### As a PR Author
-- Self-review before requesting review — read your own diff
-- Keep PRs focused — one feature or fix per PR
-- Respond to review comments within 24 hours
-- Do not force-push after review has started (use new commits)
+#### As an Author
+
+1. **Self-review first** - Check your own code before requesting review
+2. **Keep PRs small** - Aim for <400 lines changed when possible
+3. **Respond promptly** - Address review feedback within 24 hours
+4. **Don't take it personally** - Reviews improve code quality
 
 #### As a Reviewer
 
-Use these comment prefixes so authors know what's required:
+Use the following checklist:
 
-| Prefix | Meaning | Author action |
-|--------|---------|---------------|
-| `blocking:` | Must be fixed before merge | Required fix |
-| `suggestion:` | Good improvement, not required | Optional |
-| `question:` | Need clarification | Response needed |
-| `nit:` | Minor style/preference | Optional |
-| `praise:` | Something done well | None 😊 |
+```markdown
+## Review Checklist
+- [ ] Code solves the stated problem
+- [ ] Code is readable and maintainable
+- [ ] No obvious performance issues
+- [ ] Edge cases are handled
+- [ ] Error handling is appropriate
+- [ ] TypeScript types are properly defined
+- [ ] Follows project conventions
+- [ ] Tests cover the changes
+- [ ] No security vulnerabilities
+```
 
-**Reviewer checklist:**
-- [ ] Logic is correct and solves the stated problem
-- [ ] Architecture rules (Section 3) are respected
-- [ ] TypeScript types are properly defined — no `any`
-- [ ] Edge cases are handled (null checks, empty arrays, etc.)
-- [ ] Socket events follow the established naming convention
-- [ ] No unrelated code has been changed
+#### Review Comment Prefixes
+
+| Prefix | Meaning | Action Required |
+|--------|---------|-----------------|
+| `blocking: ` | Must be fixed before merge | Yes |
+| `suggestion:` | Recommended improvement | Optional |
+| `question:` | Clarification needed | Response needed |
+| `nit:` | Minor/stylistic issue | Optional |
+| `praise:` | Something done well!  | None 😊 |
+
+Example:
+```
+blocking: This will cause a memory leak.  Please add cleanup in useEffect. 
+
+suggestion: Consider extracting this into a custom hook for reusability. 
+
+nit: Extra whitespace on line 42. 
+
+praise: Great use of useMemo here!  👏
+```
 
 ### Merging
 
 - Requires **1 approval** minimum
 - All CI checks must pass
-- Use **Normal Merge**
-- Delete the branch after merging
+- Use **Squash and merge**
+- Delete branch after merging
+
+---
+
+## Issue Management
+
+### Creating Issues
+
+#### Feature Request Template
+
+```markdown
+## Feature Description
+A clear description of the feature you're proposing.
+
+## User Story
+As a [type of user], I want [goal] so that [benefit]. 
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Criterion 3
+
+## Module
+- [ ] Editor (Creator)
+- [ ] Data Configuration
+- [ ] Preview
+- [ ] Playback
+- [ ] Backend/API
+
+## Design Reference
+[Link to Figma if applicable]
+
+## Technical Notes
+Any implementation considerations or constraints. 
+```
+
+#### Bug Report Template
+
+```markdown
+## Bug Description
+What went wrong? 
+
+## Steps to Reproduce
+1. Go to '...'
+2. Click on '...'
+3. See error
+
+## Expected Behavior
+What should have happened?
+
+## Actual Behavior
+What actually happened?
+
+## Screenshots
+[If applicable]
+
+## Environment
+- Browser: Chrome 120
+- OS: Windows 11
+- App Version: 0.1.0
+```
+
+### Issue Labels
+
+| Label | Color | Use When |
+|-------|-------|----------|
+| `module: editor` | Purple | Related to editor/creator |
+| `module:data` | Teal | Related to data config |
+| `module:preview` | Gold | Related to preview |
+| `module:playback` | Tomato | Related to playback |
+| `module:backend` | Blue | Related to server/API |
+| `priority:critical` | Red | Blocking issue |
+| `priority:high` | Orange | Important, do soon |
+| `priority:medium` | Yellow | Normal priority |
+| `priority:low` | Green | Nice to have |
+| `status:blocked` | Black | Waiting on something |
+| `good-first-issue` | Purple | Good for newcomers |
+
+### Linking Issues and PRs
+
+```markdown
+# In PR description - closes issue when merged
+Closes #42
+Fixes #42
+Resolves #42
+
+# In commit message
+git commit -m "fix(canvas): resolve rendering bug
+
+Fixes #42"
+
+# Reference without closing
+Related to #42
+See #42
+```
 
 ---
 
@@ -483,49 +472,69 @@ Use these comment prefixes so authors know what's required:
 
 | Type | Convention | Example |
 |------|------------|---------|
-| React page components | PascalCase | `EditorPage.tsx` |
-| React sub-components | PascalCase | `LayerPanel.tsx` |
-| Custom hooks | camelCase with `use` prefix | `useCanvas.ts` |
-| Utilities / helpers | camelCase | `exporter.ts` |
-| Redux slices | camelCase + `Slice` | `canvasSlice.ts` |
-| Type definition files | camelCase | `canvas.ts` |
-| Services | camelCase + `Service` | `socketService.ts` |
+| Components | PascalCase | `LayerPanel. tsx` |
+| Component styles | PascalCase + module | `LayerPanel.module.css` |
+| Hooks | camelCase with `use` | `useCanvas.ts` |
+| Utilities | camelCase | `formatTime.ts` |
+| Types | PascalCase | `GraphicElement.ts` |
+| Redux slices | camelCase + Slice | `editorSlice.ts` |
+| Constants | SCREAMING_SNAKE | `API_ENDPOINTS.ts` |
+| Test files | Same as source + test | `formatTime.test.ts` |
 
 ### Component Structure
 
 ```tsx
-// 1. Imports — grouped and ordered
-import { useState, useEffect, useRef } from 'react';          // React
-import { useAppSelector, useAppDispatch } from '../store/hooks'; // Store
-import { socketService } from '../services/socketService';    // Services
-import { LayerItem } from './LayerItem';                       // Components
-import type { CanvasElement } from '../types/canvas';          // Types
+// 1. Imports - grouped and ordered
+import { useState, useEffect } from 'react';           // React
+import { useAppSelector, useAppDispatch } from '@/stores/hooks'; // Store
+import { cn } from '@/utils/cn';                       // Utilities
+import { Button } from '@/components/ui/Button';       // Components
+import type { LayerPanelProps } from './LayerPanel. types'; // Types
+import styles from './LayerPanel.module.css';          // Styles
 
-// 2. Named export — functional component
-export function LayerPanel() {
-  // 2a. Redux hooks first
+// 2. Component definition
+export function LayerPanel({ className, onLayerSelect }: LayerPanelProps) {
+  // 2a.  Hooks (Redux, state, refs, etc.)
   const dispatch = useAppDispatch();
-  const elements = useAppSelector((state) => state.canvas.present.elements); // ← present!
-
-  // 2b. Local state
+  const layers = useAppSelector((state) => state.editor.layers);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // 2c. Refs
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // 2d. Effects
+  // 2b. Effects
   useEffect(() => {
-    // cleanup returned if needed
+    // Effect logic
   }, []);
 
-  // 2e. Handlers — named with "handle" prefix
-  const handleToggle = () => setIsCollapsed((prev) => !prev);
+  // 2c. Handlers
+  const handleToggle = () => {
+    setIsCollapsed((prev) => !prev);
+  };
 
-  // 3. Return JSX — Tailwind only, no inline style objects
-  return (
-    <div ref={panelRef} className="flex flex-col bg-gray-900 border-r border-gray-700">
-      {/* ... */}
+  const handleLayerClick = (layerId: string) => {
+    onLayerSelect? .(layerId);
+  };
+
+  // 2d.  Render helpers (if needed)
+  const renderLayer = (layer: Layer) => (
+    <div key={layer.id} onClick={() => handleLayerClick(layer.id)}>
+      {layer.name}
     </div>
+  );
+
+  // 3. Return JSX
+  return (
+    <aside className={cn(styles. panel, className)}>
+      <header className={styles.header}>
+        <h2>Layers</h2>
+        <Button onClick={handleToggle}>
+          {isCollapsed ? 'Expand' : 'Collapse'}
+        </Button>
+      </header>
+      {!isCollapsed && (
+        <div className={styles.layerList}>
+          {layers.map(renderLayer)}
+        </div>
+      )}
+    </aside>
   );
 }
 ```
@@ -533,313 +542,381 @@ export function LayerPanel() {
 ### TypeScript Guidelines
 
 ```typescript
-// ✅ DO: Explicit types on all function parameters and returns
-function compileElement(el: CanvasElement): string {
-  return `<div id="gfx-${el.id}">...</div>`;
+// ✅ DO:  Use explicit types for function parameters and returns
+function calculatePosition(x: number, y:  number): Position {
+  return { x, y };
 }
 
-// ✅ DO: Use interfaces for object shapes
-interface SaveGraphicPayload {
+// ✅ DO:  Use interfaces for object shapes
+interface Layer {
+  id:  string;
   name: string;
-  html: string;
-  json: string;
-  projectId?: string;
+  visible: boolean;
+  children?: Layer[];
 }
 
-// ✅ DO: Use type for unions
-type DataSourceType = 'rest-api' | 'json-file' | 'csv-file';
+// ✅ DO: Use type for unions and intersections
+type LayerType = 'shape' | 'text' | 'image' | 'group';
+type LayerWithType = Layer & { type: LayerType };
 
-// ❌ NEVER use `any`
-function process(data: any) {} // Blocked in PR review
+// ✅ DO: Use generics when appropriate
+function findById<T extends { id: string }>(items: T[], id:  string): T | undefined {
+  return items.find((item) => item.id === id);
+}
 
-// ✅ Use `unknown` and narrow it
+// ❌ DON'T: Use `any`
+function process(data: any) { } // Bad
+
+// ✅ DO:  Use `unknown` and narrow the type
 function process(data: unknown) {
-  if (typeof data === 'object' && data !== null) {
-    // narrow further
+  if (typeof data === 'string') {
+    // data is string here
   }
 }
 
-// ❌ Avoid non-null assertion without a comment explaining why it's safe
-const el = document.getElementById('root')!;
+// ❌ DON'T: Use non-null assertion without reason
+const element = document.getElementById('app')!; // Bad
 
-// ✅ Handle null explicitly or assert with a comment
-const el = document.getElementById('root');
-if (!el) throw new Error('Root element not found');
+// ✅ DO: Handle null cases
+const element = document.getElementById('app');
+if (! element) throw new Error('App element not found');
 ```
 
-### Styling Rules
-
-- **Tailwind CSS only** for all layout and static styles
-- **No inline `style={}`** objects — exception: values that are genuinely dynamic at runtime (e.g. canvas transform `scale()`, element `x`/`y` positions)
-- **No CSS modules** — we use Tailwind exclusively
-
-```tsx
-// ✅ Correct — Tailwind
-<div className="absolute flex items-center bg-gray-800 rounded-lg p-2">
-
-// ✅ Correct — dynamic value that must be inline
-<div style={{ transform: `translate(${x}px, ${y}px) rotate(${rotation}deg)` }}>
-
-// ❌ Wrong — static style as inline object
-<div style={{ display: 'flex', backgroundColor: '#1f2937' }}>
-```
-
-### Console Logging Convention
-
-Use emoji prefixes so logs are easy to filter in the browser console and terminal:
-
-| Emoji | Use for |
-|-------|---------|
-| `📡` | Data polling events |
-| `🚀` | Take / playout commands |
-| `🛑` | Stop / clear commands |
-| `📺` | Output page rendering events |
-| `⚡` | Socket relay / emit events |
-| `📄` | CSV / file operations |
-| `💾` | Save / file write operations |
-| `🔌` | Socket connection / disconnection |
-
-### Code Change Comment Prefixes
-
-When modifying existing code, prefix your comments so reviewers can find changes quickly:
+### Import Order
 
 ```typescript
-// NEW: Added image Base64 conversion step
-// MODIFIED: Now uses socketService instead of direct socket
-// FIXED: Prevented double-emit on rapid clicks
+// 1. React and React-related
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
+// 2. Third-party libraries
+import { motion } from 'framer-motion';
+import Konva from 'konva';
+import gsap from 'gsap';
+
+// 3. Internal aliases (@/)
+import { useAppSelector } from '@/stores/hooks';
+import { Button } from '@/components/ui/Button';
+import { formatTime } from '@/utils/formatTime';
+
+// 4. Relative imports
+import { LayerItem } from './LayerItem';
+import type { LayerPanelProps } from './LayerPanel.types';
+
+// 5. Styles
+import styles from './LayerPanel.module.css';
 ```
-
----
-
-## Socket Event Contract
-
-This is the authoritative list of Socket.io events. **Do not add events without updating this table.**
-
-### Client → Server
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `command:take` | `{ url: string, elements?: CanvasElement[] }` | Request to play a graphic on the output |
-| `command:clear` | _(none)_ | Request to clear the program output |
-| `data:csv-row` | `{ sourceId: string, rowIndex: number }` | Select a specific CSV row as the active data |
-| `data:start-polling` | `{ sourceId: string }` | Start polling a data source |
-| `data:stop-polling` | `{ sourceId: string }` | Stop polling a data source |
-| `join-session` | `sessionId: string` | Join a socket room |
-
-### Server → Client
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `render:take` | `{ url: string, elements?: CanvasElement[] }` | Instruction to load a graphic URL in the output |
-| `render:clear` | _(none)_ | Instruction to play the out animation and clear |
-| `data:update` | `{ sourceId: string, data: Record<string, unknown> }` | New data from a polled source, broadcast to all clients |
-
-### Event Naming Rules
-
-- Format: `namespace:action` (colon-separated)
-- Client-initiated commands: `command:*`
-- Server-to-output render instructions: `render:*`
-- Data events: `data:*`
 
 ---
 
 ## Daily Workflow
 
+### Morning Routine
+
+```
+☀️ Start of Day Checklist:
+─────────────────────────────
+□ Pull latest from develop
+□ Check Slack/Discord for updates
+□ Review assigned issues in ClickUp
+□ Check if any PRs need your review
+□ Post standup update
+```
+
+### Standup Update Format
+
+Post in `#standup` channel by 10:00 AM: 
+
+```
+📅 [Your Name] - [Date]
+───────────────────────
+✅ Yesterday: 
+  • Completed layer drag-and-drop feature
+  • Fixed canvas resize bug
+
+🔄 Today: 
+  • Implement layer grouping
+  • Code review for PR #34
+
+🚧 Blockers:
+  • None / Waiting on API endpoint from Parami
+```
+
 ### Development Flow
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                    DEVELOPMENT WORKFLOW                     │
+└─────────────────────────────────────────────────────────────┘
+
 1. PICK TASK
    └─→ Select from ClickUp sprint board
    └─→ Move to "In Progress"
+   └─→ Assign yourself if not assigned
 
 2. CREATE BRANCH
-   └─→ git checkout dev && git pull origin dev
-   └─→ git checkout -b feature/task-name-yourname
+   └─→ git checkout develop && git pull
+   └─→ git checkout -b feature/task-name
 
 3. DEVELOP
-   └─→ Write code following the architecture rules
-   └─→ Commit frequently with conventional commit messages
-   └─→ Start both servers and test in Chrome
+   └─→ Write code
+   └─→ Write/update tests
+   └─→ Commit frequently with proper messages
 
 4. LOCAL CHECKS
-   └─→ npm run lint  (in graphyne-client/)
-   └─→ npm run build (in graphyne-server/) — catches TS errors
+   └─→ pnpm lint
+   └─→ pnpm type-check
+   └─→ pnpm test
 
 5. PUSH & CREATE PR
-   └─→ git push origin feature/task-name-yourname
-   └─→ Open PR against dev
-   └─→ Fill out PR template completely
-   └─→ Assign a reviewer
+   └─→ git push origin feature/task-name
+   └─→ Create PR against develop
+   └─→ Fill out PR template
+   └─→ Request reviewers
 
 6. ADDRESS FEEDBACK
-   └─→ Push fix commits (do not force-push after review starts)
-   └─→ Resolve conversations you've addressed
-   └─→ Re-request review
+   └─→ Respond to review comments
+   └─→ Push fixes
+   └─→ Re-request review if needed
 
 7. MERGE
-   └─→ Merge when approved
+   └─→ Squash and merge when approved
    └─→ Delete branch
    └─→ Move ClickUp task to "Done"
 ```
 
-### Standup Format
-
-Post in your team channel:
+### End of Day
 
 ```
-📅 [Name] — [Date]
-✅ Done:    [what you completed]
-🔄 Today:  [what you're working on]
-🚧 Blocked: [anything blocking you, or "None"]
+🌙 End of Day Checklist:
+─────────────────────────
+□ Commit and push WIP if needed
+□ Update ClickUp task status
+□ Note any blockers for tomorrow
+□ Respond to pending review comments
 ```
+
+---
+
+## Communication Guidelines
+
+### Channels
+
+| Channel | Purpose | Response Time |
+|---------|---------|---------------|
+| `#general` | Announcements, general discussion | 24 hours |
+| `#dev-frontend` | Frontend technical discussions | 4 hours |
+| `#dev-backend` | Backend technical discussions | 4 hours |
+| `#code-review` | PR notifications (automated) | 24 hours |
+| `#standup` | Daily async updates | N/A |
+| `#help` | Quick questions, blockers | 2 hours |
+| `#random` | Off-topic, team bonding | Whenever |
+
+### Asking for Help
+
+When asking for help, include:
+
+```markdown
+**What I'm trying to do:**
+Implement layer grouping in the editor
+
+**What I've tried:**
+1.  Tried using Konva's Group class
+2. Attempted to modify the layer tree structure
+
+**What's happening:**
+The layers are grouping but the transform handles
+are not updating correctly
+
+**Relevant code:**
+[Code snippet or link to file]
+
+**Error messages (if any):**
+[Paste error]
+```
+
+### Meetings
+
+| Meeting | When | Duration | Purpose |
+|---------|------|----------|---------|
+| Sprint Planning | Monday 10:00 AM | 1 hour | Plan sprint tasks |
+| Weekly Sync | Thursday 2:00 PM | 1 hour | Progress, demos, blockers |
+| Retro | End of sprint | 45 min | What went well/poorly |
 
 ---
 
 ## Module Ownership
 
-| Module | Primary Owner | Backup |
-|--------|--------------|--------|
-| Editor Core & Canvas Architecture | Dilhara | Anudhi |
-| Editor UI (Panels, Toolbar, Properties) | Parami | Nikini |
-| Animations & Exporter / Importer | Sharon | Anudhi |
-| Data Sources & Polling | Nikini | Sharon |
-| Backend API & Database (Prisma) | Dilhara | Parami |
-| Playout Controller & Output Page | Anudhi | Dilhara |
-| Socket.io & Real-time Events | Dilhara | Parami |
-| CI/CD & DevOps | Dilhara | Nikini |
+### Primary Owners
 
-**As a module owner:** Review all PRs touching your module. Make architecture decisions. Keep your module's types documented.
+| Module | Owner | Backup |
+|--------|-------|--------|
+| Editor Core & Architecture | Dilhara | Nikini |
+| Editor UI (Panels, Toolbar) | Parami | Anudhi |
+| Canvas & Animations | Nishika | Anudhi |
+| Data Configuration | Nikini | Nishika |
+| Backend API & Database | Dilhara | Anudhi |
+| Preview & Playback | Anudhi | Nikini |
+| WebSockets & Real-time | Parami | Dilhara |
+| CI/CD & DevOps | Nishika | Dilhara |
 
-**As a backup:** Stay familiar enough to review when the owner is unavailable.
+### Responsibilities
+
+**As a Module Owner:**
+- Review all PRs for your module
+- Maintain documentation
+- Make architecture decisions
+- Onboard others working in your area
+- Ensure test coverage
+
+**As a Backup:**
+- Stay familiar with module code
+- Available to review when owner is unavailable
+- Can answer basic questions
 
 ---
 
 ## Troubleshooting
 
-### Server won't start — port already in use
+### Common Issues
+
+#### pnpm install fails
 
 ```bash
-# macOS / Linux — find and kill what's using port 3001
-lsof -i :3001
+# Clear cache and reinstall
+rm -rf node_modules
+rm pnpm-lock. yaml
+pnpm install
+```
+
+#### Database connection error
+
+```bash
+# Ensure Docker is running
+docker-compose up -d
+
+# Reset database
+pnpm db:reset
+```
+
+#### Type errors after pulling
+
+```bash
+# Regenerate types
+pnpm type-check
+
+# If Prisma types are stale
+pnpm db:generate
+```
+
+#### Port already in use
+
+```bash
+# Find and kill process (macOS/Linux)
+lsof -i : 3000
 kill -9 <PID>
 
 # Windows
-netstat -ano | findstr :3001
+netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 ```
 
-### Prisma errors after pulling
+#### Git merge conflicts
 
 ```bash
-cd graphyne-server
+# Update your branch with latest develop
+git checkout develop
+git pull origin develop
+git checkout your-branch
+git merge develop
 
-# Regenerate the Prisma client after schema changes
-npx prisma generate
-
-# Apply any new migrations
-npx prisma migrate dev
+# Resolve conflicts in your editor
+# Then: 
+git add . 
+git commit -m "chore: resolve merge conflicts"
 ```
 
-### TypeScript errors after pulling
+### Getting Help
 
-```bash
-# In graphyne-server — catches compiled errors
-npm run build
-
-# In graphyne-client — Vite will show errors in the browser, or:
-npx tsc --noEmit
-```
-
-### `state.canvas.elements` is undefined
-
-You're accessing canvas state without `.present`. The canvas slice is wrapped with `redux-undo`. Fix:
-
-```typescript
-// ❌ Wrong
-state.canvas.elements
-
-// ✅ Correct
-state.canvas.present.elements
-```
-
-### Socket events not being received
-
-1. Check the browser console — is the socket connected? Look for `🔌` logs
-2. Check the server terminal — is the event being received?
-3. Confirm you're using `socketService.emit()` / `socketService.on()`, not a raw socket
-4. Confirm the event name matches **exactly** as listed in the [Socket Event Contract](#socket-event-contract)
-
-### Git merge conflicts
-
-```bash
-# Update your branch with the latest dev
-git fetch origin
-git merge origin/dev
-
-# Resolve conflicts in your editor, then:
-git add .
-git commit -m "chore: resolve merge conflicts with dev"
-```
-
-### Canvas elements look different between Editor and Output
-
-The Editor uses Konva (canvas API). The Output renders the exported HTML which uses DOM + CSS + GSAP. If something looks different, check:
-
-1. The exporter's CSS generation for that element type
-2. Whether a `blob:` URL image was properly converted to Base64 in the exporter
-3. Whether the `gfx-` prefix is being applied to the element ID in both the DOM and GSAP selectors
+1. **Check documentation** in `/docs` folder
+2. **Search existing issues** on GitHub
+3. **Ask in #help** channel with context
+4. **Pair program** with module owner
+5. **Raise in weekly sync** if still blocked
 
 ---
 
 ## Quick Reference
 
-### Git Cheat Sheet
+### Git Commands Cheat Sheet
 
 ```bash
-# Start work
-git checkout dev && git pull origin dev
-git checkout -b feature/name-yourname
+# Start new feature
+git checkout develop && git pull
+git checkout -b feature/name
 
-# Save progress
-git add .
-git commit -m "feat(scope): description"
+# Save work in progress
+git add . 
+git commit -m "wip: description"
 
-# Stay up to date
-git fetch origin && git merge origin/dev
+# Update branch with develop
+git fetch origin
+git merge origin/develop
 
-# Undo last commit (keep changes staged)
+# Undo last commit (keep changes)
 git reset --soft HEAD~1
 
-# Push
-git push origin feature/name-yourname
+# Undo changes to file
+git checkout -- path/to/file
+
+# See what's changed
+git status
+git diff
+
+# Push branch
+git push origin feature/name
+
+# Force push (after rebase only!)
+git push origin feature/name --force-with-lease
 ```
 
-### Commit Type Quick Reference
+### Commit Message Quick Reference
 
 ```
-feat(scope):     new feature
-fix(scope):      bug fix
-refactor(scope): restructure, no behaviour change
-docs(scope):     documentation only
-chore(scope):    maintenance, deps, config
-perf(scope):     performance improvement
-ci(scope):       CI/CD pipeline changes
+feat(scope): add new feature
+fix(scope): fix bug
+docs(scope): update documentation
+style(scope): formatting only
+refactor(scope): restructure code
+test(scope): add tests
+chore(scope): maintenance
+perf(scope): performance improvement
 ```
 
-### Architecture Quick Rules
+### PR Checklist
 
 ```
-✅ state.canvas.present.elements    (not state.canvas.elements)
-✅ socketService.emit(...)           (not socket.emit(...))
-✅ id="gfx-${el.id}"               (not id="${el.id}")
-✅ fill: 'transparent'              (on image CanvasElements)
-✅ <CanvasImage>                    (not raw <Image> from react-konva)
-✅ postMessage('play', '*')         (to control iframes)
-✅ Tailwind classes                 (not inline style objects)
-✅ Named exports                    (not default exports for components)
+□ Branch is up to date with develop
+□ All tests pass locally
+□ No linting errors
+□ Self-reviewed the code
+□ PR template filled out
+□ Screenshots added (if UI change)
+□ Related issue linked
+□ Reviewers assigned
 ```
 
 ---
 
-*Last updated: March 2026*
+## Need More Help?
+
+- 📖 **Documentation**: Check `/docs` folder
+- 💬 **Quick questions**: `#help` channel
+- 🐛 **Found a bug**: Create a GitHub issue
+- 💡 **Have an idea**:  Discuss in `#general` first
+- 👥 **Need pairing**: Ask in your module channel
+
+---
+
+*Last updated: December 2025*
 *Maintained by: Graphyne Development Team*
