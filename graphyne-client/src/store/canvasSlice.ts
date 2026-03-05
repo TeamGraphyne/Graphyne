@@ -6,8 +6,6 @@ import type { CanvasState, CanvasElement, CanvasConfig } from '../types/canvas';
 interface GridState {
   show: boolean;
   snap: boolean;
-  size: number;
-  snapStyle: 'centers' | 'edges';
   style: 'lines' | 'dots' | 'graph';
 }
 
@@ -28,7 +26,7 @@ const initialState: ExtendedCanvasState = {
     width: 1920,
     height: 1080,
     background: '#000000',
-    zoom: 1
+    zoom: 1 
   },
   meta: {
     id: null,
@@ -38,8 +36,6 @@ const initialState: ExtendedCanvasState = {
   grid: {
     show: true,
     snap: true,
-    size: 20,
-    snapStyle: 'centers',
     style: 'lines'
   }
 };
@@ -191,10 +187,12 @@ export const canvasSlice = createSlice({
 
     // ---------------- ZOOM ----------------
     zoomIn: state => {
+      if (state.config.zoom === undefined) state.config.zoom = 1;
       state.config.zoom = Math.min(state.config.zoom + 0.1, 3);
     },
 
     zoomOut: state => {
+      if (state.config.zoom === undefined) state.config.zoom = 1;
       state.config.zoom = Math.max(state.config.zoom - 0.1, 0.2);
     },
 
@@ -206,20 +204,9 @@ export const canvasSlice = createSlice({
     setShowGrid: (state, action: PayloadAction<boolean>) => {
       state.grid.show = action.payload;
     },
-
+    
     setSnap: (state, action: PayloadAction<boolean>) => {
       state.grid.snap = action.payload;
-    },
-
-    setGridSize: (state, action: PayloadAction<number>) => {
-      state.grid.size = action.payload;
-    },
-
-    setSnapStyle: (
-      state,
-      action: PayloadAction<'centers' | 'edges'>
-    ) => {
-      state.grid.snapStyle = action.payload;
     },
 
     setGridStyle: (
@@ -246,15 +233,13 @@ export const {
   toggleLock,
   moveLayerUp,
   moveLayerDown,
-  zoomIn,
-  zoomOut,
-  setZoom,
   renameElement,
+  zoomIn,      
+  zoomOut,     
+  setZoom,     
   setShowGrid,
   setSnap,
-  setGridSize,
-  setSnapStyle,
-  setGridStyle
+  setGridStyle,
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;
