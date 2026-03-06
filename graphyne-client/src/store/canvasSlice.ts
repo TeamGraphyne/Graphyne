@@ -7,6 +7,7 @@ interface GridState {
   show: boolean;
   snap: boolean;
   style: 'lines' | 'dots' | 'graph';
+  showAlignmentGuides : boolean;
 }
 
 // --- EXTENDED STATE ---
@@ -36,7 +37,8 @@ const initialState: ExtendedCanvasState = {
   grid: {
     show: true,
     snap: true,
-    style: 'lines'
+    style: 'lines',
+    showAlignmentGuides: true
   }
 };
 
@@ -204,6 +206,10 @@ export const canvasSlice = createSlice({
     setShowGrid: (state, action: PayloadAction<boolean>) => {
       state.grid.show = action.payload;
     },
+
+    setShowAlignmentGuides: (state, action: PayloadAction<boolean>) => {
+      state.grid.showAlignmentGuides = action.payload;
+    },
     
     setSnap: (state, action: PayloadAction<boolean>) => {
       state.grid.snap = action.payload;
@@ -238,6 +244,7 @@ export const {
   zoomOut,     
   setZoom,     
   setShowGrid,
+  setShowAlignmentGuides,
   setSnap,
   setGridStyle,
 } = canvasSlice.actions;
