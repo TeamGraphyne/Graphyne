@@ -6,6 +6,7 @@ import {
   zoomIn,
   zoomOut,
   setShowGrid,
+  setShowAlignmentGuides,
   setSnap,
   setGridStyle
 } from "../../store/canvasSlice";
@@ -29,8 +30,7 @@ export const Toolbar = () => {
 
   // --- CONNECT TO REDUX GRID STATE ---
   const grid = useAppSelector((state) => (state.canvas.present || state.canvas).grid);
-  const [showGridMenu, setShowGridMenu] = useState(false);
-  
+  const [showGridMenu, setShowGridMenu] = useState(false);  
 
   // Hardcode snap size to 20 for newly added elements
   const snap = (value: number) =>
@@ -214,6 +214,16 @@ export const Toolbar = () => {
                 type="checkbox"
                 checked={grid.snap}
                 onChange={() => dispatch(setSnap(!grid.snap))}
+                className="accent-orange-400 w-4 h-4 cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between cursor-pointer hover:text-white">
+              <span>Show Alignment Guides</span>
+              <input
+                type="checkbox"
+                checked={grid.showAlignmentGuides}
+                onChange={() => dispatch(setShowAlignmentGuides(!grid.showAlignmentGuides))}
                 className="accent-orange-400 w-4 h-4 cursor-pointer"
               />
             </label>
