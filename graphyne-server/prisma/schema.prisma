@@ -32,6 +32,8 @@ model Project {
 
   // A Project is a ordered list of Graphics
   items PlaylistItem[]
+
+  dataSources DataSource[]
 }
 
 model PlaylistItem {
