@@ -12,11 +12,10 @@ import type { RootState } from '../../store/store';
 import { updateElement } from '../../store/canvasSlice';
 import type { CanvasElement, ShadowEffect } from '../../types/canvas';
 import { AnimationPanel } from './AnimationPanel';
-import { DataBindingTab } from './DataBindingTab';
 
 export const PropertiesPanel = () => {
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState<'design' | 'animate' | 'data'>('design');
+  const [activeTab, setActiveTab] = useState<'design' | 'animate'>('design');
 
   // 1. Access state via .present because of redux-undo
   const selectedId = useSelector((state: RootState) => state.canvas.present.selectedIds[0]);
@@ -58,7 +57,7 @@ export const PropertiesPanel = () => {
   return (
     <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-white flex flex-col h-full z-20">
       
-      {/* --- Tab Navigation (3 tabs now) --- */}
+      {/* --- Tab Navigation --- */}
       <div className="flex border-b border-fuchsia-200/30">
         <button
           onClick={() => setActiveTab('design')}
@@ -80,16 +79,6 @@ export const PropertiesPanel = () => {
         >
           Animate
         </button>
-        <button
-          onClick={() => setActiveTab('data')}
-          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
-            activeTab === 'data' 
-              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
-              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
-          }`}
-        >
-          Data
-        </button>
       </div>
 
       {/* --- Tab Content Area --- */}
@@ -99,7 +88,7 @@ export const PropertiesPanel = () => {
         {activeTab === 'design' && (
           <div className="p-4 space-y-6">
 
-            {/* TYPOGRAPHY SECTION (Text Only) */}
+            {/* [NEW] TYPOGRAPHY SECTION (Text Only) */}
             {element.type === 'text' && (
               <div className="border-b border-gray-800 pb-6">
                 <h2 className="font-bold mb-3 text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -243,31 +232,10 @@ export const PropertiesPanel = () => {
             <div>
               <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Appearance</h2>
               <div className="space-y-3">
-
-                {/* Fill Type */}
+                
+                {/* Fill Color */}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">Fill Type</label>
-                  <select 
-                    value={element.fillType || 'solid'}
-                    onChange={(e) => {
-                      handleChange('fillType', e.target.value);
-                      if (!element.fillSecondary) {
-                        handleChange('fillSecondary', "#62a0ea");
-                      }
-                    }}
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300" 
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="linear">Linear Gradient</option>
-                    <option value="radial">Radial Gradient</option>
-                  </select>
-                </div>
-
-                {/* Solid Fill */}
-                <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
-                    {element.fillType && element.fillType !== 'solid' ? 'Start Color' : 'Fill Color'}
-                  </label>
+                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Fill Color</label>
                   <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
                     <input 
                       type="color" 
@@ -279,25 +247,9 @@ export const PropertiesPanel = () => {
                   </div>
                 </div>
 
-                {/* Secondary Color */}
-                {element.fillType && element.fillType !== 'solid' && (
-                  <div>
-                    <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">End Color</label>
-                    <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
-                      <input 
-                        type="color" 
-                        value={element.fillSecondary || "#62a0ea"}
-                        onChange={(e) => handleChange('fillSecondary', e.target.value)} 
-                        className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
-                      />
-                      <span className="text-xs text-gray-400 font-mono">{element.fillSecondary}</span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Stroke Width */}
                 <div>
-                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
                     <span>Stroke Width</span>
                   </label>
                   <input
@@ -327,7 +279,7 @@ export const PropertiesPanel = () => {
 
                 {/* Corner Radius*/}
                 <div>
-                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
                     <span>Corner Radius</span>
                   </label>
                   <input
@@ -396,6 +348,7 @@ export const PropertiesPanel = () => {
                             [&::-webkit-slider-thumb]:rounded-full 
                             [&::-webkit-slider-thumb]:bg-white/50
                             hover:[&::-webkit-slider-thumb]:bg-orange-300"
+                            
                           />
                         </div>
                         
@@ -441,14 +394,9 @@ export const PropertiesPanel = () => {
 
         {/* VIEW 2: ANIMATION CONTROLS */}
         {activeTab === 'animate' && (
-  
+          <div className="h-full p-4">
              <AnimationPanel />
-    
-        )}
-
-        {/* VIEW 3: DATA BINDING CONTROLS (NEW) */}
-        {activeTab === 'data' && (
-          <DataBindingTab />
+          </div>
         )}
 
       </div>

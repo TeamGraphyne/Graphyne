@@ -30,9 +30,6 @@ model Project {
 
   // A Project is a ordered list of Graphics
   items PlaylistItem[]
-
-  // A Project owns its Data Sources
-  dataSources DataSource[]
 }
 
 model PlaylistItem {
@@ -45,27 +42,4 @@ model PlaylistItem {
   graphicId String
 
   order Int
-}
-
-model DataSource {
-  id        String  @id @default(uuid())
-
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-
-  name      String   // label
-  type      String   // "rest-api" | "json-file" | "csv-file"
-
-  // Connection configuration (varies by type, stored as JSON string)
-  config    String   @db.Text  // JSON
-
-  // Polling
-  pollingInterval Int     @default(0)   // Seconds. 0 = manual refresh only
-  autoStart       Boolean @default(false)
-
-  // Cached schema for UI dropdowns (auto-detected)
-  fields    String?  @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
