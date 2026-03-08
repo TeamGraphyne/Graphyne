@@ -2,16 +2,24 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import type { CanvasState, CanvasElement, CanvasConfig } from '../types/canvas';
 
-// Extend the state to track Metadata (Database IDs)
-interface ExtendedCanvasState extends CanvasState {
-  meta: {
-    id: string | null;        // The Database ID of this graphic
-    name: string;             // The name of the graphic
-    projectId: string | null; // The currently selected Project/Playlist ID
-  };
+// --- GRID TYPES ---
+interface GridState {
+  show: boolean;
+  snap: boolean;
+  style: 'lines' | 'dots' | 'graph';
+  showAlignmentGuides : boolean;
 }
 
-// MODIFIED: Removed 'zoom' from config — it now lives in viewSlice
+// --- EXTENDED STATE ---
+interface ExtendedCanvasState extends CanvasState {
+  meta: {
+    id: string | null;
+    name: string;
+    projectId: string | null;
+  };
+  grid: GridState;
+}
+
 const initialState: ExtendedCanvasState = {
   elements: [],
   selectedIds: [],
@@ -19,11 +27,18 @@ const initialState: ExtendedCanvasState = {
     width: 1920,
     height: 1080,
     background: '#000000',
+    zoom: 1 
   },
   meta: {
     id: null,
-    name: "New Graphic",
+    name: 'New Graphic',
     projectId: null
+  },
+  grid: {
+    show: true,
+    snap: true,
+    style: 'lines',
+    showAlignmentGuides: true
   }
 };
 
@@ -31,15 +46,26 @@ export const canvasSlice = createSlice({
   name: 'canvas',
   initialState,
   reducers: {
-    // --- METADATA ACTIONS ---
-    setGraphicMeta: (state, action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>) => {
+    // ---------------- META ----------------
+    setGraphicMeta: (
+      state,
+      action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>
+    ) => {
       if (action.payload.id !== undefined) state.meta.id = action.payload.id;
       if (action.payload.name !== undefined) state.meta.name = action.payload.name;
-      if (action.payload.projectId !== undefined) state.meta.projectId = action.payload.projectId;
+      if (action.payload.projectId !== undefined)
+        state.meta.projectId = action.payload.projectId;
     },
 
-    // [FIXED] Replaced 'any' with 'CanvasConfig'
-    loadGraphic: (state, action: PayloadAction<{ id: string; name: string; elements: CanvasElement[]; config: CanvasConfig }>) => {
+    loadGraphic: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        name: string;
+        elements: CanvasElement[];
+        config: CanvasConfig;
+      }>
+    ) => {
       state.meta.id = action.payload.id;
       state.meta.name = action.payload.name;
       state.elements = action.payload.elements;
@@ -47,20 +73,24 @@ export const canvasSlice = createSlice({
       state.selectedIds = [];
     },
 
-    // --- EXISTING ACTIONS ---
+    // ---------------- ELEMENTS ----------------
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
-      const newElement = {
+      const newElement: CanvasElement = {
         ...action.payload,
         id: uuidv4(),
         isVisible: action.payload.isVisible ?? true,
         isLocked: action.payload.isLocked ?? false,
         zIndex: state.elements.length
       };
+
       state.elements.push(newElement);
       state.selectedIds = [newElement.id];
     },
 
-    updateElement: (state, action: PayloadAction<Partial<CanvasElement> & { id: string }>) => {
+    updateElement: (
+      state,
+      action: PayloadAction<Partial<CanvasElement> & { id: string }>
+    ) => {
       const { id, ...changes } = action.payload;
       const index = state.elements.findIndex(el => el.id === id);
       if (index !== -1) {
@@ -68,7 +98,10 @@ export const canvasSlice = createSlice({
       }
     },
 
-    updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
+    updateElements: (
+      state,
+      action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>
+    ) => {
       action.payload.forEach(({ id, ...changes }) => {
         const index = state.elements.findIndex(el => el.id === id);
         if (index !== -1) {
@@ -82,12 +115,9 @@ export const canvasSlice = createSlice({
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
 
+    // ---------------- SELECTION ----------------
     selectElement: (state, action: PayloadAction<string | null>) => {
-      if (action.payload === null) {
-        state.selectedIds = [];
-      } else {
-        state.selectedIds = [action.payload];
-      }
+      state.selectedIds = action.payload ? [action.payload] : [];
     },
 
     setSelection: (state, action: PayloadAction<string[]>) => {
@@ -104,6 +134,41 @@ export const canvasSlice = createSlice({
       }
     },
 
+    // ---------------- LAYER CONTROL ----------------
+    reorderElement: (
+      state,
+      action: PayloadAction<{ fromIndex: number; toIndex: number }>
+    ) => {
+      const { fromIndex, toIndex } = action.payload;
+      const [removed] = state.elements.splice(fromIndex, 1);
+      state.elements.splice(toIndex, 0, removed);
+
+      state.elements.forEach((el, idx) => {
+        el.zIndex = idx;
+      });
+    },
+
+    moveLayerUp: (state, action: PayloadAction<string>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload);
+      if (index !== -1 && index < state.elements.length - 1) {
+        [state.elements[index], state.elements[index + 1]] = [
+          state.elements[index + 1],
+          state.elements[index]
+        ];
+      }
+    },
+
+    moveLayerDown: (state, action: PayloadAction<string>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload);
+      if (index > 0) {
+        [state.elements[index], state.elements[index - 1]] = [
+          state.elements[index - 1],
+          state.elements[index]
+        ];
+      }
+    },
+
+    // ---------------- VISIBILITY / LOCK ----------------
     toggleVisibility: (state, action: PayloadAction<string>) => {
       const el = state.elements.find(e => e.id === action.payload);
       if (el) el.isVisible = !el.isVisible;
@@ -114,102 +179,74 @@ export const canvasSlice = createSlice({
       if (el) el.isLocked = !el.isLocked;
     },
 
-    reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
-      const { fromIndex, toIndex } = action.payload;
-      const [removed] = state.elements.splice(fromIndex, 1);
-      state.elements.splice(toIndex, 0, removed);
-      
-      // Update zIndex for all elements based on new array order
-      state.elements.forEach((el, idx) => {
-        el.zIndex = idx;
-      });
-    },
-
-    moveLayerUp: (state, action: PayloadAction<string>) => {
-      const index = state.elements.findIndex(el => el.id === action.payload);
-      if (index < state.elements.length - 1 && index !== -1) {
-        const temp = state.elements[index];
-        state.elements[index] = state.elements[index + 1];
-        state.elements[index + 1] = temp;
-      }
-    },
-
-    moveLayerDown: (state, action: PayloadAction<string>) => {
-      const index = state.elements.findIndex(el => el.id === action.payload);
-      if (index > 0 && index !== -1) {
-        const temp = state.elements[index];
-        state.elements[index] = state.elements[index - 1];
-        state.elements[index - 1] = temp;
-      }
-    },
-
-    // REMOVED: zoomIn, zoomOut, setZoom — moved to viewSlice.ts
-
-    // Add this to your canvasSlice reducers
-    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
+    renameElement: (
+      state,
+      action: PayloadAction<{ id: string; name: string }>
+    ) => {
       const element = state.elements.find(el => el.id === action.payload.id);
-      if (element) {
-        element.name = action.payload.name;
-      }
+      if (element) element.name = action.payload.name;
     },
 
-    // NEW: Nudge selected elements by a delta. Skips locked elements.
-    nudgeElements: (state, action: PayloadAction<{ ids: string[]; dx: number; dy: number }>) => {
-      const { ids, dx, dy } = action.payload;
-      ids.forEach((id) => {
-        const el = state.elements.find(e => e.id === id);
-        if (el && !el.isLocked) {
-          el.x += dx;
-          el.y += dy;
-        }
-      });
+    // ---------------- ZOOM ----------------
+    zoomIn: state => {
+      if (state.config.zoom === undefined) state.config.zoom = 1;
+      state.config.zoom = Math.min(state.config.zoom + 0.1, 3);
     },
 
-    // NEW: Duplicate selected elements as a single undo step.
-    // Clones each element with a new UUID and offsets position by 20px.
-    duplicateElements: (state, action: PayloadAction<string[]>) => {
-      const newIds: string[] = [];
-      action.payload.forEach((id) => {
-        const source = state.elements.find(el => el.id === id);
-        if (source) {
-          const newId = uuidv4();
-          const clone: CanvasElement = {
-            ...source,
-            id: newId,
-            name: `${source.name} Copy`,
-            x: source.x + 20,
-            y: source.y + 20,
-            zIndex: state.elements.length,
-          };
-          state.elements.push(clone);
-          newIds.push(newId);
-        }
-      });
-      // Auto-select the duplicated elements
-      state.selectedIds = newIds;
+    zoomOut: state => {
+      if (state.config.zoom === undefined) state.config.zoom = 1;
+      state.config.zoom = Math.max(state.config.zoom - 0.1, 0.2);
     },
+
+    setZoom: (state, action: PayloadAction<number>) => {
+      state.config.zoom = Math.max(0.2, Math.min(3, action.payload));
+    },
+
+    // ---------------- GRID ----------------
+    setShowGrid: (state, action: PayloadAction<boolean>) => {
+      state.grid.show = action.payload;
+    },
+
+    setShowAlignmentGuides: (state, action: PayloadAction<boolean>) => {
+      state.grid.showAlignmentGuides = action.payload;
+    },
+    
+    setSnap: (state, action: PayloadAction<boolean>) => {
+      state.grid.snap = action.payload;
+    },
+
+    setGridStyle: (
+      state,
+      action: PayloadAction<'lines' | 'dots' | 'graph'>
+    ) => {
+      state.grid.style = action.payload;
+    }
   }
 });
 
 export const {
   setGraphicMeta,
   loadGraphic,
-  addElement, 
-  updateElement, 
-  updateElements, 
+  addElement,
+  updateElement,
+  updateElements,
   removeElement,
-  selectElement, 
-  setSelection, 
-  toggleSelection, 
+  selectElement,
+  setSelection,
+  toggleSelection,
   reorderElement,
-  toggleVisibility, 
-  toggleLock, 
-  moveLayerUp, 
+  toggleVisibility,
+  toggleLock,
+  moveLayerUp,
   moveLayerDown,
   renameElement,
-  nudgeElements,
-  duplicateElements,
-  // REMOVED: zoomIn, zoomOut, setZoom — now exported from viewSlice.ts
+  zoomIn,      
+  zoomOut,     
+  setZoom,     
+  setShowGrid,
+  setShowAlignmentGuides,
+  setSnap,
+  setGridStyle,
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

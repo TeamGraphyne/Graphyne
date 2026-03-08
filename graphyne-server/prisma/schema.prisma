@@ -32,9 +32,6 @@ model Project {
 
   // A Project is a ordered list of Graphics
   items PlaylistItem[]
-
-  // A Project owns its Data Sources
-  dataSources DataSource[]
 }
 
 model PlaylistItem {

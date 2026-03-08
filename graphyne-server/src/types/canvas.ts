@@ -15,14 +15,6 @@ export interface AnimationConfig {
     ease: string;
 }
 
-export interface DataBinding {
-    sourceId: string;
-    sourceName: string;
-    fieldPath: string;
-    targetProperty: string;
-    format?: string;
-}
-
 export interface CanvasElement {
     id: string;
     type: ElementType;
@@ -40,8 +32,8 @@ export interface CanvasElement {
 
     // Style Props
     fill: string;
-    stroke?: string;
-    strokeWidth?: number;
+    stroke?: string;        // Made optional to match typical usage
+    strokeWidth?: number;   // Made optional
     opacity: number;
     cornerRadius?: number;
 
@@ -62,11 +54,8 @@ export interface CanvasElement {
     isVisible: boolean;
 
     // Animation State
-    inAnimation?: AnimationConfig;
-    outAnimation?: AnimationConfig;
-
-    // Data Bindings (NEW)
-    dataBindings?: DataBinding[];
+    inAnimation?: AnimationConfig;  // Optional to allow partial updates
+    outAnimation?: AnimationConfig; // Optional
 }
 
 export interface CanvasConfig {

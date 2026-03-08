@@ -161,7 +161,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                                     dispatch(loadGraphic({ 
                                         id: '', name: 'New Graphic', 
                                         elements: [], 
-                                        config: { width: 1920, height: 1080, background: '#000000' } 
+                                        config: { width: 1920, height: 1080, background: '#000000', zoom: 1 } 
                                     }));
                                     onClose();
                                 }}
