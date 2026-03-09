@@ -126,9 +126,9 @@ export const Artboard = () => {
       const allGuides = [...alignmentGuides, ...spacingGuides];
       setActiveGuides(allGuides);
 
-      const snappedX = snapToGuide(node.x(), allGuides, true);
-      const snappedY = snapToGuide(node.y(), allGuides, false);
-      
+      const snappedX = snapToGuide(node.x(), node.width(), allGuides, true);
+      const snappedY = snapToGuide(node.y(), node.height(), allGuides, false);
+
       if (snappedX !== node.x()) node.x(snappedX);
       if (snappedY !== node.y()) node.y(snappedY);
     };

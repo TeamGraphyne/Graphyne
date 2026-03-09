@@ -246,16 +246,20 @@ export function detectSpacingGuides (
 
 export function snapToGuide(
   position: number,
+  size: number,           // pass width or height
   guides: GuideLine[],
   isVertical: boolean
 ): number {
-  const relevantGuides = guides.filter(g => 
+  const relevantGuides = guides.filter(g =>
     isVertical ? g.type === 'vertical' : g.type === 'horizontal'
   );
 
   for (const guide of relevantGuides) {
     if (Math.abs(position - guide.position) < SNAP_THRESHOLD) {
-      return guide.position;
+      return guide.position;                // leading edge snap
+    }
+    if (Math.abs((position + size) - guide.position) < SNAP_THRESHOLD) {
+      return guide.position - size;         // trailing edge snap
     }
   }
 
