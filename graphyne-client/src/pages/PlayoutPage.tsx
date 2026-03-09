@@ -126,7 +126,10 @@ export function PlayoutPage() {
 
   useEffect(() => {
     socketService.connect();
+    
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRundown();
+    
     return () => {
       socketService.disconnect();
     };
