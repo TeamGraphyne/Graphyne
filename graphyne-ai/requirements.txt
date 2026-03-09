@@ -1,0 +1,5 @@
+agno
+pydantic>=2.0
+openai
+requests
+python-dotenv

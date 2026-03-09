@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MonitorPlay, Loader2, Save, FolderOpen, Database } from "lucide-react";
+import { MonitorPlay, Loader2, Save, FolderOpen, Database, Sparkles } from "lucide-react";
 
 // 1. Imports for Logic
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -20,6 +20,8 @@ import { DataSourceManager } from "../components/UI/DataSourceManager";
 
 import type { DataUpdatePayload, DataErrorPayload, DataField } from "../types/datasource";
 
+import { AiDesignPanel } from "../components/UI/AiDesignPanel";
+
 import transLogo from "../assets/TransLogo.png";
 
 export function EditorPage() {
@@ -35,6 +37,7 @@ export function EditorPage() {
   const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
   const [isProjectMgrOpen, setProjectMgrOpen] = useState(false);
   const [isDataMgrOpen, setDataMgrOpen] = useState(false); // NEW: Data Source Manager modal
+  const [isAiPanelOpen, setAiPanelOpen] = useState(false);
 
   // 4. Fetch Projects on Mount + Connect Socket for live data preview
   useEffect(() => {
@@ -145,6 +148,11 @@ export function EditorPage() {
          onClose={() => setDataMgrOpen(false)}
        />
 
+      <AiDesignPanel
+        isOpen={isAiPanelOpen}
+        onClose={() => setAiPanelOpen(false)}
+      />
+
       {/* --- HEADER --- */}
       <header className="h-20 bg-neutral-950 border-b border-none flex flex-col justify-center z-20">
         <div className="flex items-center w-full">
@@ -166,6 +174,19 @@ export function EditorPage() {
 
             {/* Context & Actions */}
             <div className="flex gap-2">
+
+              {/* NEW: AI Generate Button */}
+              <button
+                onClick={() => setAiPanelOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5
+                           bg-gradient-to-r from-orange-500/20 to-fuchsia-500/20
+                           hover:from-orange-500/40 hover:to-fuchsia-500/40
+                           text-orange-300 border border-orange-500/30
+                           hover:border-orange-400/60 rounded text-xs font-bold transition-all"
+              >
+                <Sparkles size={14} />
+                AI DESIGN
+              </button>
               
               {/* Project Manager Button */}
               <button 

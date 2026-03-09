@@ -10,6 +10,8 @@ import { projectRoutes } from './routes/projects';
 import { graphicRoutes } from './routes/graphics';
 import { datasourceRoutes } from './routes/datasources';
 import { DataPollerService } from './services/dataPoller';
+import { aiRoutes } from './routes/ai';
+
 
 // 1. Setup Directories
 const DATA_DIR = path.join(__dirname, '../data');
@@ -53,6 +55,7 @@ const dataPoller = new DataPollerService(io);
 app.register(projectRoutes);
 app.register(graphicRoutes(DATA_DIR));
 app.register(datasourceRoutes(dataPoller));
+app.register(aiRoutes);
 
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);

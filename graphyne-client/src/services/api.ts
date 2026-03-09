@@ -1,11 +1,25 @@
 import axios from "axios";
 import type { ProjectData, GraphicData } from "../types/project";
 import type { DataSourceData, DataSourceConnectionConfig, DataField } from "../types/datasource";
+import type { CanvasConfig, CanvasElement } from "../types/canvas";
 
 const API_URL = `http://${window.location.hostname}:3001/api`;
 const client = axios.create({ baseURL: API_URL });
 
+// NEW: Shape returned by POST /api/ai/generate
+export interface AiDesignResult {
+  name: string;
+  config: CanvasConfig;
+  elements: CanvasElement[];
+}
+
 export const api = {
+
+    generateGraphic: async (prompt: string): Promise<AiDesignResult> => {
+    const response = await client.post<AiDesignResult>('/ai/generate', { prompt });
+    return response.data;
+  },
+  
   // --- Graphics ---
   saveGraphic: async (payload: {
     id?: string | null;
