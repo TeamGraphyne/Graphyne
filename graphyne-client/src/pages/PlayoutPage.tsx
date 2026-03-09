@@ -94,7 +94,6 @@ export function PlayoutPage() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PlaylistItem | null>(null);
   const [programItem, setProgramItem] = useState<PlaylistItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
 
@@ -112,7 +111,6 @@ export function PlayoutPage() {
   }, []);
 
   const loadRundown = async () => {
-    setIsLoading(true);
     try {
       const projects = await api.getProjects();
       if (projects.length > 0) {
@@ -130,8 +128,6 @@ export function PlayoutPage() {
     } catch (err) {
       console.error("Failed to load rundown:", err);
       setProjectName("Connection Error");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -395,6 +391,7 @@ export function PlayoutPage() {
                 // to create a PlaylistItem compatible with your structure
                 const newItem: PlaylistItem = {
                   id: `local-${Date.now()}`,
+                  graphicId: `local-${Date.now()}`,
                   order: playlist.length,
                   graphic: {
                     id: `local-${Date.now()}`,
