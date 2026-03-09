@@ -102,13 +102,6 @@ export function PlayoutPage() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   
   // --- 1. System Startup ---
-  useEffect(() => {
-    socketService.connect();
-    loadRundown();
-    return () => {
-      socketService.disconnect();
-    };
-  }, []);
 
   const loadRundown = async () => {
     try {
@@ -130,6 +123,14 @@ export function PlayoutPage() {
       setProjectName("Connection Error");
     }
   };
+
+  useEffect(() => {
+    socketService.connect();
+    loadRundown();
+    return () => {
+      socketService.disconnect();
+    };
+  }, []);
 
   // ========== FEATURE 3: DRAG AND DROP HANDLERS ==========
   const handleDragStart = (index: number) => {
