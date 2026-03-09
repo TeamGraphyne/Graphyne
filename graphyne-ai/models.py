@@ -7,7 +7,7 @@ These must stay in sync with CanvasElement, CanvasConfig, AnimationConfig.
 
 from __future__ import annotations
 from typing import Literal, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 import re
 
 
@@ -86,7 +86,7 @@ class CanvasElement(BaseModel):
 
     @field_validator('src')
     @classmethod
-    def image_must_have_src(cls, v: Optional[str], info) -> Optional[str]:
+    def image_must_have_src(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
         """Images that have a src must be a valid URL or data URI."""
         if v is not None and not (v.startswith('http') or v.startswith('data:')):
             raise ValueError("src must be a URL or data URI")
