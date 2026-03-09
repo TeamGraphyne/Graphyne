@@ -20,10 +20,6 @@ export interface PlaylistItem {
     }
     type?: "SERVER" |  "LOCAL_HTML"; //To show the miport html file in rundown 
     htmlContent?: string;
-    autoplay? : boolean;
-    autoTakr?: boolean;
-    duration?: number;
-    loop?: boolean; // The nested details
 }
 
 export interface ProjectData {
