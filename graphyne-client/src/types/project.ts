@@ -13,17 +13,7 @@ export interface PlaylistItem {
     id: string;
     graphicId: string;
     order: number;
-    graphic: {
-        id: string; 
-        name : string;
-        filePath : string;
-    }
-    type?: "SERVER" |  "LOCAL_HTML"; //To show the miport html file in rundown 
-    htmlContent?: string;
-    autoplay? : boolean;
-    autoTakr?: boolean;
-    duration?: number;
-    loop?: boolean; // The nested details
+    graphic: GraphicData; // The nested details
 }
 
 export interface ProjectData {
