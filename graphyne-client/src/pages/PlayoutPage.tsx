@@ -118,7 +118,7 @@ export function PlayoutPage() {
       const projects = await api.getProjects();
       if (projects.length > 0) {
         // [FIXED] Use getProjectById to get items
-        const activeProject = await api.getProjectById(projects[0].id);
+        const activeProject = await api.getProjectById(projects[1].id);
         setProjectName(activeProject.name);
         
         // Sort items by order
