@@ -1,3 +1,5 @@
+import type { DataSourceData } from "./datasource";
+
 // 1. The Visual Asset (What the Editor creates)
 export interface GraphicData {
     id: string;
@@ -16,9 +18,11 @@ export interface PlaylistItem {
     graphic: GraphicData; // The nested details
 }
 
+// 3. The Project (The overall container)
 export interface ProjectData {
     id: string;
     name: string;
     items: PlaylistItem[];
+    dataSources?: DataSourceData[];
     updatedAt: string;
 }

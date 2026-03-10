@@ -7,7 +7,7 @@ interface GridState {
   show: boolean;
   snap: boolean;
   style: 'lines' | 'dots' | 'graph';
-  showAlignmentGuides : boolean;
+  showAlignmentGuides: boolean;
 }
 
 // --- EXTENDED STATE ---
@@ -27,45 +27,33 @@ const initialState: ExtendedCanvasState = {
     width: 1920,
     height: 1080,
     background: '#000000',
-    zoom: 1 
   },
   meta: {
     id: null,
     name: 'New Graphic',
-    projectId: null
+    projectId: null,
   },
   grid: {
     show: true,
     snap: true,
     style: 'lines',
-    showAlignmentGuides: true
-  }
+    showAlignmentGuides: true,
+  },
 };
 
 export const canvasSlice = createSlice({
   name: 'canvas',
   initialState,
   reducers: {
-    // ---------------- META ----------------
-    setGraphicMeta: (
-      state,
-      action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>
-    ) => {
+
+    // --- METADATA ---
+    setGraphicMeta: (state, action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>) => {
       if (action.payload.id !== undefined) state.meta.id = action.payload.id;
       if (action.payload.name !== undefined) state.meta.name = action.payload.name;
-      if (action.payload.projectId !== undefined)
-        state.meta.projectId = action.payload.projectId;
+      if (action.payload.projectId !== undefined) state.meta.projectId = action.payload.projectId;
     },
 
-    loadGraphic: (
-      state,
-      action: PayloadAction<{
-        id: string;
-        name: string;
-        elements: CanvasElement[];
-        config: CanvasConfig;
-      }>
-    ) => {
+    loadGraphic: (state, action: PayloadAction<{ id: string; name: string; elements: CanvasElement[]; config: CanvasConfig }>) => {
       state.meta.id = action.payload.id;
       state.meta.name = action.payload.name;
       state.elements = action.payload.elements;
@@ -73,24 +61,20 @@ export const canvasSlice = createSlice({
       state.selectedIds = [];
     },
 
-    // ---------------- ELEMENTS ----------------
+    // --- ELEMENTS ---
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
       const newElement: CanvasElement = {
         ...action.payload,
         id: uuidv4(),
         isVisible: action.payload.isVisible ?? true,
         isLocked: action.payload.isLocked ?? false,
-        zIndex: state.elements.length
+        zIndex: state.elements.length,
       };
-
       state.elements.push(newElement);
       state.selectedIds = [newElement.id];
     },
 
-    updateElement: (
-      state,
-      action: PayloadAction<Partial<CanvasElement> & { id: string }>
-    ) => {
+    updateElement: (state, action: PayloadAction<Partial<CanvasElement> & { id: string }>) => {
       const { id, ...changes } = action.payload;
       const index = state.elements.findIndex(el => el.id === id);
       if (index !== -1) {
@@ -98,10 +82,7 @@ export const canvasSlice = createSlice({
       }
     },
 
-    updateElements: (
-      state,
-      action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>
-    ) => {
+    updateElements: (state, action: PayloadAction<(Partial<CanvasElement> & { id: string })[]>) => {
       action.payload.forEach(({ id, ...changes }) => {
         const index = state.elements.findIndex(el => el.id === id);
         if (index !== -1) {
@@ -115,9 +96,8 @@ export const canvasSlice = createSlice({
       state.selectedIds = state.selectedIds.filter(id => id !== action.payload);
     },
 
-    // ---------------- SELECTION ----------------
     selectElement: (state, action: PayloadAction<string | null>) => {
-      state.selectedIds = action.payload ? [action.payload] : [];
+      state.selectedIds = action.payload === null ? [] : [action.payload];
     },
 
     setSelection: (state, action: PayloadAction<string[]>) => {
@@ -125,50 +105,14 @@ export const canvasSlice = createSlice({
     },
 
     toggleSelection: (state, action: PayloadAction<string>) => {
-      const id = action.payload;
-      const index = state.selectedIds.indexOf(id);
+      const index = state.selectedIds.indexOf(action.payload);
       if (index !== -1) {
         state.selectedIds.splice(index, 1);
       } else {
-        state.selectedIds.push(id);
+        state.selectedIds.push(action.payload);
       }
     },
 
-    // ---------------- LAYER CONTROL ----------------
-    reorderElement: (
-      state,
-      action: PayloadAction<{ fromIndex: number; toIndex: number }>
-    ) => {
-      const { fromIndex, toIndex } = action.payload;
-      const [removed] = state.elements.splice(fromIndex, 1);
-      state.elements.splice(toIndex, 0, removed);
-
-      state.elements.forEach((el, idx) => {
-        el.zIndex = idx;
-      });
-    },
-
-    moveLayerUp: (state, action: PayloadAction<string>) => {
-      const index = state.elements.findIndex(el => el.id === action.payload);
-      if (index !== -1 && index < state.elements.length - 1) {
-        [state.elements[index], state.elements[index + 1]] = [
-          state.elements[index + 1],
-          state.elements[index]
-        ];
-      }
-    },
-
-    moveLayerDown: (state, action: PayloadAction<string>) => {
-      const index = state.elements.findIndex(el => el.id === action.payload);
-      if (index > 0) {
-        [state.elements[index], state.elements[index - 1]] = [
-          state.elements[index - 1],
-          state.elements[index]
-        ];
-      }
-    },
-
-    // ---------------- VISIBILITY / LOCK ----------------
     toggleVisibility: (state, action: PayloadAction<string>) => {
       const el = state.elements.find(e => e.id === action.payload);
       if (el) el.isVisible = !el.isVisible;
@@ -179,30 +123,70 @@ export const canvasSlice = createSlice({
       if (el) el.isLocked = !el.isLocked;
     },
 
-    renameElement: (
-      state,
-      action: PayloadAction<{ id: string; name: string }>
-    ) => {
-      const element = state.elements.find(el => el.id === action.payload.id);
-      if (element) element.name = action.payload.name;
+    reorderElement: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
+      const { fromIndex, toIndex } = action.payload;
+      const [removed] = state.elements.splice(fromIndex, 1);
+      state.elements.splice(toIndex, 0, removed);
+      state.elements.forEach((el, idx) => { el.zIndex = idx; });
     },
 
-    // ---------------- ZOOM ----------------
-    zoomIn: state => {
-      if (state.config.zoom === undefined) state.config.zoom = 1;
-      state.config.zoom = Math.min(state.config.zoom + 0.1, 3);
+    moveLayerUp: (state, action: PayloadAction<string>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload);
+      if (index !== -1 && index < state.elements.length - 1) {
+        const temp = state.elements[index];
+        state.elements[index] = state.elements[index + 1];
+        state.elements[index + 1] = temp;
+      }
     },
 
-    zoomOut: state => {
-      if (state.config.zoom === undefined) state.config.zoom = 1;
-      state.config.zoom = Math.max(state.config.zoom - 0.1, 0.2);
+    moveLayerDown: (state, action: PayloadAction<string>) => {
+      const index = state.elements.findIndex(el => el.id === action.payload);
+      if (index > 0) {
+        const temp = state.elements[index];
+        state.elements[index] = state.elements[index - 1];
+        state.elements[index - 1] = temp;
+      }
     },
 
-    setZoom: (state, action: PayloadAction<number>) => {
-      state.config.zoom = Math.max(0.2, Math.min(3, action.payload));
+    renameElement: (state, action: PayloadAction<{ id: string; name: string }>) => {
+      const el = state.elements.find(e => e.id === action.payload.id);
+      if (el) el.name = action.payload.name;
     },
 
-    // ---------------- GRID ----------------
+    nudgeElements: (state, action: PayloadAction<{ ids: string[]; dx: number; dy: number }>) => {
+      const { ids, dx, dy } = action.payload;
+      ids.forEach((id) => {
+        const el = state.elements.find(e => e.id === id);
+        if (el && !el.isLocked) {
+          el.x += dx;
+          el.y += dy;
+        }
+      });
+    },
+
+    // FIX: was incorrectly nested inside setGridStyle — now a proper sibling reducer
+    duplicateElements: (state, action: PayloadAction<string[]>) => {
+      const newIds: string[] = [];
+      action.payload.forEach((id) => {
+        const source = state.elements.find(el => el.id === id);
+        if (source) {
+          const newId = uuidv4();
+          const clone: CanvasElement = {
+            ...source,
+            id: newId,
+            name: `${source.name} Copy`,
+            x: source.x + 20,
+            y: source.y + 20,
+            zIndex: state.elements.length,
+          };
+          state.elements.push(clone);
+          newIds.push(newId);
+        }
+      });
+      state.selectedIds = newIds;
+    },
+
+    // --- GRID ---
     setShowGrid: (state, action: PayloadAction<boolean>) => {
       state.grid.show = action.payload;
     },
@@ -210,18 +194,16 @@ export const canvasSlice = createSlice({
     setShowAlignmentGuides: (state, action: PayloadAction<boolean>) => {
       state.grid.showAlignmentGuides = action.payload;
     },
-    
+
     setSnap: (state, action: PayloadAction<boolean>) => {
       state.grid.snap = action.payload;
     },
 
-    setGridStyle: (
-      state,
-      action: PayloadAction<'lines' | 'dots' | 'graph'>
-    ) => {
+    // FIX: was missing its closing brace, causing duplicateElements to nest inside it
+    setGridStyle: (state, action: PayloadAction<'lines' | 'dots' | 'graph'>) => {
       state.grid.style = action.payload;
-    }
-  }
+    },
+  },
 });
 
 export const {
@@ -240,9 +222,8 @@ export const {
   moveLayerUp,
   moveLayerDown,
   renameElement,
-  zoomIn,      
-  zoomOut,     
-  setZoom,     
+  nudgeElements,
+  duplicateElements,
   setShowGrid,
   setShowAlignmentGuides,
   setSnap,

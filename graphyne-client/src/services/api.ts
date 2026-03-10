@@ -1,10 +1,26 @@
 import axios from "axios";
 import type { ProjectData, GraphicData } from "../types/project";
+import type { DataSourceData, DataSourceConnectionConfig, DataField } from "../types/datasource";
+import type { CanvasConfig, CanvasElement } from "../types/canvas";
 
-const API_URL = "http://localhost:3001/api";
+const API_URL = `http://${window.location.hostname}:3001/api`;
 const client = axios.create({ baseURL: API_URL });
 
+// NEW: Shape returned by POST /api/ai/generate
+export interface AiDesignResult {
+  name: string;
+  config: CanvasConfig;
+  elements: CanvasElement[];
+}
+
 export const api = {
+
+    generateGraphic: async (prompt: string): Promise<AiDesignResult> => {
+    const response = await client.post<AiDesignResult>('/ai/generate', { prompt });
+    return response.data;
+  },
+  
+  // --- Graphics ---
   saveGraphic: async (payload: {
     id?: string | null;
     name: string;
@@ -23,6 +39,7 @@ export const api = {
     return response.data;
   },
 
+  // --- Projects ---
   getProjects: async () => {
     const response =
       await client.get<{ id: string; name: string }[]>("/projects");
@@ -42,6 +59,16 @@ export const api = {
     return response.data;
   },
 
+  // NEW: Added updateProject to save re-ordered or removed rundown items to the DB
+  updateProject: async (id: string, name: string, items: { graphicId: string; order: number }[]) => {
+    const response = await client.post<{ success: boolean; id: string }>("/projects", {
+      id,
+      name,
+      items,
+    });
+    return response.data;
+  },
+
   deleteProject: async (id: string) => {
     await client.delete(`/projects/${id}`);
   },
@@ -55,5 +82,44 @@ export const api = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
+  },
+
+  // --- Data Sources ---
+  getDataSources: async (projectId: string): Promise<DataSourceData[]> => {
+    const response = await client.get(`/projects/${projectId}/datasources`);
+    return response.data;
+  },
+
+  saveDataSource: async (projectId: string, payload: {
+    id?: string;
+    name: string;
+    type: string;
+    config: DataSourceConnectionConfig;
+    pollingInterval: number;
+    autoStart: boolean;
+    fields?: DataField[];
+  }): Promise<{ success: boolean; id: string; source: DataSourceData }> => {
+    const response = await client.post(`/projects/${projectId}/datasources`, payload);
+    return response.data;
+  },
+
+  deleteDataSource: async (id: string) => {
+    await client.delete(`/datasources/${id}`);
+  },
+
+  testDataSource: async (payload: {
+    type: string;
+    config: DataSourceConnectionConfig;
+  }): Promise<{ success: boolean; fields: DataField[]; sampleData: Record<string, unknown> }> => {
+    const response = await client.post('/datasources/test', payload);
+    return response.data;
+  },
+
+  startPolling: async (sourceId: string) => {
+    await client.post(`/datasources/${sourceId}/start`);
+  },
+
+  stopPolling: async (sourceId: string) => {
+    await client.post(`/datasources/${sourceId}/stop`);
   },
 };
