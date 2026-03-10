@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Rect, Circle, Text, Transformer } from "react-konva";
+import React from "react";
+import { Stage, Layer, Rect, Circle, Text, Transformer, Line } from "react-konva";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectElement,
@@ -16,6 +17,14 @@ import { ActionCreators } from "redux-undo";
 import Konva from "konva";
 import { CanvasImage } from "./CanvasImage";
 import type { CanvasElement } from "../../types/canvas";
+import {
+  calculateSnapPoints,
+  calculateCenterGuides,
+  findActiveGuides,
+  detectSpacingGuides,
+  snapToGuide
+} from '../../utils/alignmentGuides';
+import type {GuideLine} from '../../types/alignment';
 
 // Nudge distance constants (in canvas pixels)
 const NUDGE_SMALL = 1;  // Arrow key
@@ -24,6 +33,10 @@ const NUDGE_LARGE = 10; // Shift + Arrow key
 export const Artboard = () => {
   const dispatch = useAppDispatch();
   const containerRef = useRef<HTMLDivElement>(null);
+
+   // --- ALIGNMENT GUIDES STATE ---
+  const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config, grid } = useAppSelector(
@@ -84,7 +97,39 @@ export const Artboard = () => {
     if (!selectedIds.includes(id)) {
       dispatch(selectElement(id));
     }
+    setIsDragging(true);
   };
+
+      const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+      console.log('onDragMove called');
+      const node = e.target;
+      const id = node.id();
+
+      if (grid?.snap) {
+    node.x(snap(node.x()));
+    node.y(snap(node.y()));
+  }
+
+      const element = elements.find(el => el.id === id);
+      if (!element) return;
+
+      const width = element.width || node.width() || 100;
+      const height = element.height || node.height() || 100;
+
+      const snapPoints = calculateSnapPoints(elements, id);
+
+      const alignmentGuides = findActiveGuides (
+        {x: node.x(), y: node.y(), width, height},
+        config.width,
+        config.height,
+        snapPoints
+      );
+
+      const spacingGuides = detectSpacingGuides(elements, id);
+
+      const allGuides = [...alignmentGuides, ...spacingGuides];
+      setActiveGuides(allGuides);
+    };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
@@ -109,15 +154,9 @@ export const Artboard = () => {
         y: snapped.y,
       }),
     );
+    setActiveGuides([]);
+    setIsDragging(false);
   };
-  
-  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
-  if (!grid?.snap) return;
-
-  const node = e.target;
-  node.x(snap(node.x()));
-  node.y(snap(node.y()));
-};
 
   // --- SNAP TO GRID HELPER ---
   const GRID_SIZE = 20;
@@ -386,6 +425,8 @@ export const Artboard = () => {
     return { fill: el.fill };
   }
 
+  console.log('Active guides:', activeGuides.length, 'isDragging:', isDragging);
+
   return (
     <div
       ref={containerRef}
@@ -553,6 +594,56 @@ export const Artboard = () => {
             }
 
             return null;
+          })}
+
+          {/* ALIGNMENT GUIDES */}
+          {activeGuides.map((guide) => {
+            if (guide.type === 'vertical') {
+              return (
+                <React.Fragment key={guide.id}>
+                  <Line 
+                    points={[guide.position, 0, guide.position, config.height]}
+                    stroke={guide.color || '#00a1ff'}
+                    strokeWidth={1}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                  {guide.label && (
+                  <Text
+                    x={guide.position + 5}
+                    y={10}
+                    text={guide.label}
+                    fontSize={12}
+                    fill={guide.color || '#00a1ff'}
+                    listening={false}
+                  />
+                )}
+                </React.Fragment>
+              );
+            } else {
+              return (
+                <React.Fragment key={guide.id}>
+                  <Line
+                    points={[0, guide.position, config.width, guide.position]}
+                    stroke={guide.color || '#00a1ff'}
+                    strokeWidth={1}
+                    dash={[5, 5]}
+                    listening={false}
+                  />
+                  {guide.label && (
+                    <Text
+                      x={10}
+                      y={guide.position + 5}
+                      text={guide.label}
+                      fontSize={12}
+                      fill={guide.color || '#00a1ff'}
+                      listening={false}
+                    />
+                  )}
+
+                </React.Fragment>
+              );
+            }
           })}
 
           {/* SELECTION RECTANGLE */}
