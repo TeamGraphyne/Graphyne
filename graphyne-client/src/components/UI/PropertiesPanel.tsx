@@ -27,7 +27,7 @@ export const PropertiesPanel = () => {
 
   if (!element) {
     return (
-      <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-gray-500 flex items-center justify-center h-full text-sm">
+      <div className="w-80 bg-panelColour border-l border-fuchsia-200/30 text-gray-500 flex items-center justify-center h-full text-sm">
         Select an element to edit
       </div>
   )}
@@ -246,7 +246,7 @@ export const PropertiesPanel = () => {
 
                 {/* Fill Type */}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">Fill Type</label>
+                  <label className="text-[10px] text-gray-400  mb-1 uppercase flex justify-between">Fill Type</label>
                   <select 
                     value={element.fillType || 'solid'}
                     onChange={(e) => {
