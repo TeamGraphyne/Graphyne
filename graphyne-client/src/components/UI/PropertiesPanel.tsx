@@ -246,7 +246,7 @@ export const PropertiesPanel = () => {
 
                 {/* Fill Type */}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">Fill Type</label>
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">Fill Type</label>
                   <select 
                     value={element.fillType || 'solid'}
                     onChange={(e) => {
@@ -265,7 +265,7 @@ export const PropertiesPanel = () => {
 
                 {/* Solid Fill */}
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">
+                  <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">
                     {element.fillType && element.fillType !== 'solid' ? 'Start Color' : 'Fill Color'}
                   </label>
                   <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
@@ -282,7 +282,7 @@ export const PropertiesPanel = () => {
                 {/* Secondary Color */}
                 {element.fillType && element.fillType !== 'solid' && (
                   <div>
-                    <label className="text-[10px] text-gray-400 block mb-1 uppercase flex justify-between">End Color</label>
+                    <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">End Color</label>
                     <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
                       <input 
                         type="color" 
