@@ -1,0 +1,117 @@
+# Fires ONLY when a version tag is pushed to main (e.g. v1.0.0)
+# Builds the Tauri desktop app for all three platforms
+name: Graphyne Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # e.g. v1.0.0, v1.2.3-beta
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build-tauri:
+    name: Build — ${{ matrix.platform }}
+    permissions:
+      contents: write  # Required to create GitHub Release
+    strategy:
+      fail-fast: false  # Don't cancel other platforms if one fails
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            artifact-name: graphyne-linux
+            artifact-path: |
+              graphyne-launcher/src-tauri/target/release/bundle/appimage/*.AppImage
+              graphyne-launcher/src-tauri/target/release/bundle/deb/*.deb
+
+          - platform: windows-latest
+            artifact-name: graphyne-windows
+            artifact-path: |
+              graphyne-launcher/src-tauri/target/release/bundle/msi/*.msi
+              graphyne-launcher/src-tauri/target/release/bundle/nsis/*.exe
+
+          - platform: macos-latest
+            artifact-name: graphyne-macos
+            artifact-path: |
+              graphyne-launcher/src-tauri/target/release/bundle/dmg/*.dmg
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Linux: system dependencies required by Tauri ──
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libxdo-dev
+
+      # ── Rust toolchain (cached by rustup) ──
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './graphyne-launcher/src-tauri -> target'
+
+      # ── Node.js for building the client and server ──
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: graphyne-client/package-lock.json
+
+      # ── Build the React client (Tauri serves this from disk) ──
+      - name: Install client dependencies
+        working-directory: ./graphyne-client
+        run: npm ci
+
+      - name: Build client
+        working-directory: ./graphyne-client
+        run: npm run build
+
+      # ── Install Tauri launcher dependencies ──
+      - name: Install launcher dependencies
+        working-directory: ./graphyne-launcher
+        run: npm ci
+
+      # ── Run Tauri build — produces platform installers ──
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: ./graphyne-launcher
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Graphyne ${{ github.ref_name }}'
+          releaseBody: |
+            ## Graphyne ${{ github.ref_name }}
+
+            ### Installation
+            - **Windows:** Download the `.exe` installer
+            - **macOS:** Download the `.dmg` file
+            - **Linux:** Download the `.AppImage` (no install needed) or `.deb`
+
+            ### What's included
+            - Graphyne Launcher (Tauri native app)
+            - Graphyne Server (Fastify + SQLite, bundled as sidecar)
+            - Graphyne Client (built React app, served by the server)
+          releaseDraft: true   # Creates a draft — team reviews before publishing
+          prerelease: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
+          retention-days: 14

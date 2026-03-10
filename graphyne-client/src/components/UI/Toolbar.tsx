@@ -1,10 +1,9 @@
 import { useRef, useState } from "react";
 import { ActionCreators } from "redux-undo";
+import { zoomIn, zoomOut } from "../../store/viewSlice"; // NEW: Import from viewSlice
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   addElement,
-  zoomIn,
-  zoomOut,
   setShowGrid,
   setShowAlignmentGuides,
   setSnap,
@@ -114,19 +113,33 @@ export const Toolbar = () => {
     );
   };
 
-  const handleZoomIn = () => dispatch(zoomIn());
-  const handleZoomOut = () => dispatch(zoomOut());
+  const selectTool = () => {
+    console.log("Select tool activated");
+  };
+
+  // Dispatch the actual Redux actions
+  const handleZoomIn = () => {
+    dispatch(zoomIn());
+  };
+
+  const handleZoomOut = () => {
+    dispatch(zoomOut());
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 1. Create temporary Blob URL
     const objectUrl = URL.createObjectURL(file);
-    const img = new window.Image();
 
+    // 2. Load image to get natural dimensions
+    const img = new window.Image();
     img.onload = () => {
       const maxSize = 500;
       const scale = Math.min(1, maxSize / img.width, maxSize / img.height);
+      const scaledWidth = img.width * scale;
+      const scaledHeight = img.height * scale;
 
       dispatch(
         addElement({
@@ -134,9 +147,9 @@ export const Toolbar = () => {
           name: file.name,
           x: snap(100),
           y: snap(100),
-          width: img.width * scale,
-          height: img.height * scale,
-          src: objectUrl,
+          width: scaledWidth, // Cap initial size while preserving aspect ratio
+          height: scaledHeight,
+          src: objectUrl, // Store blob URL in Redux
           opacity: 1,
           rotation: 0,
           scaleX: 1,
@@ -145,19 +158,19 @@ export const Toolbar = () => {
           isVisible: true,
           inAnimation: { ...defaultAnim },
           outAnimation: { ...defaultAnim },
-          fill: "transparent",
+          fill: "transparent", // Images don't have a fill, but we need to set it for the type
         }),
       );
     };
-
     img.src = objectUrl;
+
+    // Reset input so same file can be selected again
     e.target.value = "";
   };
 
   return (
-    <div className="relative h-14 bg-fuchsia-950 flex items-center px-4 space-x-4 text-gray-300">
-
-      {/* Hidden File Input */}
+    <div className="h-14 bg-fuchsia-950 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
+      {/* Hidden File Input for Image Upload */}
       <input
         type="file"
         ref={fileInputRef}
@@ -165,26 +178,38 @@ export const Toolbar = () => {
         accept="image/png, image/jpeg, image/svg+xml"
         className="hidden"
       />
-
       {/* Shape Tools */}
-      <div className="flex space-x-2 border-r pr-4">
-        <button onClick={addRect} className="p-2 hover:bg-orange-300 rounded">
-          <Square size={20} />
+      <div className="flex space-x-2   border-r border-none pr-4">
+        <button
+          onClick={addRect}
+          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          title="Add Rectangle"
+        >
+          <Square size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button onClick={addCircle} className="p-2 hover:bg-orange-300 rounded">
-          <Circle size={20} />
+        <button
+          onClick={addCircle}
+          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          title="Add Circle"
+        >
+          <Circle size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button onClick={addText} className="p-2 hover:bg-orange-300 rounded">
-          <Type size={20} />
+        <button
+          onClick={addText}
+          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          title="Add Text"
+        >
+          <Type size={20} className="group-hover/button:text-gray-800" />
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 hover:bg-orange-300 rounded"
+          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          title="Add Image"
         >
-          <ImageIcon size={20} />
+          <ImageIcon size={20} className="group-hover/button:text-gray-800" />
         </button>
       </div>
-
+      
       {/* GRID DROPDOWN */}
       <div className="relative border-r pr-4">
         <button
@@ -247,20 +272,43 @@ export const Toolbar = () => {
 
       {/* History Controls */}
       <div className="flex space-x-2">
-        <button onClick={() => dispatch(ActionCreators.undo())} className="p-2 hover:bg-orange-300 rounded">
-          <Undo size={20} />
+        <button
+          onClick={() => dispatch(ActionCreators.undo())}
+          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          title="Undo"
+        >
+          <Undo size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button onClick={() => dispatch(ActionCreators.redo())} className="p-2 hover:bg-orange-300 rounded">
-          <Redo size={20} />
+        <button
+          onClick={() => dispatch(ActionCreators.redo())}
+          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          title="Redo"
+        >
+          <Redo size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button onClick={handleZoomIn} className="p-2 hover:bg-orange-300 rounded">
-          <ZoomIn size={20} />
+        <button
+          onClick={handleZoomIn}
+          className="group/button p-2 hover:bg-orange-300 rounded"
+          title="Zoom In"
+        >
+          <ZoomIn size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button onClick={handleZoomOut} className="p-2 hover:bg-orange-300 rounded">
-          <ZoomOut size={20} />
+        <button
+          onClick={handleZoomOut}
+          className="group/button p-2 hover:bg-orange-300 rounded"
+          title="Zoom Out"
+        >
+          <ZoomOut size={20} className="group-hover/button:text-gray-800" />
         </button>
-        <button className="p-2 hover:bg-orange-300 rounded">
-          <MousePointer2 size={20} />
+        <button
+          onClick={selectTool}
+          className="group/button p-2 hover:bg-orange-300 rounded"
+          title="Select Tool"
+        >
+          <MousePointer2
+            size={20}
+            className="group-hover/button:text-gray-800"
+          />
         </button>
       </div>
     </div>
