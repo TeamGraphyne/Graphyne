@@ -1,23 +1,29 @@
 import { FastifyInstance } from "fastify";
 import { spawn } from "child_process";
 import path from "path";
+import fs from "fs";
 
 interface GenerateBody {
   prompt: string;
 }
 
 // Path to the graphyne-ai directory (sibling of graphyne-server)
-const AI_DIR = path.resolve(__dirname, "../../graphyne-ai");
+const AI_DIR = path.resolve(__dirname, "../../../graphyne-ai");
 
-// FIXED: Resolve the correct Python binary for the current platform.
-// On Windows, 'py' (the Python Launcher) is the most reliable option as
-// it is always registered in PATH by the official Python installer and the
-// Microsoft Store release. 'python' is often NOT in PATH on Windows.
-// On Linux/macOS, 'python3' is standard.
+// FIXED: Use the venv Python executable directly.
+// This avoids PATH lookup issues on Windows ('python' / 'py' not found)
+// AND guarantees we use the venv where agno, pydantic, etc. are installed.
 function getPythonBin(): string {
+  const winVenv  = path.join(AI_DIR, ".venv", "Scripts", "python.exe");
+  const unixVenv = path.join(AI_DIR, ".venv", "bin", "python3");
+
   if (process.platform === "win32") {
-    return "python";
+    if (fs.existsSync(winVenv)) return winVenv;
+    // Fallback: py launcher (requires Python installed from python.org)
+    return "py";
   }
+
+  if (fs.existsSync(unixVenv)) return unixVenv;
   return "python3";
 }
 
@@ -41,7 +47,7 @@ sys.path.insert(0, ${JSON.stringify(AI_DIR)})
 from pipeline import generate_only
 result = generate_only(sys.argv[1])
 print(json.dumps(result))
-            `.trim(),
+        `.trim(),
         prompt,
       ],
       {
@@ -80,14 +86,12 @@ print(json.dumps(result))
     });
 
     child.on("error", (err) => {
-      // FIXED: Improved error message that explains all three possible binary names
       reject(
         new Error(
           `Failed to spawn Python process: ${err.message}\n` +
             `Tried binary: '${pythonBin}'\n` +
-            `On Windows, ensure Python is installed from python.org or the Microsoft Store.\n` +
-            `The 'py' launcher must be available in PATH.\n` +
-            `On Linux/macOS, ensure 'python3' is installed.\n` +
+            `Ensure a .venv exists in graphyne-ai/ with dependencies installed:\n` +
+            `  cd graphyne-ai && py -m venv .venv && .venv\\Scripts\\activate && pip install -r requirements.txt\n` +
             `AI directory: ${AI_DIR}`,
         ),
       );
@@ -127,6 +131,7 @@ export const aiRoutes = async (fastify: FastifyInstance) => {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         console.error("❌ AI pipeline error:", message);
+        console.log(AI_DIR);
 
         // Surface a clean error to the client
         return reply.code(500).send({
