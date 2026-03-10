@@ -19,7 +19,6 @@ import { CanvasImage } from "./CanvasImage";
 import type { CanvasElement } from "../../types/canvas";
 import {
   calculateSnapPoints,
-  calculateCenterGuides,
   findActiveGuides,
   detectSpacingGuides,
   snapToGuide
@@ -129,6 +128,11 @@ export const Artboard = () => {
 
       const allGuides = [...alignmentGuides, ...spacingGuides];
       setActiveGuides(allGuides);
+
+      const snappedX = snapToGuide(node.x(), allGuides, true);
+      const snappedY = snapToGuide(node.y(), allGuides, false);
+      if (snappedX !== node.x()) node.x(snappedX);
+      if (snappedY !== node.y()) node.y(snappedY);
     };
 
   const onDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
