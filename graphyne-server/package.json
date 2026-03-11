@@ -4,7 +4,10 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -20,8 +23,11 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.19",
     "@types/uuid": "^9.0.8",
+    "@vitest/coverage-v8": "^4.0.18",
     "prisma": "^5.10.2",
+    "socket.io-client": "^4.8.3",
     "tsx": "^4.21.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   }
 }
