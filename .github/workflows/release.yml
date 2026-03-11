@@ -1,48 +1,218 @@
+# .github/workflows/release.yml
 # Fires ONLY when a version tag is pushed to main (e.g. v1.0.0)
-# Builds the Tauri desktop app for all three platforms
 name: Graphyne Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'   # e.g. v1.0.0, v1.2.3-beta
+      - 'v*.*.*'
 
 env:
   NODE_VERSION: '20'
 
 jobs:
+  # ─── SERVER BUNDLE: Windows ────────────────────────────────
+  bundle-server-windows:
+    name: Bundle Server — Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./graphyne-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: graphyne-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client (binary engine)
+        run: npx prisma generate
+        env:
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
+          PRISMA_CLIENT_ENGINE_TYPE: binary
+          DATABASE_URL: "file:./data/temp.db"
+
+      - name: Bundle server JS
+        run: node bundle.mjs
+
+      - name: Compile to Windows binary
+        run: npm run bundle:win
+
+      - name: Upload server binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-windows
+          path: graphyne-launcher/src-tauri/binaries/graphyne-server-x86_64-pc-windows-msvc.exe
+          retention-days: 1
+
+  # ─── SERVER BUNDLE: macOS Intel ────────────────────────────
+  bundle-server-macos-intel:
+    name: Bundle Server — macOS Intel
+    runs-on: macos-13     # Intel runner
+    defaults:
+      run:
+        working-directory: ./graphyne-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: graphyne-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client (binary engine)
+        run: npx prisma generate
+        env:
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
+          PRISMA_CLIENT_ENGINE_TYPE: binary
+          DATABASE_URL: "file:./data/temp.db"
+
+      - name: Bundle server JS
+        run: node bundle.mjs
+
+      - name: Compile to macOS Intel binary
+        run: npm run bundle:mac-intel
+
+      - name: Upload server binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-macos-intel
+          path: graphyne-launcher/src-tauri/binaries/graphyne-server-x86_64-apple-darwin
+          retention-days: 1
+
+  # ─── SERVER BUNDLE: macOS ARM ──────────────────────────────
+  bundle-server-macos-arm:
+    name: Bundle Server — macOS ARM
+    runs-on: macos-latest   # ARM (M-series) runner
+    defaults:
+      run:
+        working-directory: ./graphyne-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: graphyne-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client (binary engine)
+        run: npx prisma generate
+        env:
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
+          PRISMA_CLIENT_ENGINE_TYPE: binary
+          DATABASE_URL: "file:./data/temp.db"
+
+      - name: Bundle server JS
+        run: node bundle.mjs
+
+      - name: Compile to macOS ARM binary
+        run: npm run bundle:mac-arm
+
+      - name: Upload server binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-macos-arm
+          path: graphyne-launcher/src-tauri/binaries/graphyne-server-aarch64-apple-darwin
+          retention-days: 1
+
+  # ─── SERVER BUNDLE: Linux ──────────────────────────────────
+  bundle-server-linux:
+    name: Bundle Server — Linux
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: ./graphyne-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: graphyne-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client (binary engine)
+        run: npx prisma generate
+        env:
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
+          PRISMA_CLIENT_ENGINE_TYPE: binary
+          DATABASE_URL: "file:./data/temp.db"
+
+      - name: Bundle server JS
+        run: node bundle.mjs
+
+      - name: Compile to Linux binary
+        run: npm run bundle:linux
+
+      - name: Upload server binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-linux
+          path: graphyne-launcher/src-tauri/binaries/graphyne-server-x86_64-unknown-linux-gnu
+          retention-days: 1
+
+  # ─── TAURI BUILD ───────────────────────────────────────────
   build-tauri:
-    name: Build — ${{ matrix.platform }}
+    name: Build Tauri — ${{ matrix.platform }}
+    needs:
+      - bundle-server-windows
+      - bundle-server-macos-intel
+      - bundle-server-macos-arm
+      - bundle-server-linux
     permissions:
-      contents: write  # Required to create GitHub Release
+      contents: write
     strategy:
-      fail-fast: false  # Don't cancel other platforms if one fails
+      fail-fast: false
       matrix:
         include:
           - platform: ubuntu-22.04
+            server-artifact: server-linux
             artifact-name: graphyne-linux
             artifact-path: |
               graphyne-launcher/src-tauri/target/release/bundle/appimage/*.AppImage
               graphyne-launcher/src-tauri/target/release/bundle/deb/*.deb
 
           - platform: windows-latest
+            server-artifact: server-windows
             artifact-name: graphyne-windows
             artifact-path: |
               graphyne-launcher/src-tauri/target/release/bundle/msi/*.msi
               graphyne-launcher/src-tauri/target/release/bundle/nsis/*.exe
 
-          - platform: macos-latest
-            artifact-name: graphyne-macos
+          - platform: macos-13            # Intel
+            server-artifact: server-macos-intel
+            artifact-name: graphyne-macos-intel
+            artifact-path: |
+              graphyne-launcher/src-tauri/target/release/bundle/dmg/*.dmg
+
+          - platform: macos-latest        # ARM
+            server-artifact: server-macos-arm
+            artifact-name: graphyne-macos-arm
             artifact-path: |
               graphyne-launcher/src-tauri/target/release/bundle/dmg/*.dmg
 
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ── Linux: system dependencies required by Tauri ──
+      # ── Linux system deps ──
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -54,24 +224,20 @@ jobs:
             patchelf \
             libxdo-dev
 
-      # ── Rust toolchain (cached by rustup) ──
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust build
-        uses: swatinem/rust-cache@v2
+      # ── Rust ──
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
         with:
           workspaces: './graphyne-launcher/src-tauri -> target'
 
-      # ── Node.js for building the client and server ──
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      # ── Node.js ──
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: graphyne-client/package-lock.json
 
-      # ── Build the React client (Tauri serves this from disk) ──
+      # ── Build React client ──
       - name: Install client dependencies
         working-directory: ./graphyne-client
         run: npm ci
@@ -80,16 +246,38 @@ jobs:
         working-directory: ./graphyne-client
         run: npm run build
 
-      # ── Install Tauri launcher dependencies ──
+      # ── Copy built client into server's public folder ──
+      # The server serves the client from /public — copy it there so
+      # the sidecar can serve it at localhost:3001
+      - name: Stage client for server
+        run: |
+          mkdir -p graphyne-server/public
+          cp -r graphyne-client/dist/* graphyne-server/public/
+
+      # ── Download the pre-built server binary for this platform ──
+      - name: Download server binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.server-artifact }}
+          path: graphyne-launcher/src-tauri/binaries/
+
+      # Make binaries executable (not needed on Windows)
+      - name: Set binary permissions
+        if: matrix.platform != 'windows-latest'
+        run: chmod +x graphyne-launcher/src-tauri/binaries/graphyne-server-*
+
+      # ── Install Tauri launcher deps ──
       - name: Install launcher dependencies
         working-directory: ./graphyne-launcher
         run: npm ci
 
-      # ── Run Tauri build — produces platform installers ──
+      # ── Tauri build ──
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: ./graphyne-launcher
           tagName: ${{ github.ref_name }}
@@ -98,15 +286,15 @@ jobs:
             ## Graphyne ${{ github.ref_name }}
 
             ### Installation
-            - **Windows:** Download the `.exe` installer
-            - **macOS:** Download the `.dmg` file
-            - **Linux:** Download the `.AppImage` (no install needed) or `.deb`
+            - **Windows:** Download and run the `.exe` installer (NSIS) or `.msi`
+            - **macOS (Intel):** Download `graphyne-macos-intel` `.dmg`
+            - **macOS (Apple Silicon):** Download `graphyne-macos-arm` `.dmg`
+            - **Linux:** Download the `.AppImage` (no install) or `.deb`
 
-            ### What's included
-            - Graphyne Launcher (Tauri native app)
-            - Graphyne Server (Fastify + SQLite, bundled as sidecar)
-            - Graphyne Client (built React app, served by the server)
-          releaseDraft: true   # Creates a draft — team reviews before publishing
+            ### First launch
+            Graphyne will create its database and data folders automatically in your
+            app-data directory on first run. No setup required.
+          releaseDraft: true
           prerelease: false
 
       - name: Upload build artifacts

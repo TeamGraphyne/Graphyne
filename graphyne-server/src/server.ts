@@ -13,8 +13,12 @@ import { DataPollerService } from './services/dataPoller';
 import { aiRoutes } from './routes/ai';
 
 
-// 1. Setup Directories
-const DATA_DIR = path.join(__dirname, '../data');
+// MODIFIED: Use DATA_DIR env var when provided (production / Tauri sidecar),
+// fall back to __dirname-relative path for local dev.
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(__dirname, '../data');
+
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const GRAPHICS_DIR = path.join(DATA_DIR, 'graphics');
 
@@ -56,6 +60,7 @@ app.register(projectRoutes);
 app.register(graphicRoutes(DATA_DIR));
 app.register(datasourceRoutes(dataPoller));
 app.register(aiRoutes);
+app.get('/api/health', async () => ({ status: 'ok', version: '1.0.0' }));
 
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
@@ -138,6 +143,45 @@ io.on('connection', (socket) => {
         console.log('Client disconnected:', socket.id);
     });
 });
+
+if (process.env.NODE_ENV === 'production') {
+  // MODIFIED: Inside pkg, __dirname is /snapshot/dist-bundle/ so public/
+  // must be resolved as a sibling of index.js, not a parent-relative path.
+  const clientDistPath = path.join(__dirname, 'public');
+
+  // Serve static assets
+  app.register(fastifyStatic, {
+    root: clientDistPath,
+    prefix: '/',
+    decorateReply: false,
+  });
+
+  // SPA fallback
+  app.setNotFoundHandler(async (request, reply) => {
+    const url = request.url;
+
+    if (
+      url.startsWith('/api/') ||
+      url.startsWith('/graphics/') ||
+      url.startsWith('/uploads/')
+    ) {
+      return reply.code(404).send({ error: 'Not Found', statusCode: 404 });
+    }
+
+    // MODIFIED: Read lazily inside the handler — avoids a startup crash
+    // when public/ doesn't exist (e.g. during dev or a partial build).
+    // pkg has already snapshotted the file so this read is from memory.
+    const indexHtml = fs.readFileSync(
+      path.join(clientDistPath, 'index.html'),
+      'utf-8'
+    );
+
+    return reply
+      .code(200)
+      .header('Content-Type', 'text/html; charset=utf-8')
+      .send(indexHtml);
+  });
+}
 
 // 7. Start Server
 const start = async () => {

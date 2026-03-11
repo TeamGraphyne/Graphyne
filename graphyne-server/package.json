@@ -2,6 +2,11 @@
   "name": "graphyne-server",
   "version": "1.0.0",
   "scripts": {
+    "bundle:js": "node bundle.mjs",
+    "bundle:win": "pkg dist-bundle/index.js --target node20-win-x64   --output ../graphyne-launcher/src-tauri/binaries/graphyne-server-x86_64-pc-windows-msvc.exe",
+    "bundle:mac-intel": "pkg dist-bundle/index.js --target node20-mac-x64   --output ../graphyne-launcher/src-tauri/binaries/graphyne-server-x86_64-apple-darwin",
+    "bundle:mac-arm": "pkg dist-bundle/index.js --target node20-mac-arm64 --output ../graphyne-launcher/src-tauri/binaries/graphyne-server-aarch64-apple-darwin",
+    "bundle:linux": "pkg dist-bundle/index.js --target node20-linux-x64  --output ../graphyne-launcher/src-tauri/binaries/graphyne-server-x86_64-unknown-linux-gnu",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js"
@@ -11,6 +16,7 @@
     "@fastify/multipart": "^8.1.0",
     "@fastify/static": "^7.0.1",
     "@prisma/client": "^5.10.2",
+    "@yao-pkg/pkg": "^6.14.1",
     "fastify": "^4.26.1",
     "fs-extra": "^11.2.0",
     "socket.io": "^4.7.4",
@@ -20,8 +26,22 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.19",
     "@types/uuid": "^9.0.8",
+    "esbuild": "^0.24.0",
     "prisma": "^5.10.2",
     "tsx": "^4.21.0",
     "typescript": "^5.3.3"
+  },
+  "pkg": {
+    "assets": [
+    "dist-bundle/public/**",
+    "dist-bundle/prisma/**",
+    "node_modules/.prisma/client/libquery_engine-*",
+    "node_modules/@prisma/engines/libquery_engine-*",
+    "node_modules/@prisma/engines/schema-engine-*"
+    ],
+    "scripts": [],
+    "targets": [
+      "node20"
+    ]
   }
 }

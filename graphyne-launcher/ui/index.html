@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Graphyne</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #e2e8f0;
+      overflow: hidden;
+    }
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      background: linear-gradient(135deg, #f97316, #d946ef);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(249,115,22,0.2);
+      border-top-color: #f97316;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #64748b;
+      letter-spacing: 0.1em;
+    }
+    .error {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #ef4444;
+      max-width: 400px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">GRAPHYNE</div>
+  <div class="spinner"></div>
+  <div class="status" id="status">STARTING ENGINE…</div>
+  <div class="error" id="error"></div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const errorEl  = document.getElementById('error');
+    let attempts = 0;
+    const MAX_ATTEMPTS = 60; // 30 seconds total
+
+    async function checkServer() {
+      try {
+        const res = await fetch('http://localhost:3001/api/health', { signal: AbortSignal.timeout(500) });
+        if (res.ok) {
+          statusEl.textContent = 'LAUNCHING EDITOR…';
+          window.location.href = 'http://localhost:3001/editor';
+          return;
+        }
+      } catch {
+        // still starting
+      }
+
+      attempts++;
+      if (attempts > MAX_ATTEMPTS) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Server failed to start. Please restart Graphyne. If the issue persists, check that port 3001 is not in use.';
+        statusEl.textContent = 'FAILED TO START';
+        return;
+      }
+
+      statusEl.textContent = `STARTING ENGINE… (${attempts}/${MAX_ATTEMPTS})`;
+      setTimeout(checkServer, 500);
+    }
+
+    // Give the sidecar a moment to begin spawning before first check
+    setTimeout(checkServer, 1000);
+  </script>
+</body>
+</html>
