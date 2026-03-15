@@ -1,11 +1,9 @@
-# Fires ONLY when a version tag is pushed to main (e.g. v1.0.0)
-# Builds the Tauri desktop app for all three platforms
 name: Graphyne Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'   # e.g. v1.0.0, v1.2.3-beta
+      - 'v*.*.*'
 
 env:
   NODE_VERSION: '20'
@@ -14,9 +12,9 @@ jobs:
   build-tauri:
     name: Build — ${{ matrix.platform }}
     permissions:
-      contents: write  # Required to create GitHub Release
+      contents: write
     strategy:
-      fail-fast: false  # Don't cancel other platforms if one fails
+      fail-fast: false
       matrix:
         include:
           - platform: ubuntu-22.04
@@ -42,7 +40,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Linux: system dependencies required by Tauri ──
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -54,7 +51,6 @@ jobs:
             patchelf \
             libxdo-dev
 
-      # ── Rust toolchain (cached by rustup) ──
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -63,15 +59,16 @@ jobs:
         with:
           workspaces: './graphyne-launcher/src-tauri -> target'
 
-      # ── Node.js for building the client and server ──
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: graphyne-client/package-lock.json
+          cache-dependency-path: |
+            graphyne-client/package-lock.json
+            graphyne-server/package-lock.json
 
-      # ── Build the React client (Tauri serves this from disk) ──
+      # ── Step 1: Build the React client ───────────────────────────────────────
       - name: Install client dependencies
         working-directory: ./graphyne-client
         run: npm ci
@@ -80,12 +77,48 @@ jobs:
         working-directory: ./graphyne-client
         run: npm run build
 
-      # ── Install Tauri launcher dependencies ──
+      # ── Step 2 & 3: Compile server + pkg binary ───────────────────────────────
+      - name: Install server dependencies
+        working-directory: ./graphyne-server
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: ./graphyne-server
+        run: npx prisma generate
+        env:
+          DATABASE_URL: "file:./data/ci.db"
+
+      - name: Build server TypeScript
+        working-directory: ./graphyne-server
+        run: npm run build
+
+      - name: Build server binary (sidecar)
+        working-directory: ./graphyne-server
+        run: node scripts/build-sidecar.js
+
+      # ── Step 4: Copy client contents into Tauri resources ────────────────────
+      # IMPORTANT: Copy the *contents* of dist/, not the dist/ folder itself.
+      # Wrong:  cp -r dist   → creates client/dist/index.html  (broken)
+      # Right:  cp -r dist/* → creates client/index.html       (correct)
+      - name: Copy client dist → Tauri resources (Linux/macOS)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          mkdir -p graphyne-launcher/src-tauri/client
+          cp -r graphyne-client/dist/* graphyne-launcher/src-tauri/client/
+
+      - name: Copy client dist → Tauri resources (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force graphyne-launcher\src-tauri\client
+          Copy-Item -Recurse graphyne-client\dist\* graphyne-launcher\src-tauri\client\
+
+      # ── Step 5: Install launcher deps ────────────────────────────────────────
       - name: Install launcher dependencies
         working-directory: ./graphyne-launcher
         run: npm ci
 
-      # ── Run Tauri build — produces platform installers ──
+      # ── Step 6: Tauri build ───────────────────────────────────────────────────
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -97,16 +130,10 @@ jobs:
           releaseBody: |
             ## Graphyne ${{ github.ref_name }}
 
-            ### Installation
-            - **Windows:** Download the `.exe` installer
-            - **macOS:** Download the `.dmg` file
-            - **Linux:** Download the `.AppImage` (no install needed) or `.deb`
-
-            ### What's included
-            - Graphyne Launcher (Tauri native app)
-            - Graphyne Server (Fastify + SQLite, bundled as sidecar)
-            - Graphyne Client (built React app, served by the server)
-          releaseDraft: true   # Creates a draft — team reviews before publishing
+            - **Windows:** Download the `.exe` or `.msi` installer
+            - **macOS:** Download the `.dmg`
+            - **Linux:** Download the `.AppImage` or `.deb`
+          releaseDraft: true
           prerelease: false
 
       - name: Upload build artifacts
