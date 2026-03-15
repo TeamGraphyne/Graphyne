@@ -59,5 +59,3 @@ projects/
 # pkg intermediate binaries
 /graphyne-server/binaries/
 -e 
-# Generated migration bundle
-/graphyne-server/src/migrations-bundle.ts
