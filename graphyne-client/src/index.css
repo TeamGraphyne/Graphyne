@@ -1,0 +1,37 @@
+/* @import "tailwindcss/tailwind.css";
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-950 text-white; 
+  margin: 0;
+  min-height: 100vh;
+}  */
+
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+@theme {
+  --color-bgColour: #1e1e1e;
+  --color-panelColour: #1e1e1e;
+  --color-highlight: #FFB74D;
+  --color-hover: #BDBDBD;
+  --color-selected: #BDBDBD;
+  --color-borderColour: rgba(245, 208, 254, 0.3);
+  --color-guideline: #00a1ff;
+  --color-centreGuide: #ad0ec2;
+
+  --font-size-normalText: 1rem;
+  --font-size-subTopic: 1.5rem;
+  --font-size-topic: 2rem;
+}
+
+body {
+  @apply bg-gray-950 text-white;
+  margin: 0;
+  min-height: 100vh;
+}

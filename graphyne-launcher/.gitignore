@@ -1,0 +1,60 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+dist-ssr/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Project specific
+projects/
+!projects/.keep
+/graphyne-server/src/generated/prisma
+/graphyne-server/data/
+
+# ── Tauri generated artefacts (must not be committed) ─────────────────────────
+# These are produced by the build pipeline and placed here by build-sidecar.js /
+# the release workflow. They are platform-specific and large; .gitignore them so
+# developers don't accidentally commit binaries.
+
+# Compiled server sidecar binaries
+/graphyne-launcher/src-tauri/binaries/
+
+# React client build copied into Tauri resources
+/graphyne-launcher/src-tauri/client/
+
+# Rust build output
+/graphyne-launcher/src-tauri/target/
+
+# pkg intermediate binaries
+/graphyne-server/binaries/

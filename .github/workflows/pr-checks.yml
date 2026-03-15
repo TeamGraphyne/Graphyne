@@ -1,16 +1,19 @@
+# Fires on every PR — validates metadata, does not build
 name: PR Checks
 
 on:
-  pull_request: 
+  pull_request:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  # Validate PR title follows conventional commits
   validate-pr-title:
     name: Validate PR Title
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      statuses: write
     steps:
-      - name: Check PR title
+      - name: Check PR title follows Conventional Commits
         uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -25,33 +28,19 @@ jobs:
             test
             chore
             ci
-          scopes: |
-            editor
-            canvas
-            layers
-            toolbar
-            properties
-            data
-            preview
-            playback
-            api
-            db
-            sockets
-            ui
-            store
-            deps
-            config
+            revert
           requireScope: false
-          subjectPattern: ^[a-z]. +$
+          subjectPattern: ^[a-z].+$
           subjectPatternError: |
-            The subject "{subject}" must start with a lowercase letter. 
+            The subject "{subject}" must start with a lowercase letter.
 
-  # Check PR size
-  pr-size: 
-    name: Check PR Size
+  pr-size:
+    name: Label PR Size
     runs-on: ubuntu-latest
-    steps: 
-      - name:  Check PR size
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Apply size label
         uses: codelytv/pr-size-labeler@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,9 +51,9 @@ jobs:
           m_label: 'size/M'
           m_max_size: 400
           l_label: 'size/L'
-          l_max_size:  800
+          l_max_size: 800
           xl_label: 'size/XL'
           fail_if_xl: false
           message_if_xl: >
-            This PR is quite large. Consider breaking it into smaller PRs
-            for easier review. 
+            This PR is large. Consider breaking it into smaller PRs
+            for easier review.

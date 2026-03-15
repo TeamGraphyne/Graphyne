@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Graphyne Engine</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #05050a;
+      color: #e2e8f0;
+      font-family: 'Courier New', Courier, monospace; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0.03),
+        rgba(255, 255, 255, 0)
+      );
+      animation: scan 3s linear infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    @keyframes scan {
+      0% { top: -100px; }
+      100% { top: 100%; }
+    }
+
+    .splash-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      z-index: 2;
+    }
+
+    .video-container {
+      width: 200px;
+      height: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      outline: none;
+    }
+
+    .scanner-bar {
+      width: 150px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scanner-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -50%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #d946ef, #f97316, transparent);
+      animation: scan-line 1.5s ease-in-out infinite;
+    }
+
+    @keyframes scan-line {
+      0% { left: -50%; }
+      100% { left: 100%; }
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #f97316; /* Graphyne orange */
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      min-height: 1.2em;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+    }
+
+    /* Success State */
+    .success-text {
+      color: #27c93f; /* Broadcast green */
+      text-shadow: 0 0 10px rgba(39, 201, 63, 0.3);
+    }
+
+  </style>
+</head>
+<body>
+  
+  <div class="scanline"></div>
+
+  <div class="splash-content">
+    <div class="video-container">
+      <video src="GraphyneLogo.webm" autoplay muted playsinline></video>
+    </div>
+
+    <div class="scanner-bar" id="scanner"></div>
+
+    <p class="status" id="status">INITIALIZING ENGINE...</p>
+  </div>
+
+  <script>
+    const STATUS  = document.getElementById('status');
+    const SCANNER = document.getElementById('scanner');
+
+    const TARGET  = 'http://localhost:3001/api/projects';
+    const REDIRECT = 'http://localhost:3001/editor';
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 60; // 30 seconds total at 500 ms intervals
+
+    async function probe() {
+      attempts++;
+      try {
+        const r = await fetch(TARGET, { cache: 'no-store' });
+        if (r.ok || r.status < 500) {
+          // Server is up — navigate to the editor
+          SCANNER.style.display = 'none';
+          STATUS.classList.add('success-text');
+          STATUS.textContent = 'CONNECTION ESTABLISHED. LAUNCHING...';
+          
+          setTimeout(() => {
+            window.location.replace(REDIRECT);
+          }, 1600);
+          return;
+        }
+      } catch {
+        // Server not ready yet — keep polling
+      }
+
+      if (attempts >= MAX_ATTEMPTS) {
+        STATUS.style.color = '#ef4444'; // Red error
+        STATUS.textContent = 'SYS ERR: SERVER UNREACHABLE.';
+        SCANNER.style.display = 'none';
+        return;
+      }
+
+      STATUS.textContent = `AWAITING SIGNAL... [${attempts}]`;
+      setTimeout(probe, 500);
+    }
+
+    setTimeout(probe, 1000);
+  </script>
+</body>
+</html>
