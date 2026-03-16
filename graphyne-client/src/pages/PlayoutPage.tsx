@@ -379,36 +379,40 @@ export function PlayoutPage() {
             accept=".html"
             id="rundown-import-html"
             className="hidden"
-            onChange={(e) => {
+            onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file) return;
 
               const reader = new FileReader();
-
-              reader.onload = (event) => {
+              reader.onload = async (event) => {
                 const htmlContent = event.target?.result as string;
 
-                // to create temporary blob URL
-                const blob = new Blob([htmlContent], { type: "text/html" });
-                const blobUrl = URL.createObjectURL(blob);
+                try {
+                  // 1. Identify the current project (linking the graphic to the active show)
+                  const projects = await api.getProjects(); //
+                  const activeProjectId = projects.length > 0 ? projects[0].id : null;
 
-                // to create a PlaylistItem compatible with your structure
-                const newItem: PlaylistItem = {
-                  id: `local-${Date.now()}`,
-                  graphicId: `local-${Date.now()}`,
-                  order: playlist.length,
-                  graphic: {
-                    id: `local-${Date.now()}`,
+                  // 2. Save to Database and Server Disk
+                  //use existing API service to save the grpahic to the DB
+                  //sends html and project id to the backend 
+                  const response = await api.saveGraphic({
                     name: file.name,
-                    filePath: blobUrl //  THIS is the key
-                  }
-                };
+                    html: htmlContent,
+                    json: {}, // Generic placeholder for direct imports
+                    projectId: activeProjectId
+                  });
 
-                setPlaylist(prev => [...prev, newItem]);
+                  if (response.data.success) {
+                    // 3. Re-fetch the rundown from the server to show the persisted item
+                    await loadRundown(); 
+                  }
+                } catch (err) {
+                  console.error("Failed to persist imported graphic:", err);
+                }
               };
 
               reader.readAsText(file);
-              e.target.value = "";
+              e.target.value = "";//reset input
             }}
           />
         
