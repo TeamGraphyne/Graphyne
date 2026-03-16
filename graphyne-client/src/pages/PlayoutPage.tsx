@@ -280,14 +280,14 @@ const handleTake = () => {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col p-4 gap-4 max-w-screen-2xl mx-auto w-full min-h-0">
         
-        {/* MONITORS */}
-        <div className="grid grid-cols-2 gap-6 w-full max-w-5xl mx-auto flex-shrink-0">
+{/* MONITORS & CONTROLS */}
+        <div className="flex flex-row items-center justify-center gap-6 w-full max-w-7xl mx-auto flex-shrink-0">
           
           {/* PREVIEW WINDOW */}
-          <div className="flex flex-col gap-2">
+          <div className="flex-1 flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
               <span className="text-sm font-bold text-gray-400 tracking-wider">PREVIEW</span>
-              <span className="text-xs text-purple-300 font-mono">
+              <span className="text-xs text-purple-300 font-mono truncate max-w-[200px] text-right">
                 {previewItem ? previewItem.graphic.name : "IDLE"}
               </span>
             </div>
@@ -298,14 +298,15 @@ const handleTake = () => {
             </div>
           </div>
 
+
           {/* PROGRAM WINDOW */}
-          <div className="flex flex-col gap-2">
+          <div className="flex-1 flex flex-col gap-2">
             <div className="flex justify-between items-end px-1">
               <span className="text-sm font-bold text-red-500 tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                 PROGRAM
               </span>
-              <span className="text-xs text-red-400 font-mono">
+              <span className="text-xs text-red-400 font-mono truncate max-w-[200px] text-right">
                 {programItem ? programItem.graphic.name : "BLACK"}
               </span>
             </div>
@@ -314,6 +315,7 @@ const handleTake = () => {
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>
           </div>
+          
         </div>
 
         {/* CONTROLS */}
@@ -324,7 +326,7 @@ const handleTake = () => {
               // Allow take if there's anything in preview OR program
               disabled={!previewItem && !programItem}
               className={`
-                group relative overflow-hidden w-48 h-12 rounded-lg font-black tracking-[0.15em] transition-all duration-200
+                group relative overflow-hidden w-40 h-12 rounded-lg font-black tracking-[0.15em] transition-all duration-200
                 flex items-center justify-center gap-2
                 ${(previewItem || programItem) ? "bg-purple-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"}
               `}
@@ -337,7 +339,7 @@ const handleTake = () => {
               onClick={handleClearProgram}
               disabled={!programItem}
               className={`
-                w-32 h-12 rounded-lg font-bold tracking-widest border-2 transition-all duration-200
+                w-40 h-12 rounded-lg font-bold tracking-widest border-2 transition-all duration-200
                 flex items-center justify-center gap-2
                 ${programItem ? "border-red-900/50 text-red-500 hover:bg-red-950 hover:border-red-600 active:scale-95" : "border-gray-800 text-gray-700 cursor-not-allowed bg-gray-900"}
               `}
