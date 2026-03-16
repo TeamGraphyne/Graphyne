@@ -179,21 +179,33 @@ export function PlayoutPage() {
     setPreviewItem(item);
   };
 
-  const handleTake = () => {
-    if (previewItem) {
-      // 1. Move Preview to Program
-      setProgramItem(previewItem);
-      
-      const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
+const handleTake = () => {
+    // Prevent taking if both monitors are already empty
+    if (!previewItem && !programItem) return;
 
-      // 2. Emit Socket command for external renderers (Output Window)
+    // 1. Swap Preview and Program states
+    const nextProgram = previewItem;
+    const nextPreview = programItem;
+
+    setProgramItem(nextProgram);
+    setPreviewItem(nextPreview);
+
+    // 2. Emit the correct Socket command
+    if (nextProgram) {
+      // If we swapped a graphic into Program, trigger a TAKE
+      const fullUrl = getGraphicUrl(nextProgram.graphic.filePath);
       console.log("🚀 Emitting TAKE:", fullUrl);
       socketService.emit("command:take", {
         url: fullUrl
       });
+    } else {
+      // If we swapped an empty Preview into Program, cut to black
+      console.log("🚀 Emitting CLEAR (Cut to Black)");
+      socketService.emit("command:clear");
     }
   };
 
+  // handleClearProgram stays exactly the same
   const handleClearProgram = () => {
     setProgramItem(null);
     console.log("Emitting CLEAR");
@@ -233,7 +245,7 @@ export function PlayoutPage() {
   return (
     <div className="flex flex-col h-screen bg-[#140a24] text-white overflow-hidden font-sans">
       {/* HEADER */}
-      <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
+      <header className="h-14 bg-[#1a0f2e] border-b border-purple-900/40 flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
           <MonitorPlay className="text-purple-400" size={24} />
           <h1 className="font-bold text-xl tracking-tight text-gray-100">
@@ -249,7 +261,6 @@ export function PlayoutPage() {
             <div className="text-sm font-bold text-gray-200">{projectName}</div>
           </div>
 
-          {/* NEW: Open Output Button */}
           <button 
              onClick={openOutputWindow}
              className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-purple-300 border border-blue-900/30 hover:border-blue-500 transition-colors"
@@ -266,9 +277,11 @@ export function PlayoutPage() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col p-6 gap-6 max-w-[1920px] mx-auto w-full">
-        <div className="grid grid-cols-2 gap-6 w-full">
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col p-4 gap-4 max-w-screen-2xl mx-auto w-full min-h-0">
+        
+        {/* MONITORS */}
+        <div className="grid grid-cols-2 gap-6 w-full max-w-5xl mx-auto flex-shrink-0">
           
           {/* PREVIEW WINDOW */}
           <div className="flex flex-col gap-2">
@@ -278,12 +291,9 @@ export function PlayoutPage() {
                 {previewItem ? previewItem.graphic.name : "IDLE"}
               </span>
             </div>
-            <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
-               {/* Checkerboard */}
+            <div className="relative w-full aspect-video bg-[#20123a] rounded-lg border border-purple-900/40 overflow-hidden shadow-inner">
                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-               
                {renderMonitorContent(previewItem, "Preview", true)} 
-
                <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
             </div>
           </div>
@@ -300,27 +310,26 @@ export function PlayoutPage() {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-              
               {renderMonitorContent(programItem, "Program", true)}
-
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>
           </div>
         </div>
 
         {/* CONTROLS */}
-        <div className="flex justify-center items-center py-2">
-          <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl">
+        <div className="flex justify-center items-center flex-shrink-0">
+          <div className="flex gap-4 p-2 bg-[#1a0f2e] border border-purple-900/40 rounded-xl shadow-xl">
             <button
               onClick={handleTake}
-              disabled={!previewItem}
+              // Allow take if there's anything in preview OR program
+              disabled={!previewItem && !programItem}
               className={`
                 group relative overflow-hidden w-48 h-12 rounded-lg font-black tracking-[0.15em] transition-all duration-200
                 flex items-center justify-center gap-2
-                ${previewItem ? "bg-purple-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"}
+                ${(previewItem || programItem) ? "bg-purple-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:scale-105 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700"}
               `}
             >
-              <Play size={18} className={previewItem ? "fill-current" : ""} />
+              <Play size={18} className={(previewItem || programItem) ? "fill-current" : ""} />
               TAKE
             </button>
 
@@ -339,39 +348,31 @@ export function PlayoutPage() {
           </div>
         </div>
 
-        {/* RUNDOWN LIST - WITH DRAG AND DROP */}
-        
-        <div className="w-full bg-[#1a1033] rounded-lg mt-6 flex flex-col min-h-0 flex-1">
+        {/* RUNDOWN LIST */}
+        <div className="w-full bg-[#1a1033] rounded-lg flex flex-col min-h-0 flex-1 border border-purple-900/30">
 
-          {/* HEADER */}
-          <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex items-center flex-shrink-0">
-            
+          {/* LIST HEADER */}
+          <div className="px-4 py-3 bg-[#20123a] border-b border-purple-900/40 flex items-center flex-shrink-0 rounded-t-lg">
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
               RUNDOWN
             </h3>
             
-            {/* REFERSH BUTTON and IMPORT BUTTON ON THE RIGHT SIDE  */}
             <div className="ml-auto flex items-center gap-2">
               <button
-                onClick={() =>
-                  document.getElementById("rundown-import-html")?.click()
-                }
-                className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600
-                          text-xs font-bold text-white rounded"
+                onClick={() => document.getElementById("rundown-import-html")?.click()}
+                className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-xs font-bold text-white rounded transition-colors"
               >
                 + IMPORT
               </button>
 
               <button
                 onClick={loadRundown}
-                className="p-1.5 bg-gray-800 hover:bg-gray-700
-                          rounded border border-gray-700"
+                className="p-1.5 bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors"
               >
                 <RefreshCw size={14} />
               </button>
             </div>
-
           </div>
 
            <input
@@ -416,11 +417,10 @@ export function PlayoutPage() {
             }}
           />
 
-          {/* SCROLLABLE LIST AREA: The "window" for your graphics */}
-          {/* We set a max-height here. If the list is longer than 400px, it scrolls. */}
-          <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar" style={{ maxHeight: '400px' }}>
+          {/* SCROLLABLE LIST AREA */}
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
             {playlist.length === 0 ? (
-              <div className="h-32 flex flex-col items-center justify-center text-gray-600 gap-2">
+              <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-2 min-h-[120px]">
                 <AlertCircle size={32} className="opacity-20" />
                 <p className="text-sm">Rundown is empty or could not be loaded.</p>
               </div>
@@ -441,7 +441,7 @@ export function PlayoutPage() {
                     onDragEnd={handleDragEnd}
                     onClick={() => handleLoadToPreview(item)}
                     className={`
-                      group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
+                      group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden flex-shrink-0
                       ${isDragging ? "opacity-50" : ""}
                       ${isDragOver ? "border-t-4 border-t-blue-500" : ""}
                       ${isProgram ? "bg-pink-950/30 border-pink-900/60" : isPreview ? "bg-purple-900/30 border-purple-500" : "bg-[#20123a] border-transparent hover:bg-gray-800 hover:border-gray-700"}
