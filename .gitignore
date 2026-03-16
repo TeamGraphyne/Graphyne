@@ -55,6 +55,7 @@ projects/
 
 # Rust build output
 /graphyne-launcher/src-tauri/target/
+/graphyne-launcher/src-tauri/gen/
 
 # pkg intermediate binaries
 /graphyne-server/binaries/

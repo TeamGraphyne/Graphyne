@@ -1,42 +1,15 @@
 {
+  "productName": "Graphyne",
+  "version": "0.0.0",
+  "identifier": "com.graphyne.engine",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
-    "devPath": "../src",
-    "distDir": "../src"
+    "frontendDist": "../src"
   },
-  "package": {
-    "productName": "Graphyne",
-    "version": "0.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "sidecar": true,
-        "open": false
-      }
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "com.graphyne.app",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "externalBin": ["binaries/graphyne-server"],
-      "resources": ["client/index.html","client/assets/*"]
-    },
+  "app": {
     "security": {
       "csp": null
-    },
-    "updater": {
-      "active": false
     },
     "windows": [
       {
@@ -51,5 +24,23 @@
         "center": true
       }
     ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/graphyne-server"
+    ],
+    "resources": {
+      "client/index.html": "client/index.html",
+      "client/assets/": "client/assets"
+    }
   }
 }
