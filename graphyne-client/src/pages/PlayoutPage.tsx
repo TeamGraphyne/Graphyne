@@ -341,10 +341,10 @@ export function PlayoutPage() {
 
         {/* RUNDOWN LIST - WITH DRAG AND DROP */}
         
-        <div className="w-full bg-[#1a1033] rounded-lg mt-6">
+        <div className="w-full bg-[#1a1033] rounded-lg mt-6 flex flex-col min-h-0 flex-1">
 
           {/* HEADER */}
-          <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex items-center">
+          <div className="px-4 py-3 bg-[#20123a] border-purple-900/40 flex items-center flex-shrink-0">
             
             <h3 className="font-bold text-gray-300 flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
@@ -374,7 +374,7 @@ export function PlayoutPage() {
 
           </div>
 
-          <input
+           <input
             type="file"
             accept=".html"
             id="rundown-import-html"
@@ -415,10 +415,12 @@ export function PlayoutPage() {
               e.target.value = "";//reset input
             }}
           />
-        
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+
+          {/* SCROLLABLE LIST AREA: The "window" for your graphics */}
+          {/* We set a max-height here. If the list is longer than 400px, it scrolls. */}
+          <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar" style={{ maxHeight: '400px' }}>
             {playlist.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-2">
+              <div className="h-32 flex flex-col items-center justify-center text-gray-600 gap-2">
                 <AlertCircle size={32} className="opacity-20" />
                 <p className="text-sm">Rundown is empty or could not be loaded.</p>
               </div>
@@ -426,44 +428,30 @@ export function PlayoutPage() {
               playlist.map((item, index) => {
                 const isPreview = previewItem?.id === item.id;
                 const isProgram = programItem?.id === item.id;
-                // ========== FEATURE 3: DRAG VISUAL FEEDBACK ==========
                 const isDragging = dragIndex === index;
                 const isDragOver = dragOverIndex === index;
-                // ==================================================
                 
                 return (
                   <div
                     key={item.id}
-                    // ========== FEATURE 3: DRAG HANDLERS ==========
                     draggable
                     onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      handleDragOver(index);
-                    }}
+                    onDragOver={(e) => { e.preventDefault(); handleDragOver(index); }}
                     onDrop={() => handleDrop(index)}
                     onDragEnd={handleDragEnd}
-                    // ============================================
                     onClick={() => handleLoadToPreview(item)}
                     className={`
                       group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
                       ${isDragging ? "opacity-50" : ""}
                       ${isDragOver ? "border-t-4 border-t-blue-500" : ""}
-                      ${isProgram ? "bg-pink-950/30 border-pink-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-purple-900/30 border-pruple-500 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-[#20123a] border-transparent hover:bg-gray-800 hover:border-gray-700"}
+                      ${isProgram ? "bg-pink-950/30 border-pink-900/60" : isPreview ? "bg-purple-900/30 border-purple-500" : "bg-[#20123a] border-transparent hover:bg-gray-800 hover:border-gray-700"}
                     `}
                   >
                     {(isPreview || isProgram) && (<div className={`absolute left-0 top-0 bottom-0 w-1 ${isProgram ? "bg-red-500" : "bg-blue-500"}`} />)}
                     <div className="w-8 font-mono text-xs text-gray-600 text-center">{(index + 1).toString().padStart(2, "0")}</div>
-                    <div className="w-8 flex justify-center mr-2">
-                      {isProgram && (<div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />)}
-                      {!isProgram && isPreview && (<div className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,1)]" />)}
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center">
+                    <div className="flex-1 flex flex-col justify-center ml-4">
                       <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"}`}>{item.graphic.name}</span>
                       <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide">HTML5 SOURCE</span>
-                    </div>
-                    <div className="w-20 text-right">
-                      <span className={`text-[10px] font-black tracking-wider ${isProgram ? "text-red-600" : isPreview ? "text-blue-600" : "hidden"}`}>{isProgram ? "ON AIR" : "NEXT"}</span>
                     </div>
                   </div>
                 );
