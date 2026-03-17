@@ -15,7 +15,9 @@ export interface PlaylistItem {
     id: string;
     graphicId: string;
     order: number;
-    graphic: GraphicData; // The nested details
+    graphic: GraphicData; // Embed the graphic data for easy access in playout
+    type?: "SERVER" |  "LOCAL_HTML"; //To show the miport html file in rundown 
+    htmlContent?: string;
 }
 
 // 3. The Project (The overall container)
