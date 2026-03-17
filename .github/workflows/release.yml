@@ -40,6 +40,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Building version $VERSION"
+          # Update tauri.conf.json
+          sed -i "s/\"version\": \"[^\"][^\"]*\"/\"version\": \"$VERSION\"/" \
+            graphyne-launcher/src-tauri/tauri.conf.json
+          # Update server package.json too so they stay in sync
+          sed -i "s/\"version\": \"[^\"][^\"]*\"/\"version\": \"$VERSION\"/" \
+            graphyne-server/package.json
+
       # Tauri 2.x on Linux uses webkit2gtk-4.1 and libsoup3
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
