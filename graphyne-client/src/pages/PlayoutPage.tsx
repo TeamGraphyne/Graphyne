@@ -472,8 +472,8 @@ export function PlayoutPage() {
       </header>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col p-6 gap-6 max-w-[1920px] mx-auto w-full">
-        <div className="grid grid-cols-2 gap-6 w-full">
+          <div className="flex-1 flex flex-col p-6 gap-6 max-w-7xl mx-auto w-full min-h-0 overflow-hidden">
+          <div className="grid grid-cols-2 gap-6 w-full">
 
           {/* PREVIEW WINDOW */}
           <div className="flex flex-col gap-2">
