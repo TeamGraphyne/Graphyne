@@ -45,11 +45,10 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           echo "Building version $VERSION"
-          # Update tauri.conf.json
-          sed -i "s/\"version\": \"[^\"][^\"]*\"/\"version\": \"$VERSION\"/" \
+          # Use perl instead of sed — works identically on macOS (BSD) and Linux (GNU)
+          perl -i -pe "s/\"version\": \"[^\"]+\"/\"version\": \"$VERSION\"/" \
             graphyne-launcher/src-tauri/tauri.conf.json
-          # Update server package.json too so they stay in sync
-          sed -i "s/\"version\": \"[^\"][^\"]*\"/\"version\": \"$VERSION\"/" \
+          perl -i -pe "s/\"version\": \"[^\"]+\"/\"version\": \"$VERSION\"/" \
             graphyne-server/package.json
 
       # Tauri 2.x on Linux uses webkit2gtk-4.1 and libsoup3
