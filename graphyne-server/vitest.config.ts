@@ -1,0 +1,15 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+    test: {
+        globals: true,
+        environment: 'node',
+        coverage: {
+            provider: 'v8',
+            reporter: ['text', 'html'],
+            include: ['src/routes/**', 'src/server.ts'],
+        },
+        // Isolate each test file
+        isolate: true,
+    },
+});
