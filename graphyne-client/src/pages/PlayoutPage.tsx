@@ -9,11 +9,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Camera,
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
 import type { PlaylistItem } from "../types/project";
-import type { CanvasElement } from "../types/canvas";
+import type { CanvasElement, CanvasConfig } from "../types/canvas";
 import type { DataUpdatePayload, DataSourceData } from "../types/datasource";
 import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 import { useNavigate } from "react-router-dom";
@@ -30,9 +31,11 @@ interface ScaledFrameProps {
   autoPlay?: boolean;
   iframeRef?: React.RefObject<HTMLIFrameElement | null>;
   onIframeLoad?: () => void;
+  baseWidth?: number;
+  baseHeight?: number;
 }
 
-const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFrameProps) => {
+const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad, baseWidth = 1920, baseHeight = 1080 }: ScaledFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const localIframeRef = useRef<HTMLIFrameElement>(null);
   const activeRef = iframeRef || localIframeRef;
@@ -42,8 +45,14 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
-        const currentWidth = containerRef.current.offsetWidth;
-        setScale(currentWidth / 1920);
+        const parentW = containerRef.current.offsetWidth;
+        const parentH = containerRef.current.offsetHeight;
+        
+        const scaleW = parentW / baseWidth;
+        const scaleH = parentH / baseHeight;
+        
+        // Scale to fit within both horizontal and vertical bounds
+        setScale(Math.min(scaleW, scaleH));
       }
     };
     updateScale();
@@ -75,13 +84,13 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-black">
       <div
+        className="absolute top-1/2 left-1/2"
         style={{
-          width: "1920px",
-          height: "1080px",
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
+          width: `${baseWidth}px`,
+          height: `${baseHeight}px`,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+          transformOrigin: "center",
         }}
-        className="absolute top-0 left-0"
       >
         <iframe
           ref={activeRef}
@@ -108,20 +117,33 @@ function parseGraphicElements(item: PlaylistItem): CanvasElement[] {
   }
 }
 
+function parseGraphicConfig(item: PlaylistItem): CanvasConfig | null {
+  try {
+    const parsed = JSON.parse(item.graphic.rawJson);
+    return parsed.config || null;
+  } catch {
+    return null;
+  }
+}
+
 export function PlayoutPage() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
+  
   const [previewItem, setPreviewItem] = useState<PlaylistItem | null>(null);
+  const [previewElements, setPreviewElements] = useState<CanvasElement[]>([]);
+  const [previewConfig, setPreviewConfig] = useState<CanvasConfig | null>(null);
+  
   const [programItem, setProgramItem] = useState<PlaylistItem | null>(null);
+  const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
+  const [programConfig, setProgramConfig] = useState<CanvasConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [projectName, setProjectName] = useState<string>("Loading...");
   const navigate = useNavigate();
 
   // Refs and state for data binding
   const programIframeRef = useRef<HTMLIFrameElement>(null);
-  const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
 
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  const [previewElements, setPreviewElements] = useState<CanvasElement[]>([]);
 
   const [dataSources, setDataSources] = useState<DataSourceData[]>([]);
   const [liveData, setLiveData] = useState<Record<string, Record<string, unknown>>>({});
@@ -324,11 +346,12 @@ export function PlayoutPage() {
   const handleLoadToPreview = (item: PlaylistItem) => {
     setPreviewItem(item);
     setPreviewElements(parseGraphicElements(item));
+    setPreviewConfig(parseGraphicConfig(item));
   };
 
   const handleTake = () => {
-    if (previewItem) {
-      const elements = parseGraphicElements(previewItem);
+    if (previewItem && previewConfig) {
+      const elements = previewElements; // Already parsed and set by handleLoadToPreview
       const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
 
       if (programItem) {
@@ -341,20 +364,24 @@ export function PlayoutPage() {
         setTimeout(() => {
           setProgramItem(previewItem);
           setProgramElements(elements);
+          setProgramConfig(previewConfig); // Set program config
           console.log("🚀 Emitting TAKE:", fullUrl);
           socketService.emit("command:take", {
             url: fullUrl,
             elements: elements,
+            config: previewConfig,
             liveData: liveData
           });
         }, 1500);
       } else {
         setProgramItem(previewItem);
         setProgramElements(elements);
+        setProgramConfig(previewConfig); // Set program config
         console.log("🚀 Emitting TAKE:", fullUrl);
         socketService.emit("command:take", {
           url: fullUrl,
           elements: elements,
+          config: previewConfig,
           liveData: liveData
         });
       }
@@ -372,11 +399,48 @@ export function PlayoutPage() {
     setTimeout(() => {
       setProgramItem(null);
       setProgramElements([]);
+      setProgramConfig(null); // Clear program config
     }, 1000);
   };
 
   const openOutputWindow = () => {
     window.open('/output', 'GraphyneOutput', 'width=1920,height=1080,menubar=no,toolbar=no');
+  };
+
+  // NEW: Capture the program iframe at 3x resolution as a PNG snapshot
+  const handleSnapshot = () => {
+    const iframe = programIframeRef.current;
+    if (!iframe?.contentWindow) {
+      console.warn('📸 No program graphic loaded to snapshot');
+      return;
+    }
+
+    console.log('📸 Requesting 3× high-res snapshot from graphic...');
+
+    // Listen for the snapshot result from the iframe
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== 'snapshot-result') return;
+      window.removeEventListener('message', handler);
+
+      if (event.data.error) {
+        console.error('📸 Snapshot failed:', event.data.error);
+        return;
+      }
+
+      // Trigger download
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      link.download = `Graphyne_Snapshot_${timestamp}.png`;
+      link.href = event.data.dataUrl;
+      link.click();
+
+      console.log('📸 Snapshot saved:', link.download);
+    };
+
+    window.addEventListener('message', handler);
+
+    // Ask the iframe to capture itself
+    iframe.contentWindow.postMessage({ type: 'snapshot', scale: 3 }, '*');
   };
 
   const applyAllCachedData = (
@@ -406,7 +470,8 @@ export function PlayoutPage() {
     label: string,
     shouldAutoPlay: boolean,
     externalIframeRef: React.RefObject<HTMLIFrameElement | null>,
-    elements: CanvasElement[]
+    elements: CanvasElement[],
+    config: CanvasConfig | null
   ) => {
     if (!item) {
       return (
@@ -424,8 +489,11 @@ export function PlayoutPage() {
         autoPlay={shouldAutoPlay}
         iframeRef={externalIframeRef}
         onIframeLoad={() => {
+          console.log(`✅ [${label}] Iframe loaded ${item.graphic.name}`);
           applyAllCachedData(externalIframeRef, elements, liveData);
         }}
+        baseWidth={config?.width}
+        baseHeight={config?.height}
       />
     );
   };
@@ -485,7 +553,7 @@ export function PlayoutPage() {
             </div>
             <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-              {renderMonitorContent(previewItem, "Preview", true, previewIframeRef, previewElements)}
+              {renderMonitorContent(previewItem, "Preview", false, previewIframeRef, previewElements, previewConfig)}
               <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
             </div>
           </div>
@@ -502,7 +570,7 @@ export function PlayoutPage() {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-black rounded-lg border-2 border-red-900 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-              {renderMonitorContent(programItem, "Program", true, programIframeRef, programElements)}
+              {renderMonitorContent(programItem, "Program", true, programIframeRef, programElements, programConfig)}
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">ON AIR</div>
             </div>
           </div>
@@ -537,6 +605,20 @@ export function PlayoutPage() {
             >
               <Square size={16} className={programItem ? "fill-current" : ""} />
               CLEAR
+            </button>
+
+            {/* NEW: Snapshot button */}
+            <button
+              onClick={handleSnapshot}
+              disabled={!programItem}
+              className={`
+                w-12 h-12 rounded-lg font-bold transition-all duration-200
+                flex items-center justify-center
+                ${programItem ? "border-2 border-purple-900/50 text-purple-400 hover:bg-purple-950 hover:border-purple-500 active:scale-95" : "border-2 border-gray-800 text-gray-700 cursor-not-allowed bg-gray-900"}
+              `}
+              title="Capture 3× High-Res Snapshot"
+            >
+              <Camera size={18} />
             </button>
           </div>
 

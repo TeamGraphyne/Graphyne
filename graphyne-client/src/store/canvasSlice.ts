@@ -61,6 +61,10 @@ export const canvasSlice = createSlice({
       state.selectedIds = [];
     },
 
+    updateConfig: (state, action: PayloadAction<Partial<CanvasConfig>>) => {
+      state.config = { ...state.config, ...action.payload };
+    },
+
     // --- ELEMENTS ---
     addElement: (state, action: PayloadAction<Omit<CanvasElement, 'id'>>) => {
       const newElement: CanvasElement = {
@@ -209,6 +213,7 @@ export const canvasSlice = createSlice({
 export const {
   setGraphicMeta,
   loadGraphic,
+  updateConfig,
   addElement,
   updateElement,
   updateElements,

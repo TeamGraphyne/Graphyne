@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   AlignLeft, 
@@ -9,10 +9,11 @@ import {
   Type 
 } from 'lucide-react';
 import type { RootState } from '../../store/store';
-import { updateElement } from '../../store/canvasSlice';
+import { updateElement, updateConfig } from '../../store/canvasSlice';
 import type { CanvasElement, ShadowEffect } from '../../types/canvas';
 import { AnimationPanel } from './AnimationPanel';
 import { DataBindingTab } from './DataBindingTab';
+import { api } from '../../services/api';
 
 export const PropertiesPanel = () => {
   const dispatch = useDispatch();
@@ -25,12 +26,62 @@ export const PropertiesPanel = () => {
     state.canvas.present.elements.find((el: CanvasElement) => el.id === selectedId)
   );
 
+  const config = useSelector((state: RootState) => state.canvas.present.config);
+
+  const [systemFonts, setSystemFonts] = useState<string[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    api.getSystemFonts()
+      .then(fonts => {
+        if (mounted) setSystemFonts(fonts);
+      })
+      .catch(err => console.error('Failed to load system fonts:', err));
+    return () => { mounted = false; };
+  }, []);
+
   if (!element) {
     return (
-      <div className="w-80 bg-panelColour border-l border-fuchsia-200/30 text-gray-500 flex items-center justify-center h-full text-sm">
-        Select an element to edit
+      <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-white flex flex-col h-full z-20">
+        <div className="p-4 border-b border-gray-800">
+          <h2 className="font-bold mb-4 text-xs text-gray-400 uppercase tracking-wider">Canvas Settings</h2>
+          
+          <div className="space-y-4">
+            {/* Resolution Dropdown */}
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1 uppercase">Resolution</label>
+              <select 
+                value={`${config.width}x${config.height}`}
+                onChange={(e) => {
+                  const [w, h] = e.target.value.split('x').map(Number);
+                  dispatch(updateConfig({ width: w, height: h }));
+                }}
+                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300"
+              >
+                <option value="1920x1080">16:9 Landscape (1920×1080)</option>
+                <option value="1080x1920">9:16 Vertical (1080×1920)</option>
+                <option value="1080x1080">1:1 Square (1080×1080)</option>
+              </select>
+            </div>
+            
+            {/* Background Color Picker */}
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1 uppercase">Background</label>
+              <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                <input 
+                  type="color" 
+                  value={config.background || '#000000'} 
+                  onChange={(e) => dispatch(updateConfig({ background: e.target.value }))} 
+                  className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
+                />
+                <span className="text-xs text-gray-400 font-mono">{config.background || '#000000'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-  )}
+    );
+  }
 
   // CanvasElement values
   type ElementValue = string | number | boolean | ShadowEffect | undefined;
@@ -143,6 +194,13 @@ export const PropertiesPanel = () => {
                                 <option value="'Roboto', sans-serif">Roboto</option>
                                 <option value="'Montserrat', sans-serif">Montserrat</option>
                                 <option value="'Open Sans', sans-serif">Open Sans</option>
+                                {systemFonts.length > 0 && (
+                                  <optgroup label="System Fonts">
+                                    {systemFonts.map(font => (
+                                      <option key={font} value={`'${font}'`}>{font}</option>
+                                    ))}
+                                  </optgroup>
+                                )}
                             </select>
                         </div>
                     </div>
@@ -362,6 +420,29 @@ export const PropertiesPanel = () => {
                         [&::-webkit-slider-thumb]:bg-white/50
                         hover:[&::-webkit-slider-thumb]:bg-orange-300"
                     />
+                </div>
+
+                {/* NEW: Blend Mode */}
+                <div>
+                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">Blend Mode</label>
+                  <select 
+                    value={element.blendMode || 'normal'}
+                    onChange={(e) => handleChange('blendMode', e.target.value)}
+                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="multiply">Multiply</option>
+                    <option value="screen">Screen</option>
+                    <option value="overlay">Overlay</option>
+                    <option value="darken">Darken</option>
+                    <option value="lighten">Lighten</option>
+                    <option value="color-dodge">Color Dodge</option>
+                    <option value="color-burn">Color Burn</option>
+                    <option value="hard-light">Hard Light</option>
+                    <option value="soft-light">Soft Light</option>
+                    <option value="difference">Difference</option>
+                    <option value="exclusion">Exclusion</option>
+                  </select>
                 </div>
 
                 {/* Shadow Controls */}

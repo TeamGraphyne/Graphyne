@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { socketService } from "../services/socket";
-import type { CanvasElement } from "../types/canvas";
+import type { CanvasElement, CanvasConfig } from "../types/canvas";
 import type { DataUpdatePayload } from "../types/datasource";
 import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 
 export function OutputPage() {
   const [currentSrc, setCurrentSrc] = useState<string | null>(null);
+  const [currentConfig, setCurrentConfig] = useState<CanvasConfig | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // NEW: Cache the current graphic's elements for data binding resolution
@@ -17,9 +18,10 @@ export function OutputPage() {
 
     // Listen for 'TAKE' (Load and Play new graphic)
     // MODIFIED: Payload now includes elements for binding resolution
-    const handleTake = (data: { url: string; elements?: CanvasElement[] }) => {
+    const handleTake = (data: { url: string; elements?: CanvasElement[]; config?: CanvasConfig }) => {
       console.log("📺 Output received TAKE:", data.url);
       setCurrentSrc(data.url);
+      setCurrentConfig(data.config || null);
 
       // Cache elements for data binding (if provided by PlayoutPage)
       if (data.elements) {
@@ -75,14 +77,21 @@ export function OutputPage() {
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden">
       {currentSrc && (
-        <iframe
-          ref={iframeRef}
-          src={currentSrc}
-          onLoad={handleLoad}
-          className="w-full h-full border-0"
-          title="Broadcast Output"
-          sandbox="allow-scripts allow-same-origin"
-        />
+        <div 
+          style={{
+            width: currentConfig ? `${currentConfig.width}px` : "100%",
+            height: currentConfig ? `${currentConfig.height}px` : "100%",
+          }}
+        >
+          <iframe
+            ref={iframeRef}
+            src={currentSrc}
+            onLoad={handleLoad}
+            className="w-full h-full border-0"
+            title="Broadcast Output"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
       )}
     </div>
   );

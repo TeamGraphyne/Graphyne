@@ -130,39 +130,43 @@ export const Toolbar = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Create temporary Blob URL
-    const objectUrl = URL.createObjectURL(file);
+    // Convert to Base64 to ensure it can be saved and reloaded indefinitely
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (!base64Url) return;
 
-    // 2. Load image to get natural dimensions
-    const img = new window.Image();
-    img.onload = () => {
-      const maxSize = 500;
-      const scale = Math.min(1, maxSize / img.width, maxSize / img.height);
-      const scaledWidth = img.width * scale;
-      const scaledHeight = img.height * scale;
+      const img = new window.Image();
+      img.onload = () => {
+        const maxSize = 500;
+        const scale = Math.min(1, maxSize / img.width, maxSize / img.height);
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
 
-      dispatch(
-        addElement({
-          type: "image",
-          name: file.name,
-          x: snap(100),
-          y: snap(100),
-          width: scaledWidth, // Cap initial size while preserving aspect ratio
-          height: scaledHeight,
-          src: objectUrl, // Store blob URL in Redux
-          opacity: 1,
-          rotation: 0,
-          scaleX: 1,
-          scaleY: 1,
-          isLocked: false,
-          isVisible: true,
-          inAnimation: { ...defaultAnim },
-          outAnimation: { ...defaultAnim },
-          fill: "transparent", // Images don't have a fill, but we need to set it for the type
-        }),
-      );
+        dispatch(
+          addElement({
+            type: "image",
+            name: file.name,
+            x: snap(100),
+            y: snap(100),
+            width: scaledWidth,
+            height: scaledHeight,
+            src: base64Url, // Store Base64 string directly
+            opacity: 1,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            isLocked: false,
+            isVisible: true,
+            inAnimation: { ...defaultAnim },
+            outAnimation: { ...defaultAnim },
+            fill: "transparent",
+          }),
+        );
+      };
+      img.src = base64Url;
     };
-    img.src = objectUrl;
+    reader.readAsDataURL(file);
 
     // Reset input so same file can be selected again
     e.target.value = "";

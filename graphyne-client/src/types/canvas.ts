@@ -30,6 +30,9 @@ export interface CanvasElement {
   opacity?: number;
   zIndex?: number;
 
+  // NEW: Blend mode (CSS mix-blend-mode / Canvas globalCompositeOperation)
+  blendMode?: string;
+
   // State flags
   isVisible?: boolean;
   isLocked?: boolean;
@@ -40,6 +43,7 @@ export interface CanvasElement {
   fontFamily?: string;
   fontWeight?: string;
   fontStyle?: string;
+  lineHeight?: number;
   align?: 'left' | 'center' | 'right';
 
   // Shape specific
@@ -78,7 +82,7 @@ export interface CanvasState {
 export interface DataBinding {
   sourceId: string;      // Which data source (UUID)
   sourceName: string;    // For UI display
-  fieldPath: string;     
-  targetProperty: string; 
+  fieldPath: string;
+  targetProperty: string;
   format?: string;       // Optional
 }

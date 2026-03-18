@@ -10,6 +10,7 @@ import { graphicRoutes } from './routes/graphics';
 import { datasourceRoutes } from './routes/datasources';
 import { DataPollerService } from './services/dataPoller';
 import { aiRoutes } from './routes/ai';
+import { fontsRoutes } from './routes/fonts';
 
 // ── Detect pkg binary ──────────────────────────────────────────────────────────
 const isPkg = Object.prototype.hasOwnProperty.call(process, 'pkg');
@@ -145,7 +146,10 @@ async function runMigrations() {
 }
 
 // ── Fastify ────────────────────────────────────────────────────────────────────
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: true,
+  bodyLimit: 50 * 1024 * 1024 // 50MB limit to handle large base64 images
+});
 
 // ── Plugins ────────────────────────────────────────────────────────────────────
 app.register(cors, { origin: '*' });
@@ -182,6 +186,7 @@ app.register(projectRoutes);
 app.register(graphicRoutes(DATA_DIR));
 app.register(datasourceRoutes(dataPoller));
 app.register(aiRoutes);
+app.register(fontsRoutes); // NEW
 
 // ── SPA catch-all ─────────────────────────────────────────────────────────────
 app.setNotFoundHandler(async (request, reply) => {

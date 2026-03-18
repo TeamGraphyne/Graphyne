@@ -109,18 +109,20 @@ export const compileGraphicToHTML = async (
       top: ${el.y}px;
       width: ${el.width}px;
       height: ${el.height}px;
+      transform-origin: top left;
       transform: rotate(${el.rotation || 0}deg) scale(${el.scaleX || 1}, ${el.scaleY || 1});
       opacity: 0; /* Start hidden for animation */
       z-index: ${el.zIndex || 0};
+      ${el.blendMode && el.blendMode !== 'source-over' ? `mix-blend-mode: ${el.blendMode};` : ''}
     `;
 
     // Handle Shadows
     let shadowCss = '';
     if (el.shadow) {
-        const { color, blur, offsetX, offsetY } = el.shadow;
-        if (blur > 0 || offsetX !== 0 || offsetY !== 0) {
-            shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
-        }
+      const { color, blur, offsetX, offsetY } = el.shadow;
+      if (blur > 0 || offsetX !== 0 || offsetY !== 0) {
+        shadowCss = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+      }
     }
 
     if (el.type === 'text') {
@@ -133,13 +135,21 @@ export const compileGraphicToHTML = async (
         text-align: ${el.align || 'left'};
         justify-content: ${el.align === 'center' ? 'center' : el.align === 'right' ? 'flex-end' : 'flex-start'};
         white-space: pre-wrap;
+        line-height: ${el.lineHeight || 1.2};
         ${el.fontWeight ? `font-weight: ${el.fontWeight};` : ''}
-        ${el.fontStyle ? `font-style: ${el.fontStyle};` : ''}
+        ${el.fontStyle && el.fontStyle !== 'normal' ? `font-style: ${el.fontStyle};` : ''}
         ${shadowCss ? `text-shadow: ${shadowCss};` : ''} 
       `;
     } else {
+      let backgroundCss = `background-color: ${el.fill};`;
+      if (el.fillType === 'linear' && el.fillSecondary) {
+        backgroundCss = `background: linear-gradient(to right, ${el.fill}, ${el.fillSecondary});`;
+      } else if (el.fillType === 'radial' && el.fillSecondary) {
+        backgroundCss = `background: radial-gradient(circle, ${el.fill}, ${el.fillSecondary});`;
+      }
+
       css += `
-        background-color: ${el.fill};
+        ${backgroundCss}
         border-radius: ${el.cornerRadius || 0}px;
         ${(el.stroke && el.strokeWidth && el.strokeWidth > 0) ? `border: ${el.strokeWidth}px solid ${el.stroke};` : ''}
         ${shadowCss ? `box-shadow: ${shadowCss};` : ''}
@@ -184,8 +194,8 @@ export const compileGraphicToHTML = async (
         if (!span) return;
         
         var currentSize = originalSize;
-        // Keep dropping the font size down by 1px until the span stops overflowing the div boundaries
-        while ((span.offsetWidth > domEl.clientWidth || span.offsetHeight > domEl.clientHeight) && currentSize > 4) {
+        // Keep dropping the font size down by 1px until the span stops overflowing the div boundaries (with a 5px tolerance)
+        while ((span.offsetWidth > domEl.clientWidth + 3 || span.offsetHeight > domEl.clientHeight + 5) && currentSize > 4) {
             currentSize -= 1;
             domEl.style.fontSize = currentSize + 'px';
         }
@@ -332,6 +342,7 @@ export const compileGraphicToHTML = async (
     <meta charset="UTF-8">
     <title>Graphyne Export</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
     ${fontLink}
     <style>
         body { margin: 0; overflow: hidden; background: transparent; }
@@ -352,6 +363,29 @@ export const compileGraphicToHTML = async (
         ${JSON.stringify({ config, elements })}
     </script>
     <script>${scriptLogic}</script>
+    <script>
+      // NEW: Snapshot handler — captures #gfx-container at requested scale
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'snapshot') {
+          var scale = event.data.scale || 3;
+          var container = document.getElementById('gfx-container');
+          if (!container || typeof htmlToImage === 'undefined') {
+            window.parent.postMessage({ type: 'snapshot-result', error: 'Not ready' }, '*');
+            return;
+          }
+          htmlToImage.toPng(container, {
+            pixelRatio: scale,
+            backgroundColor: null,
+            width: ${config.width},
+            height: ${config.height}
+          }).then(function(dataUrl) {
+            window.parent.postMessage({ type: 'snapshot-result', dataUrl: dataUrl }, '*');
+          }).catch(function(err) {
+            window.parent.postMessage({ type: 'snapshot-result', error: String(err) }, '*');
+          });
+        }
+      });
+    </script>
 </body>
 </html>`;
 };

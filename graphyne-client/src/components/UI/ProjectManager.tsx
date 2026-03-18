@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useAppDispatch } from '../../store/hooks';
 import { loadGraphic, setGraphicMeta } from '../../store/canvasSlice';
 import { parseHtmlGraphic } from '../../utils/importer';
+import type { GraphicData } from '../../types/project';
 
 interface ProjectManagerProps {
     isOpen: boolean;
@@ -13,6 +14,8 @@ interface ProjectManagerProps {
 export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
     const dispatch = useAppDispatch();
     const [projects, setProjects] = useState<{ id: string, name: string }[]>([]);
+    const [graphics, setGraphics] = useState<GraphicData[]>([]);
+    const [selectedGraphicId, setSelectedGraphicId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,8 +30,15 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
     const loadProjects = async () => {
         setIsLoading(true);
         try {
-            const data = await api.getProjects();
-            setProjects(data);
+            const [projData, graphData] = await Promise.all([
+                api.getProjects(),
+                api.getGraphics()
+            ]);
+            setProjects(projData);
+            setGraphics(graphData);
+            if (graphData.length > 0 && !selectedGraphicId) {
+                setSelectedGraphicId(graphData[0].id);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -73,6 +83,28 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
             dispatch(setGraphicMeta({ name: file.name.replace('.html', '') }));
             onClose();
         }).catch(err => alert(err));
+    };
+
+    // 5. Load Existing Graphic
+    const handleLoadExistingGraphic = async () => {
+        if (!selectedGraphicId) return;
+        
+        try {
+            const fullGraphic = await api.getGraphic(selectedGraphicId);
+            const parsed = fullGraphic.json || {}; // API returns parsed rawJson as json
+            
+            dispatch(loadGraphic({
+                id: fullGraphic.id,
+                name: fullGraphic.name,
+                elements: parsed.elements || [],
+                config: parsed.config || { width: 1920, height: 1080, background: '#000000' }
+            }));
+            dispatch(setGraphicMeta({ id: fullGraphic.id, name: fullGraphic.name }));
+            onClose();
+        } catch (err) {
+            alert('Failed to load graphic data');
+            console.error(err);
+        }
     };
 
     if (!isOpen) return null;
@@ -144,6 +176,32 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                                 accept=".html"
                                 onChange={handleImport}
                              />
+
+                            {/* Load Existing Graphic */}
+                            <div className="flex flex-col gap-2 p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
+                                <div className="text-left mb-1">
+                                    <div className="font-bold text-white">Load Saved Graphic</div>
+                                    <div className="text-xs text-neutral-500">Open an existing graphic from the server</div>
+                                </div>
+                                <select
+                                    value={selectedGraphicId}
+                                    onChange={e => setSelectedGraphicId(e.target.value)}
+                                    className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1.5 text-sm text-white focus:border-fuchsia-500 outline-none"
+                                >
+                                    {graphics.length === 0 && <option value="" disabled>No graphics available</option>}
+                                    {graphics.map(g => (
+                                        <option key={g.id} value={g.id}>{g.name}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={handleLoadExistingGraphic}
+                                    disabled={!selectedGraphicId}
+                                    className="w-full mt-1 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-700 disabled:text-neutral-500 text-white font-bold py-2 rounded text-sm transition-colors"
+                                >
+                                    Load Graphic
+                                </button>
+                            </div>
+                            
                             
                             <button 
                                 onClick={() => fileInputRef.current?.click()}

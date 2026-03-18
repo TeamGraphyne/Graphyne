@@ -179,7 +179,7 @@ export function EditorPage() {
               <button
                 onClick={() => setAiPanelOpen(true)}
                 className="flex items-center gap-2 px-3 py-1.5
-                           bg-gradient-to-r from-orange-500/20 to-fuchsia-500/20
+                           bg-linear-to-r from-orange-500/20 to-fuchsia-500/20
                            hover:from-orange-500/40 hover:to-fuchsia-500/40
                            text-orange-300 border border-orange-500/30
                            hover:border-orange-400/60 rounded text-xs font-bold transition-all"
@@ -214,7 +214,7 @@ export function EditorPage() {
                       onChange={handleProjectChange}
                       className="bg-neutral-700/40 border border-fuchsia-200/30 text-xs rounded px-2 py-1.5 
                       focus:border-orange-300 outline-none focus:bg-neutral-700/50 focus:text-gray-800
-                      hover:border-orange-300/50 max-w-[150px]"
+                      hover:border-orange-300/50 max-w-37.5"
                   >
                       <option value="">(Library Only)</option>
                       {projects.map(p => (

@@ -31,6 +31,8 @@ export const CanvasImage: React.FC<CanvasImageProps> = ({
   isVisible,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   shadow,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  blendMode,
   ...konvaProps 
 }) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);

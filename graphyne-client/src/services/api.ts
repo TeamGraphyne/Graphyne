@@ -15,11 +15,16 @@ export interface AiDesignResult {
 
 export const api = {
 
-    generateGraphic: async (prompt: string): Promise<AiDesignResult> => {
+  getSystemFonts: async (): Promise<string[]> => {
+    const response = await client.get<{ success: boolean; fonts: string[] }>('/fonts');
+    return response.data.fonts || [];
+  },
+
+  generateGraphic: async (prompt: string): Promise<AiDesignResult> => {
     const response = await client.post<AiDesignResult>('/ai/generate', { prompt });
     return response.data;
   },
-  
+
   // --- Graphics ---
   saveGraphic: async (payload: {
     id?: string | null;
@@ -36,6 +41,11 @@ export const api = {
 
   getGraphics: async () => {
     const response = await client.get<GraphicData[]>("/graphics");
+    return response.data;
+  },
+
+  getGraphic: async (id: string) => {
+    const response = await client.get(`/graphics/${id}`);
     return response.data;
   },
 

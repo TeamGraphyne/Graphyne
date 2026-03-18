@@ -475,7 +475,8 @@ export const Artboard = () => {
           />
 
           {elements.map((el) => {
-            const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
+            // NEW: destructure blendMode so it doesn't leak to DOM
+            const { zIndex, type, fill, fillType, fillSecondary, blendMode, ...elementProps } = el;
 
             void fill;
             void fillType;
@@ -488,6 +489,8 @@ export const Artboard = () => {
               name: el.type,
               draggable: !el.isLocked,
               listening: true,
+              // NEW: Blend mode support — map CSS blend mode names to Canvas2D compositing
+              globalCompositeOperation: (blendMode && blendMode !== 'normal' ? blendMode : 'source-over') as GlobalCompositeOperation,
               onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
                 e.cancelBubble = true;
                 if (e.evt.shiftKey) {
@@ -581,7 +584,9 @@ export const Artboard = () => {
                 <Text 
                   key={el.id} 
                   {...commonProps} 
+                  fill={el.fill}
                   verticalAlign="middle" 
+                  lineHeight={el.lineHeight || 1.2}
                   // COMBINE WEIGHT AND STYLE HERE
                   fontStyle={`${el.fontStyle || 'normal'} ${el.fontWeight || 'normal'}`}
                 />
