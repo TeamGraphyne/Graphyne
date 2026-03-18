@@ -244,43 +244,47 @@ export const PropertiesPanel = () => {
               <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Appearance</h2>
               <div className="space-y-3">
 
-                {/* Fill Type */}
-                <div>
-                  <label className="text-[10px] text-gray-400  mb-1 uppercase flex justify-between">Fill Type</label>
-                  <select 
-                    value={element.fillType || 'solid'}
-                    onChange={(e) => {
-                      handleChange('fillType', e.target.value);
-                      if (!element.fillSecondary) {
-                        handleChange('fillSecondary', "#62a0ea");
-                      }
-                    }}
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300" 
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="linear">Linear Gradient</option>
-                    <option value="radial">Radial Gradient</option>
-                  </select>
-                </div>
+                {/* Fill Type — MODIFIED: hidden for image elements (images don't have a fill colour) */}
+                {element.type !== 'image' && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">Fill Type</label>
+                    <select 
+                      value={element.fillType || 'solid'}
+                      onChange={(e) => {
+                        handleChange('fillType', e.target.value);
+                        if (!element.fillSecondary) {
+                          handleChange('fillSecondary', "#62a0ea");
+                        }
+                      }}
+                      className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300" 
+                    >
+                      <option value="solid">Solid</option>
+                      <option value="linear">Linear Gradient</option>
+                      <option value="radial">Radial Gradient</option>
+                    </select>
+                  </div>
+                )}
 
                 {/* Solid Fill */}
-                <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">
-                    {element.fillType && element.fillType !== 'solid' ? 'Start Color' : 'Fill Color'}
-                  </label>
-                  <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
-                    <input 
-                      type="color" 
-                      value={element.fill} 
-                      onChange={(e) => handleChange('fill', e.target.value)} 
-                      className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
-                    />
-                    <span className="text-xs text-gray-400 font-mono">{element.fill}</span>
+                {element.type !== 'image' && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">
+                      {element.fillType && element.fillType !== 'solid' ? 'Start Color' : 'Fill Color'}
+                    </label>
+                    <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                      <input 
+                        type="color" 
+                        value={element.fill} 
+                        onChange={(e) => handleChange('fill', e.target.value)} 
+                        className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
+                      />
+                      <span className="text-xs text-gray-400 font-mono">{element.fill}</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Secondary Color */}
-                {element.fillType && element.fillType !== 'solid' && (
+                {/* Secondary Color — only for non-image gradient fills */}
+                {element.type !== 'image' && element.fillType && element.fillType !== 'solid' && (
                   <div>
                     <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">End Color</label>
                     <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
@@ -295,55 +299,61 @@ export const PropertiesPanel = () => {
                   </div>
                 )}
 
-                {/* Stroke Width */}
-                <div>
-                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
-                    <span>Stroke Width</span>
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={element.strokeWidth || 0}
-                    onChange={(e) => handleChange("strokeWidth", Number(e.target.value))} 
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
-                  />
-                </div>
-
-                {/* Stroke Fill */}
-                <div>
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Stroke Fill</label>
-                  <div className="flex items-center gap-2 bg-gray-950 p-1 rounded border border-gray-800">
-                    <input 
-                      type="color" 
-                      value={element.stroke} 
-                      onChange={(e) => handleChange('stroke', e.target.value)} 
-                      className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent" 
+                {/* Stroke Width — not applicable to images */}
+                {element.type !== 'image' && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
+                      <span>Stroke Width</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={element.strokeWidth || 0}
+                      onChange={(e) => handleChange("strokeWidth", Number(e.target.value))} 
+                      className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
                     />
-                    <span className="text-xs text-gray-400 font-mono">{element.stroke}</span>
                   </div>
-                </div>
+                )}
 
-                {/* Corner Radius*/}
-                <div>
-                  <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
-                    <span>Corner Radius</span>
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={element.cornerRadius || 0}
-                    onChange={(e) => handleChange("cornerRadius", Number(e.target.value))} 
-                    className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
-                  />
-                </div>
+                {/* Stroke Fill — not applicable to images */}
+                {element.type !== 'image' && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1 uppercase">Stroke Fill</label>
+                    <div className="flex items-center gap-2 bg-gray-950 p-1 rounded border border-gray-800">
+                      <input 
+                        type="color" 
+                        value={element.stroke} 
+                        onChange={(e) => handleChange('stroke', e.target.value)} 
+                        className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent" 
+                      />
+                      <span className="text-xs text-gray-400 font-mono">{element.stroke}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Corner Radius — MODIFIED: only for rect and image elements */}
+                {(element.type === 'rect' || element.type === 'image') && (
+                  <div>
+                    <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
+                      <span>Corner Radius</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={element.cornerRadius || 0}
+                      onChange={(e) => handleChange("cornerRadius", Number(e.target.value))} 
+                      className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                    />
+                  </div>
+                )}
 
                 {/* Opacity */}
                 <div>
-                    <label className="text-[12px] text-gray-400  mb-1 uppercase flex justify-between">
+                    <label className="text-[12px] text-gray-400 mb-1 uppercase flex justify-between">
                         <span>Opacity</span>
                         <span>{Math.round((element.opacity || 1) * 100)}%</span>
                     </label>
@@ -366,7 +376,7 @@ export const PropertiesPanel = () => {
 
                 {/* Shadow Controls */}
                 <div> 
-                  <h3 className="text-[14px] font-bold  mb-2 text-gray-400 flex items-center gap-2">
+                  <h3 className="text-[14px] font-bold mb-2 text-gray-400 flex items-center gap-2">
                     SHADOWS
                     <input 
                         type="checkbox" 

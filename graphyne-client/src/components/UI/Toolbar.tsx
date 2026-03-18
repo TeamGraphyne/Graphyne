@@ -102,7 +102,7 @@ export const Toolbar = () => {
         fontSize: 24,
         fontFamily: "Arial",
         fill: "#000000",
-        width: 200,
+        width: 360,
         height: 40,
         opacity: 1,
         isLocked: false,

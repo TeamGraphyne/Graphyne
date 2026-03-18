@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useLayoutEffect, useState, useCallback } from "react";
 import React from "react";
 import { Stage, Layer, Rect, Circle, Text, Transformer, Line } from "react-konva";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -10,7 +10,6 @@ import {
   setSelection,
   nudgeElements,
   duplicateElements,
-  // REMOVED: zoomIn, zoomOut, setZoom — no longer in canvasSlice
 } from "../../store/canvasSlice";
 import { zoomIn, zoomOut, setZoom } from "../../store/viewSlice"; // NEW: Import from viewSlice
 import { ActionCreators } from "redux-undo";
@@ -36,6 +35,22 @@ export const Artboard = () => {
    // --- ALIGNMENT GUIDES STATE ---
   const [activeGuides, setActiveGuides] = useState<GuideLine[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+
+// NEW: Track which text element is being edited via the inline textarea overlay
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+
+  // FIX: Store the stage bounding box in state so we don't read the ref during render
+  const [stageBounds, setStageBounds] = useState({ top: 0, left: 0 });
+
+  useLayoutEffect(() => {
+    if (editingTextId !== null && stageRef.current) {
+      const stageContainer = stageRef.current.container();
+      if (stageContainer) {
+        const rect = stageContainer.getBoundingClientRect();
+        setStageBounds({ top: rect.top, left: rect.left });
+      }
+    }
+  }, [editingTextId]); // Only recalculate when we start editing a new text element
 
   // Handle redux-undo structure (present) or flat structure fallback
   const { elements, selectedIds, config, grid } = useAppSelector(
@@ -431,6 +446,72 @@ export const Artboard = () => {
 
   console.log('Active guides:', activeGuides.length, 'isDragging:', isDragging);
 
+  // NEW: Build the textarea overlay for in-place text editing.
+  // The textarea is rendered in fixed position over the canvas using the
+  // stage container's screen-space bounding rect as the origin.
+// NEW: Build the textarea overlay for in-place text editing.
+  // The textarea is rendered in fixed position over the canvas using the
+  // stage container's screen-space bounding rect saved in state.
+  const textEditOverlay = editingTextId !== null ? (() => {
+    const editEl = elements.find(e => e.id === editingTextId);
+    if (!editEl || editEl.type !== 'text') return null;
+
+    // Use the bounds saved in state rather than accessing stageRef directly!
+    const screenLeft = stageBounds.left + editEl.x * zoom;
+    const screenTop  = stageBounds.top  + editEl.y * zoom;
+
+    return (
+      <textarea
+        key={editingTextId}
+        autoFocus
+        style={{
+          position: 'fixed',
+          left:   screenLeft,
+          top:    screenTop,
+          width:  editEl.width  * zoom,
+          // Ensure enough height for at least one line; grow if text is tall
+          minHeight: editEl.height * zoom,
+          height: editEl.height * zoom,
+          fontSize:   (editEl.fontSize  || 24) * zoom,
+          fontFamily: editEl.fontFamily || 'Arial, sans-serif',
+          fontWeight: editEl.fontWeight || 'normal',
+          fontStyle:  editEl.fontStyle  || 'normal',
+          color:       editEl.fill,
+          background: 'rgba(255,255,255,0.06)',
+          border:     '1.5px solid #00a1ff',
+          outline:    'none',
+          resize:     'none',
+          padding:    '0',
+          margin:     '0',
+          lineHeight: 'normal',
+          textAlign:  (editEl.align || 'left') as 'left' | 'center' | 'right',
+          transform:       editEl.rotation ? `rotate(${editEl.rotation}deg)` : 'none',
+          transformOrigin: 'top left',
+          boxSizing:  'border-box',
+          overflow:   'hidden',
+          zIndex:     9999,
+          whiteSpace: 'pre-wrap',
+          wordBreak:  'break-word',
+        }}
+        defaultValue={editEl.text || ''}
+        onBlur={(e) => {
+          // Commit the edited text to Redux and close the overlay
+          dispatch(updateElement({ id: editingTextId, text: e.target.value }));
+          setEditingTextId(null);
+        }}
+        onKeyDown={(e) => {
+          // Escape cancels without saving
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setEditingTextId(null);
+          }
+          // Stop Escape / arrow-key events from propagating to the canvas
+          e.stopPropagation();
+        }}
+      />
+    );
+  })() : null;
+
   return (
     <div
       ref={containerRef}
@@ -475,16 +556,46 @@ export const Artboard = () => {
           />
 
           {elements.map((el) => {
-            const { zIndex, type, fill, fillType, fillSecondary, ...elementProps } = el;
+            // NEW: Destructure shadow, opacity, and non-Konva metadata props separately
+            // so we can convert shadow to Konva's native shadow props, compute effective
+            // opacity for the text-edit overlay, and avoid passing unknown props to Konva.
+            const {
+              zIndex, type, fill, fillType, fillSecondary,
+              shadow, opacity,
+              inAnimation, outAnimation, dataBindings,
+              ...elementProps
+            } = el;
 
             void fill;
             void fillType;
             void fillSecondary;
             void zIndex;
             void type;
+            void inAnimation;
+            void outAnimation;
+            void dataBindings;
+
+            // NEW: Convert our ShadowEffect object to Konva's flat shadow props.
+            // Previously the shadow object was spread into Konva verbatim (ignored).
+            const konvaShadowProps = shadow ? {
+              shadowColor:   shadow.color,
+              shadowBlur:    shadow.blur,
+              shadowOffsetX: shadow.offsetX,
+              shadowOffsetY: shadow.offsetY,
+              shadowEnabled: shadow.blur > 0 || shadow.offsetX !== 0 || shadow.offsetY !== 0,
+            } : { shadowEnabled: false };
+
+            // NEW: While a text element is being edited via the textarea overlay,
+            // render it with opacity 0 so the overlay sits cleanly on top.
+            const effectiveOpacity =
+              el.type === 'text' && editingTextId === el.id
+                ? 0
+                : (opacity ?? 1);
 
             const commonProps = {
               ...elementProps,
+              ...konvaShadowProps,
+              opacity: effectiveOpacity,
               name: el.type,
               draggable: !el.isLocked,
               listening: true,
@@ -497,6 +608,13 @@ export const Artboard = () => {
                     dispatch(selectElement(el.id));
                   }
                 }
+              },
+              // NEW: Double-click on a text element opens the inline textarea editor
+              onDblClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+                if (el.type !== 'text') return;
+                e.cancelBubble = true;
+                dispatch(selectElement(el.id));
+                setEditingTextId(el.id);
               },
               onDragStart: onDragStart,
               onDragEnd: onDragEnd,
@@ -674,6 +792,11 @@ export const Artboard = () => {
           />
         </Layer>
       </Stage>
+
+      {/* NEW: Inline text editing overlay — rendered on top of the Stage using
+          fixed positioning so it aligns precisely with the hidden Konva text node.
+          Press Escape to cancel, click away (blur) to save. */}
+      {textEditOverlay}
     </div>
   );
 };
