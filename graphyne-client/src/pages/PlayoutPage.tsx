@@ -9,6 +9,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
@@ -22,6 +25,7 @@ import transLogo from "../assets/TransLogo.png";
 
 // Configuration
 const SERVER_URL = `http://${window.location.hostname}:3001`;
+const OUTPUT_URL  = `${SERVER_URL}/output`;
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
 interface ScaledFrameProps {
@@ -108,6 +112,102 @@ function parseGraphicElements(item: PlaylistItem): CanvasElement[] {
   }
 }
 
+// --- NEW: Output URL dialog component ---
+interface OutputDialogProps {
+  onClose: () => void;
+}
+
+function OutputUrlDialog({ onClose }: OutputDialogProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(OUTPUT_URL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for environments where clipboard API is blocked
+      const el = document.createElement('textarea');
+      el.value = OUTPUT_URL;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="w-[480px] bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl overflow-hidden">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 bg-neutral-950 border-b border-neutral-800">
+          <div className="flex items-center gap-2">
+            <ExternalLink size={16} className="text-blue-400" />
+            <span className="text-sm font-bold text-white">Broadcast Output</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-neutral-700 rounded text-neutral-400 hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-neutral-300 leading-relaxed">
+            The output page is a full-screen browser source for your streaming software. 
+            Open this URL in your browser or add it directly as a <span className="text-blue-300 font-semibold">Browser Source</span> in OBS.
+          </p>
+
+          {/* URL display + copy */}
+          <div className="flex items-center gap-2 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2">
+            <span className="flex-1 text-sm font-mono text-blue-300 truncate select-all">
+              {OUTPUT_URL}
+            </span>
+            <button
+              onClick={handleCopy}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
+                copied
+                  ? 'bg-green-600 text-white'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+
+          {/* OBS instructions */}
+          <div className="bg-neutral-800/60 border border-neutral-700 rounded-lg p-4 space-y-2">
+            <p className="text-xs font-bold text-neutral-300 uppercase tracking-wider">OBS Setup</p>
+            <ol className="text-xs text-neutral-400 space-y-1 list-decimal list-inside">
+              <li>In OBS, click <span className="text-white">+ → Browser Source</span></li>
+              <li>Paste the URL above into the URL field</li>
+              <li>Set width to <span className="text-white">1920</span> and height to <span className="text-white">1080</span></li>
+              <li>Check <span className="text-white">"Shutdown source when not visible"</span> (optional)</li>
+              <li>Click <span className="text-white">OK</span></li>
+            </ol>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 bg-neutral-950 border-t border-neutral-800 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white text-sm font-semibold rounded transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlayoutPage() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PlaylistItem | null>(null);
@@ -131,6 +231,9 @@ export function PlayoutPage() {
   // Drag and drop state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // NEW: Output URL dialog state
+  const [showOutputDialog, setShowOutputDialog] = useState(false);
 
   // NEW: Ref for the import file input
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -376,7 +479,7 @@ export function PlayoutPage() {
   };
 
   const openOutputWindow = () => {
-    window.open('/output', 'GraphyneOutput', 'width=1920,height=1080,menubar=no,toolbar=no');
+    setShowOutputDialog(true);
   };
 
   const applyAllCachedData = (
@@ -432,6 +535,12 @@ export function PlayoutPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#140a24] text-white overflow-hidden font-sans">
+
+      {/* NEW: Output URL dialog */}
+      {showOutputDialog && (
+        <OutputUrlDialog onClose={() => setShowOutputDialog(false)} />
+      )}
+
       {/* HEADER */}
       <header className="h-14 bg-[#1a0f2e] border-purple-900/40 flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
@@ -455,6 +564,7 @@ export function PlayoutPage() {
             </div>
           )}
 
+          {/* MODIFIED: Button now opens the URL dialog instead of window.open() */}
           <button
             onClick={openOutputWindow}
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-blue-400 border border-blue-900/30 hover:border-blue-500 transition-colors"
@@ -586,7 +696,7 @@ export function PlayoutPage() {
             </h3>
 
             <div className="flex items-center gap-2">
-              {/* NEW: Import button (from feature branch) */}
+              {/* Import button */}
               <button
                 onClick={() => importFileInputRef.current?.click()}
                 className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-xs font-bold text-white rounded transition-colors"
