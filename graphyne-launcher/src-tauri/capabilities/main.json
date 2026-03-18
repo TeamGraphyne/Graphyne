@@ -1,0 +1,10 @@
+{
+  "identifier": "main",
+  "description": "Graphyne main window capabilities",
+  "windows": ["main"],
+  "permissions": [
+    "shell:allow-spawn",
+    "shell:allow-kill",
+    "shell:deny-open"
+  ]
+}

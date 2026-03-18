@@ -8,14 +8,16 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  Trash2     // NEW
+  Trash2,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
 import type { PlaylistItem } from "../types/project";
 import type { CanvasElement } from "../types/canvas";
-import type { DataUpdatePayload } from "../types/datasource";
-import type { DataSourceData } from "../types/datasource";
+import type { DataUpdatePayload, DataSourceData } from "../types/datasource";
 import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 import { useNavigate } from "react-router-dom";
 
@@ -23,6 +25,7 @@ import transLogo from "../assets/TransLogo.png";
 
 // Configuration
 const SERVER_URL = `http://${window.location.hostname}:3001`;
+const OUTPUT_URL  = `${SERVER_URL}/output`;
 
 // --- HELPER COMPONENT: Auto-Scaling Iframe ---
 interface ScaledFrameProps {
@@ -30,7 +33,7 @@ interface ScaledFrameProps {
   title: string;
   autoPlay?: boolean;
   iframeRef?: React.RefObject<HTMLIFrameElement | null>;
-  onIframeLoad?: () => void; 
+  onIframeLoad?: () => void;
 }
 
 const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFrameProps) => {
@@ -40,7 +43,6 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
   const [scale, setScale] = useState(1);
   const [hasError, setHasError] = useState(false);
 
-  // 1. Handle Scaling
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
@@ -54,19 +56,16 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
     return () => observer.disconnect();
   }, []);
 
-  // 2. Handle Auto-Play Logic
   const handleLoad = () => {
     if (onIframeLoad) {
       onIframeLoad();
     }
-
     if (autoPlay && activeRef.current?.contentWindow) {
       console.log(`📺 [Iframe] Auto-playing ${title}`);
       activeRef.current.contentWindow.postMessage('play', '*');
     }
   };
 
-  // Error UI
   if (hasError) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-gray-400">
@@ -78,10 +77,7 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full relative overflow-hidden bg-black"
-    >
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-black">
       <div
         style={{
           width: "1920px",
@@ -116,6 +112,102 @@ function parseGraphicElements(item: PlaylistItem): CanvasElement[] {
   }
 }
 
+// --- NEW: Output URL dialog component ---
+interface OutputDialogProps {
+  onClose: () => void;
+}
+
+function OutputUrlDialog({ onClose }: OutputDialogProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(OUTPUT_URL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for environments where clipboard API is blocked
+      const el = document.createElement('textarea');
+      el.value = OUTPUT_URL;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="w-[480px] bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl overflow-hidden">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 bg-neutral-950 border-b border-neutral-800">
+          <div className="flex items-center gap-2">
+            <ExternalLink size={16} className="text-blue-400" />
+            <span className="text-sm font-bold text-white">Broadcast Output</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-neutral-700 rounded text-neutral-400 hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-neutral-300 leading-relaxed">
+            The output page is a full-screen browser source for your streaming software. 
+            Open this URL in your browser or add it directly as a <span className="text-blue-300 font-semibold">Browser Source</span> in OBS.
+          </p>
+
+          {/* URL display + copy */}
+          <div className="flex items-center gap-2 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2">
+            <span className="flex-1 text-sm font-mono text-blue-300 truncate select-all">
+              {OUTPUT_URL}
+            </span>
+            <button
+              onClick={handleCopy}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
+                copied
+                  ? 'bg-green-600 text-white'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+
+          {/* OBS instructions */}
+          <div className="bg-neutral-800/60 border border-neutral-700 rounded-lg p-4 space-y-2">
+            <p className="text-xs font-bold text-neutral-300 uppercase tracking-wider">OBS Setup</p>
+            <ol className="text-xs text-neutral-400 space-y-1 list-decimal list-inside">
+              <li>In OBS, click <span className="text-white">+ → Browser Source</span></li>
+              <li>Paste the URL above into the URL field</li>
+              <li>Set width to <span className="text-white">1920</span> and height to <span className="text-white">1080</span></li>
+              <li>Check <span className="text-white">"Shutdown source when not visible"</span> (optional)</li>
+              <li>Click <span className="text-white">OK</span></li>
+            </ol>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 bg-neutral-950 border-t border-neutral-800 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white text-sm font-semibold rounded transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlayoutPage() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PlaylistItem | null>(null);
@@ -127,7 +219,7 @@ export function PlayoutPage() {
   // Refs and state for data binding
   const programIframeRef = useRef<HTMLIFrameElement>(null);
   const [programElements, setProgramElements] = useState<CanvasElement[]>([]);
-  
+
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const [previewElements, setPreviewElements] = useState<CanvasElement[]>([]);
 
@@ -135,10 +227,16 @@ export function PlayoutPage() {
   const [liveData, setLiveData] = useState<Record<string, Record<string, unknown>>>({});
 
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  
-  // DRAG AND DROP STATE 
+
+  // Drag and drop state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // NEW: Output URL dialog state
+  const [showOutputDialog, setShowOutputDialog] = useState(false);
+
+  // NEW: Ref for the import file input
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   // --- 1. System Startup ---
   useEffect(() => {
@@ -188,7 +286,7 @@ export function PlayoutPage() {
     }).catch(err => console.error('Failed to load data sources:', err));
   }, [activeProjectId]);
 
-  // --- Global Keyboard Shortcuts ---
+  // --- Global Keyboard Shortcuts (CSV row navigation) ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) return;
@@ -216,7 +314,6 @@ export function PlayoutPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dataSources, liveData]);
 
-
   const loadRundown = async () => {
     setIsLoading(true);
     try {
@@ -224,7 +321,7 @@ export function PlayoutPage() {
       if (projects.length > 0) {
         const activeProject = await api.getProjectById(projects[0].id);
         setProjectName(activeProject.name);
-        setActiveProjectId(activeProject.id); 
+        setActiveProjectId(activeProject.id);
 
         const items = activeProject.items || [];
         const sorted = items.sort((a: PlaylistItem, b: PlaylistItem) => a.order - b.order);
@@ -241,7 +338,7 @@ export function PlayoutPage() {
   };
 
   const handleRemoveItem = async (e: React.MouseEvent, index: number) => {
-    e.stopPropagation(); // Prevent triggering the row selection
+    e.stopPropagation();
     if (!activeProjectId) return;
 
     // 1. Optimistic UI Update
@@ -262,14 +359,39 @@ export function PlayoutPage() {
     }
   };
 
-  // DRAG AND DROP HANDLERS 
+  // NEW: Import an external HTML graphic into the rundown
+  const handleImportGraphic = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const htmlContent = event.target?.result as string;
+      try {
+        const response = await api.saveGraphic({
+          name: file.name,
+          html: htmlContent,
+          json: {}, // Generic placeholder for direct imports
+          projectId: activeProjectId
+        });
+        if (response.data.success) {
+          await loadRundown();
+        }
+      } catch (err) {
+        console.error("Failed to persist imported graphic:", err);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ""; // Reset input
+  };
+
+  // Drag and drop handlers (with DB persistence)
   const handleDragStart = (index: number) => setDragIndex(index);
   const handleDragOver = (index: number) => setDragOverIndex(index);
-  
-  // MODIFIED: handleDrop now persists the new order to the database
+
   const handleDrop = async (index: number) => {
     if (dragIndex === null || dragIndex === index || !activeProjectId) return;
-    
+
     // 1. Optimistic UI Update
     const updated = [...playlist];
     const [movedItem] = updated.splice(dragIndex, 1);
@@ -289,7 +411,7 @@ export function PlayoutPage() {
       console.error("Failed to save reordered items:", err);
     }
   };
-  
+
   const handleDragEnd = () => {
     setDragIndex(null);
     setDragOverIndex(null);
@@ -316,7 +438,7 @@ export function PlayoutPage() {
         if (programIframeRef.current?.contentWindow) {
           programIframeRef.current.contentWindow.postMessage('out', '*');
         }
-        
+
         socketService.emit("command:clear");
 
         setTimeout(() => {
@@ -336,7 +458,7 @@ export function PlayoutPage() {
         socketService.emit("command:take", {
           url: fullUrl,
           elements: elements,
-          liveData: liveData 
+          liveData: liveData
         });
       }
     }
@@ -346,23 +468,23 @@ export function PlayoutPage() {
     if (programIframeRef.current?.contentWindow) {
       programIframeRef.current.contentWindow.postMessage('out', '*');
     }
-    
+
     console.log("🛑 Emitting CLEAR");
     socketService.emit("command:clear");
 
     setTimeout(() => {
       setProgramItem(null);
       setProgramElements([]);
-    }, 1000); 
+    }, 1000);
   };
 
   const openOutputWindow = () => {
-    window.open('/output', 'GraphyneOutput', 'width=1920,height=1080,menubar=no,toolbar=no');
+    setShowOutputDialog(true);
   };
 
   const applyAllCachedData = (
-    iframeRef: React.RefObject<HTMLIFrameElement | null>, 
-    elements: CanvasElement[], 
+    iframeRef: React.RefObject<HTMLIFrameElement | null>,
+    elements: CanvasElement[],
     currentLiveData: Record<string, Record<string, unknown>>
   ) => {
     if (!iframeRef.current || elements.length === 0) return;
@@ -413,13 +535,19 @@ export function PlayoutPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#140a24] text-white overflow-hidden font-sans">
+
+      {/* NEW: Output URL dialog */}
+      {showOutputDialog && (
+        <OutputUrlDialog onClose={() => setShowOutputDialog(false)} />
+      )}
+
       {/* HEADER */}
-      <header className="h-14 bg-[#1a0f2e] border-purple-900/40  flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
+      <header className="h-14 bg-[#1a0f2e] border-purple-900/40 flex flex-shrink-0 items-center px-6 justify-between shadow-md z-10">
         <div className="flex items-center gap-2">
-            <div className="flex items-center gap-4 justify-start">
-              <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
-              <span className="text-purple-400 font-light">PLAYOUT</span>
-            </div>
+          <div className="flex items-center gap-4 justify-start">
+            <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
+            <span className="text-purple-400 font-light">PLAYOUT</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -436,6 +564,7 @@ export function PlayoutPage() {
             </div>
           )}
 
+          {/* MODIFIED: Button now opens the URL dialog instead of window.open() */}
           <button
             onClick={openOutputWindow}
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded text-blue-400 border border-blue-900/30 hover:border-blue-500 transition-colors"
@@ -453,8 +582,8 @@ export function PlayoutPage() {
       </header>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col p-6 gap-6 max-w-[1920px] mx-auto w-full">
-        <div className="grid grid-cols-2 gap-6 w-full">
+          <div className="flex-1 flex flex-col p-6 gap-6 max-w-7xl mx-auto w-full min-h-0 overflow-hidden">
+          <div className="grid grid-cols-2 gap-6 w-full">
 
           {/* PREVIEW WINDOW */}
           <div className="flex flex-col gap-2">
@@ -465,9 +594,9 @@ export function PlayoutPage() {
               </span>
             </div>
             <div className="relative w-full aspect-video bg-[#20123a] border-purple-900/40 overflow-hidden shadow-inner">
-               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-               {renderMonitorContent(previewItem, "Preview", true, previewIframeRef, previewElements)} 
-               <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
+              <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#a78bfa 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
+              {renderMonitorContent(previewItem, "Preview", true, previewIframeRef, previewElements)}
+              <div className="absolute top-4 left-4 px-2 py-0.5 bg-purple-600/90 text-white text-[10px] font-bold tracking-widest rounded shadow-sm">PVW</div>
             </div>
           </div>
 
@@ -491,7 +620,7 @@ export function PlayoutPage() {
 
         {/* CONTROLS AREA */}
         <div className="flex justify-center items-center py-2 gap-8">
-          
+
           {/* Main Transport */}
           <div className="flex gap-4 p-2 bg-[#1a0f2e] border-purple-900/40 shadow-xl rounded-lg">
             <button
@@ -528,12 +657,12 @@ export function PlayoutPage() {
                 const data = liveData[source.id] || {};
                 const currentRow = (data.__currentRow as number) ?? 0;
                 const rowCount = (data.__rowCount as number) ?? 0;
-                
+
                 return (
                   <div key={source.id} className="flex items-center gap-3 px-3 py-1 bg-[#20123a] border border-purple-900/40 rounded">
                     <span className="text-xs font-bold text-gray-300 min-w-[80px] truncate">📄 {source.name}</span>
                     <div className="flex items-center bg-gray-900 rounded border border-gray-700 overflow-hidden">
-                      <button 
+                      <button
                         onClick={() => socketService.emit('data:csv-row', { sourceId: source.id, rowIndex: Math.max(0, currentRow - 1) })}
                         className="px-2 py-1.5 hover:bg-gray-700 transition-colors text-gray-400 hover:text-white"
                         title="Previous Row (Shortcut: [ )"
@@ -543,7 +672,7 @@ export function PlayoutPage() {
                       <span className="text-xs font-mono text-purple-300 min-w-[50px] text-center font-bold">
                         {rowCount > 0 ? currentRow + 1 : 0} <span className="text-gray-600">/</span> {rowCount}
                       </span>
-                      <button 
+                      <button
                         onClick={() => socketService.emit('data:csv-row', { sourceId: source.id, rowIndex: Math.min(rowCount - 1, currentRow + 1) })}
                         className="px-2 py-1.5 hover:bg-gray-700 transition-colors text-gray-400 hover:text-white"
                         title="Next Row (Shortcut: ] )"
@@ -552,7 +681,7 @@ export function PlayoutPage() {
                       </button>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -565,11 +694,26 @@ export function PlayoutPage() {
               <div className="w-1 h-4 bg-blue-500 rounded-full" />
               RUNDOWN
             </h3>
-            
+
             <div className="flex items-center gap-2">
-              <button 
-                onClick={loadRundown} 
-                className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors" 
+              {/* Import button */}
+              <button
+                onClick={() => importFileInputRef.current?.click()}
+                className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-xs font-bold text-white rounded transition-colors"
+              >
+                + IMPORT
+              </button>
+              <input
+                ref={importFileInputRef}
+                type="file"
+                accept=".html"
+                className="hidden"
+                onChange={handleImportGraphic}
+              />
+
+              <button
+                onClick={loadRundown}
+                className="p-1.5 text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors"
                 title="Refresh Rundown"
               >
                 <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
@@ -589,7 +733,7 @@ export function PlayoutPage() {
                 const isProgram = programItem?.id === item.id;
                 const isDragging = dragIndex === index;
                 const isDragOver = dragOverIndex === index;
-                
+
                 return (
                   <div
                     key={item.id}
@@ -606,7 +750,7 @@ export function PlayoutPage() {
                       group flex items-center px-4 py-3 rounded-lg cursor-pointer border transition-all duration-150 relative overflow-hidden
                       ${isDragging ? "opacity-50" : ""}
                       ${isDragOver ? "border-t-4 border-t-blue-500" : ""}
-                      ${isProgram ? "bg-pink-950/30 border-pink-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-purple-900/30 border-pruple-500 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-[#20123a] border-transparent hover:bg-gray-800 hover:border-gray-700"}
+                      ${isProgram ? "bg-pink-950/30 border-pink-900/60 shadow-[inset_0_0_10px_rgba(220,38,38,0.1)]" : isPreview ? "bg-purple-900/30 border-purple-500 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]" : "bg-[#20123a] border-transparent hover:bg-gray-800 hover:border-gray-700"}
                     `}
                   >
                     {(isPreview || isProgram) && (<div className={`absolute left-0 top-0 bottom-0 w-1 ${isProgram ? "bg-red-500" : "bg-blue-500"}`} />)}
@@ -619,19 +763,18 @@ export function PlayoutPage() {
                       <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"}`}>{item.graphic.name}</span>
                       <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide">HTML5 SOURCE</span>
                     </div>
-                    
+
                     <div className="w-24 flex items-center justify-end gap-3">
                       <span className={`text-[10px] font-black tracking-wider mr-2 ${isProgram ? "text-red-600" : isPreview ? "text-blue-600" : "hidden"}`}>{isProgram ? "ON AIR" : "NEXT"}</span>
-                      
-                      <button 
-                        onClick={(e) => handleRemoveItem(e, index)} 
+
+                      <button
+                        onClick={(e) => handleRemoveItem(e, index)}
                         className="p-1.5 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Remove from Rundown"
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
-
                   </div>
                 );
               })

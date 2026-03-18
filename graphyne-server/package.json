@@ -1,6 +1,7 @@
 {
   "name": "graphyne-server",
   "version": "1.0.0",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
@@ -8,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
+    "build:binary": "node scripts/bundle-migrations.js && npm run build && node scripts/build-sidecar.js"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -24,10 +26,26 @@
     "@types/node": "^20.11.19",
     "@types/uuid": "^9.0.8",
     "@vitest/coverage-v8": "^4.0.18",
+    "@yao-pkg/pkg": "^5.12.0",
     "prisma": "^5.10.2",
     "socket.io-client": "^4.8.3",
     "tsx": "^4.21.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.18"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/.prisma/client/query_engine-*",
+      "node_modules/@prisma/client/runtime/**",
+      "prisma/schema.prisma"
+    ],
+    "targets": [
+      "node20-linux-x64",
+      "node20-linux-arm64",
+      "node20-macos-arm64",
+      "node20-macos-x64",
+      "node20-win-x64"
+    ],
+    "outputPath": "binaries"
   }
 }
