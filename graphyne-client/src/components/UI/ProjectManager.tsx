@@ -79,7 +79,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="w-[800px] h-[600px] bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="w-200 h-150 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
                 
                 {/* Header */}
                 <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-950">

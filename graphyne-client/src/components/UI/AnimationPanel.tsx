@@ -102,8 +102,6 @@ export const AnimationPanel = () => {
     };
 
   // Preview Out Animation
-  // FIXED: After the out animation completes, reset the element back to its original
-  // visible state so the user doesn't end up with a permanently invisible element.
   const handlePreviewOut = () => {
     const kWindow = window as unknown as KonvaWindow;
     const stage = kWindow.Konva?.stages?.[0];
@@ -175,20 +173,6 @@ export const AnimationPanel = () => {
           delay,
           ease: 'power2.in' });
     }
-
-    // FIXED: Schedule a reset back to the original state after the animation
-    // completes, so the element doesn't stay hidden/displaced in the editor.
-    const resetAfter = delay + duration + 0.4;
-    gsap.to(node, {
-      delay: resetAfter,
-      opacity: element.opacity ?? 1,
-      x: element.x,
-      y: element.y,
-      scaleX: element.scaleX || 1,
-      scaleY: element.scaleY || 1,
-      duration: 0.25,
-      ease: 'power2.out',
-    });
     }
   };
 

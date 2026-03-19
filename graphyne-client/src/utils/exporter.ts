@@ -140,7 +140,7 @@ export const compileGraphicToHTML = async (
     } else {
       css += `
         background-color: ${el.fill};
-        border-radius: ${el.cornerRadius || 0}px;
+        border-radius: ${el.type === 'circle' ? '50%' : (el.cornerRadius || 0) + 'px'};
         ${(el.stroke && el.strokeWidth && el.strokeWidth > 0) ? `border: ${el.strokeWidth}px solid ${el.stroke};` : ''}
         ${shadowCss ? `box-shadow: ${shadowCss};` : ''}
       `;
