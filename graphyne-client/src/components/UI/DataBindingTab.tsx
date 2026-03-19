@@ -27,7 +27,7 @@ export const DataBindingTab = () => {
 
   if (!element) {
     return (
-      <div className="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-full gap-2">
+      <div className="p-4 text-txt text-[14px] flex flex-col items-center justify-center h-full gap-2">
         <Database size={24} className="opacity-30" />
         Select an element to bind data
       </div>
@@ -93,16 +93,16 @@ export const DataBindingTab = () => {
   };
 
   return (
-    <div className="p-4 space-y-5 text-sm">
+    <div className="p-4 space-y-5 text-[14px]">
 
       {/* --- EXISTING BINDINGS --- */}
       <div>
-        <h3 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="font-bold text-[14px] text-txt uppercase tracking-wider mb-3 flex items-center gap-2">
           <Link size={12} /> Active Bindings
         </h3>
 
         {bindings.length === 0 ? (
-          <div className="text-gray-600 text-xs py-4 text-center border border-dashed border-gray-800 rounded-lg">
+          <div className="text-txtDisabled text-[10px] py-4 text-center border border-dashed border-borderDis rounded-lg">
             No data bindings on this element yet.
           </div>
         ) : (
@@ -110,23 +110,23 @@ export const DataBindingTab = () => {
             {bindings.map((binding, index) => (
               <div
                 key={index}
-                className="flex items-start gap-2 p-3 bg-gray-950 border border-gray-800 rounded-lg group"
+                className="flex items-start gap-2 p-3 bg-panel border border-border rounded-lg group"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-orange-300 font-bold text-xs uppercase">
+                    <span className="text-select font-bold text-[10px] uppercase">
                       {binding.targetProperty}
                     </span>
-                    <span className="text-gray-600">←</span>
-                    <span className="text-blue-400 font-mono text-xs truncate">
+                    <span className="text-txt">←</span>
+                    <span className="text-txt font-mono text-[10px] truncate">
                       {binding.fieldPath}
                     </span>
                   </div>
-                  <div className="text-[10px] text-gray-600 mt-1 flex items-center gap-1">
+                  <div className="text-[10px] text-txt mt-1 flex items-center gap-1">
                     <Database size={10} />
                     {binding.sourceName}
                     {binding.format && (
-                      <span className="text-gray-500 ml-2">fmt: {binding.format}</span>
+                      <span className="text-txt ml-2">fmt: {binding.format}</span>
                     )}
                   </div>
                   {/* Live value preview */}
@@ -137,7 +137,7 @@ export const DataBindingTab = () => {
 
                 <button
                   onClick={() => handleRemoveBinding(index)}
-                  className="p-1 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  className="p-1 text-txt hover:text-select opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                   title="Remove binding"
                 >
                   <Unlink size={14} />
@@ -149,13 +149,13 @@ export const DataBindingTab = () => {
       </div>
 
       {/* --- ADD NEW BINDING --- */}
-      <div className="border-t border-gray-800 pt-4">
-        <h3 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-3">
+      <div className="border-t border-panel pt-4">
+        <h3 className="font-bold text-[14px] text-txt uppercase tracking-wider mb-3">
           Add Binding
         </h3>
 
         {sources.length === 0 ? (
-          <div className="flex items-center gap-2 text-gray-600 text-xs p-3 bg-gray-950 border border-gray-800 rounded-lg">
+          <div className="flex items-center gap-2 text-txt text-[10px] p-3 bg-panel border border-border rounded-lg">
             <AlertCircle size={14} />
             No data sources configured. Open the Data Source Manager to add one.
           </div>
@@ -164,12 +164,12 @@ export const DataBindingTab = () => {
 
             {/* Property to bind */}
             <div>
-              <label className="text-[10px] text-gray-400 block mb-1 uppercase">Element Property</label>
+              <label className="text-[10px] text-txt block mb-1 uppercase">Element Property</label>
               <select
                 value={selectedProperty}
                 onChange={(e) => setSelectedProperty(e.target.value)}
-                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300
-                [&>option]:bg-gray-950 [&>option]:text-gray-300"
+                className="w-full bg-panel p-2 rounded text-[14px] border border-border focus:border-select hover:border-hover focus:outline-none text-txt focus:text-txtSelect
+                [&>option]:bg-panel [&>option]:text-txt"
               >
                 <option value="">Select property...</option>
                 {bindableProps.map(p => (
@@ -182,15 +182,15 @@ export const DataBindingTab = () => {
 
             {/* Data Source */}
             <div>
-              <label className="text-[10px] text-gray-400 block mb-1 uppercase">Data Source</label>
+              <label className="text-[10px] text-txt block mb-1 uppercase">Data Source</label>
               <select
                 value={selectedSourceId}
                 onChange={(e) => {
                   setSelectedSourceId(e.target.value);
                   setSelectedField(''); // Reset field when source changes
                 }}
-                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300
-                [&>option]:bg-gray-950 [&>option]:text-gray-300"
+                className="w-full bg-panel p-2 rounded text-[10px] border border-border focus:border-select focus:outline-none text-txt hover:border-hover focus:text-txtSelect
+                [&>option]:bg-panel [&>option]:text-txt"
               >
                 <option value="">Select source...</option>
                 {sources.map(s => (
@@ -201,13 +201,13 @@ export const DataBindingTab = () => {
 
             {/* Field */}
             <div>
-              <label className="text-[10px] text-gray-400 block mb-1 uppercase">Field</label>
+              <label className="text-[10px] text-txt block mb-1 uppercase">Field</label>
               <select
                 value={selectedField}
                 onChange={(e) => setSelectedField(e.target.value)}
                 disabled={!selectedSourceId || availableFields.length === 0}
-                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300 disabled:opacity-40
-                [&>option]:bg-gray-950 [&>option]:text-gray-300"
+                className="w-full bg-panel p-2 rounded text-[10px] border border-border focus:border-select focus:outline-none text-txt disabled:opacity-40 focus:text-txtSelect hover:border-hover
+                [&>option]:bg-panel [&>option]:text-txt"
               >
                 <option value="">
                   {!selectedSourceId
@@ -226,17 +226,17 @@ export const DataBindingTab = () => {
 
             {/* Format Template (Optional) */}
             <div>
-              <label className="text-[10px] text-gray-400 block mb-1 uppercase">
-                Format Template <span className="text-gray-600 normal-case">(optional)</span>
+              <label className="text-[10px] text-txt block mb-1 uppercase">
+                Format Template <span className="text-txt normal-case">(optional)</span>
               </label>
               <input
                 type="text"
                 value={formatTemplate}
                 onChange={(e) => setFormatTemplate(e.target.value)}
                 placeholder='e.g. Score: {{value}}'
-                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300 font-mono placeholder-gray-700"
+                className="w-full bg-panel p-2 rounded text-[10px] border border-border focus:border-select focus:outline-none text-txt font-mono placeholder-txtDisabled focus:text-txtSelect hover:border-hover"
               />
-              <p className="text-[10px] text-gray-700 mt-1">
+              <p className="text-[10px] text-txtDisabled mt-1">
                 Use {'{{value}}'} where the data should appear.
               </p>
             </div>
@@ -245,7 +245,7 @@ export const DataBindingTab = () => {
             <button
               onClick={handleAddBinding}
               disabled={!selectedProperty || !selectedSourceId || !selectedField}
-              className="w-full flex items-center justify-center gap-2 py-2 bg-orange-500 hover:bg-orange-400 text-black font-bold text-xs rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 bg-btn hover:bg-hover focus:bg-select text-btnDark font-bold text-[10px] rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <Link size={12} /> Bind
             </button>
