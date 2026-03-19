@@ -258,8 +258,10 @@ export const compileGraphicToHTML = async (
     document.querySelectorAll('[data-original-font-size]').forEach(fitText);
 
     // --- CONTROLLERS ---
-    window.playIn = () => tlIn.restart();
+    window.isPlaying = false;
+    window.playIn = () => { window.isPlaying = true; tlIn.restart(); };
     window.playOut = () => {
+        window.isPlaying = false;
         if (tlOut.getChildren().length > 0) {
             tlOut.restart();
         } else {
@@ -282,45 +284,108 @@ export const compileGraphicToHTML = async (
         // --- DATA BINDING LISTENER ---
         if (event.data && event.data.type === 'data:update') {
             var updates = event.data.updates || [];
+            if (!window.currentDataValues) window.currentDataValues = {};
+            
+            var actualUpdates = [];
             for (var i = 0; i < updates.length; i++) {
                 var u = updates[i];
-                var domEl = document.getElementById(u.elementId);
-                if (!domEl) continue;
-
-                switch (u.property) {
-                    case 'text':
-                        // Check if it has our inner wrapper
-                        var span = domEl.querySelector('.text-inner');
-                        if (span) {
-                            span.textContent = u.value;
-                            fitText(domEl); // Re-calculate fit instantly
-                        } else {
-                            domEl.textContent = u.value;
-                        }
-                        break;
-                    case 'fill':
-                        if (domEl.style.color) {
-                            domEl.style.color = u.value;
-                        } else {
-                            domEl.style.backgroundColor = u.value;
-                        }
-                        break;
-                    case 'src':
-                        domEl.style.backgroundImage = "url('" + u.value + "')";
-                        break;
-                    case 'opacity':
-                        domEl.style.opacity = u.value;
-                        break;
-                    case 'fontSize':
-                        if (domEl.hasAttribute('data-original-font-size')) {
-                            domEl.setAttribute('data-original-font-size', u.value);
-                            fitText(domEl);
-                        } else {
-                            domEl.style.fontSize = u.value + 'px';
-                        }
-                        break;
+                var key = u.elementId + '_' + u.property;
+                // Only process if the value changed
+                if (window.currentDataValues[key] !== u.value) {
+                    window.currentDataValues[key] = u.value;
+                    actualUpdates.push(u);
                 }
             }
+
+            if (actualUpdates.length === 0) return;
+
+            // Group actual updates by elementId
+            var updatesByElement = {};
+            actualUpdates.forEach(function(u) {
+                if (!updatesByElement[u.elementId]) updatesByElement[u.elementId] = [];
+                updatesByElement[u.elementId].push(u);
+            });
+
+            Object.keys(updatesByElement).forEach(function(elementId) {
+                var domEl = document.getElementById(elementId);
+                if (!domEl) return;
+
+                var elUpdates = updatesByElement[elementId];
+                
+                // Find original target opacity
+                var targetOpacity = 1;
+                var rawId = elementId.replace('gfx-', '');
+                var elConfig = elements.find(function(e) { return e.id === rawId; });
+                if (elConfig && typeof elConfig.opacity === 'number') {
+                    targetOpacity = elConfig.opacity;
+                }
+                
+                elUpdates.forEach(function(u) {
+                    if (u.property === 'opacity') {
+                        targetOpacity = parseFloat(u.value) || 1;
+                    }
+                });
+
+                function applyUpdates() {
+                    elUpdates.forEach(function(u) {
+                        switch (u.property) {
+                            case 'text':
+                                // Check if it has our inner wrapper
+                                var span = domEl.querySelector('.text-inner');
+                                if (span) {
+                                    span.textContent = u.value;
+                                    fitText(domEl); // Re-calculate fit instantly
+                                } else {
+                                    domEl.textContent = u.value;
+                                }
+                                break;
+                            case 'fill':
+                                if (domEl.style.color) {
+                                    domEl.style.color = u.value;
+                                } else {
+                                    domEl.style.backgroundColor = u.value;
+                                }
+                                break;
+                            case 'src':
+                                domEl.style.backgroundImage = "url('" + u.value + "')";
+                                break;
+                            case 'opacity':
+                                domEl.style.opacity = u.value;
+                                break;
+                            case 'fontSize':
+                                if (domEl.hasAttribute('data-original-font-size')) {
+                                    domEl.setAttribute('data-original-font-size', u.value);
+                                    fitText(domEl);
+                                } else {
+                                    domEl.style.fontSize = u.value + 'px';
+                                }
+                                break;
+                        }
+                    });
+                }
+
+                // If the graphic is not playing, or the element is fully invisible, just apply instantly without fading.
+                if (!window.isPlaying) {
+                    applyUpdates();
+                    return; // Skip animation
+                }
+
+                // Fade out -> Apply DOM changes -> Fade in
+                gsap.to(domEl, {
+                    opacity: 0,
+                    duration: 0.5,
+                    overwrite: "auto",
+                    onComplete: function() {
+                        applyUpdates();
+
+                        gsap.to(domEl, {
+                            opacity: targetOpacity,
+                            duration: 0.5,
+                            overwrite: "auto"
+                        });
+                    }
+                });
+            });
         }
     });
   `;

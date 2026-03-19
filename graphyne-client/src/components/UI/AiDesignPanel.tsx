@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Send, AlertCircle, RotateCcw, ChevronDown } from 'lucide-react';
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loadGraphic, setGraphicMeta } from '../../store/canvasSlice';
 import { api } from '../../services/api';
 
@@ -22,6 +22,7 @@ type PanelState = 'idle' | 'loading' | 'success' | 'error';
 
 export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
   const dispatch = useAppDispatch();
+  const currentGraphic = useAppSelector((state) => state.canvas.present);
 
   const [prompt, setPrompt] = useState('');
   const [panelState, setPanelState] = useState<PanelState>('idle');
@@ -29,14 +30,26 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
   const [lastGeneratedName, setLastGeneratedName] = useState('');
   const [elementCount, setElementCount] = useState(0);
 
+  const canModify = currentGraphic.elements.length > 0;
+  const [modifyCurrent, setModifyCurrent] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Focus textarea when panel opens
   useEffect(() => {
-    if (isOpen && panelState === 'idle') {
-      setTimeout(() => textareaRef.current?.focus(), 100);
+    if (isOpen) {
+      if (panelState === 'idle') {
+        setTimeout(() => textareaRef.current?.focus(), 100);
+      }
+      
+      // Initialize the toggle based on canvas state ONLY when the panel first opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setModifyCurrent(currentGraphic.elements.length > 0);
     }
-  }, [isOpen, panelState]);
+    // We intentionally omit currentGraphic to avoid overwriting the user's manual selection.
+    // We intentionally omit panelState so the checkbox doesn't reset when they click 'Generate'.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleGenerate = async () => {
     const trimmed = prompt.trim();
@@ -46,21 +59,26 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
     setErrorMessage('');
 
     try {
-      const design = await api.generateGraphic(trimmed);
+      const requestDesign = modifyCurrent ? {
+        config: currentGraphic.config,
+        elements: currentGraphic.elements
+      } : undefined;
+
+      const design = await api.generateGraphic(trimmed, requestDesign);
 
       // Load the AI-generated design into the Redux editor state as a draft.
-      // meta.id is set to '' — this tells the Save button to treat it as a
-      // new graphic (not an update), so it won't overwrite anything until
-      // the user explicitly saves.
+      // IF modifying, keep the old ID and name to allow saving it back correctly.
       dispatch(loadGraphic({
-        id: '',
-        name: design.name,
+        id: modifyCurrent ? (currentGraphic.meta.id ?? '') : '',
+        name: modifyCurrent ? (currentGraphic.meta.name ?? design.name) : design.name,
         elements: design.elements,
         config: {
           ...design.config,
         },
       }));
-      dispatch(setGraphicMeta({ name: design.name }));
+      if (!modifyCurrent) {
+        dispatch(setGraphicMeta({ name: design.name }));
+      }
 
       setLastGeneratedName(design.name);
       setElementCount(design.elements.length);
@@ -160,6 +178,22 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   <div className="flex items-start gap-2 px-3 py-2 bg-red-950/50 border border-red-800 rounded-lg">
                     <AlertCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
                     <p className="text-xs text-red-300">{errorMessage}</p>
+                  </div>
+                )}
+
+                {/* Modfify switch */}
+                {canModify && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="checkbox"
+                      id="modify-current"
+                      checked={modifyCurrent}
+                      onChange={(e) => setModifyCurrent(e.target.checked)}
+                      className="accent-orange-500 rounded border-neutral-700 bg-neutral-800 w-4 h-4"
+                    />
+                    <label htmlFor="modify-current" className="text-xs font-semibold text-neutral-300 select-none cursor-pointer">
+                      Modify existing graphic setup
+                    </label>
                   </div>
                 )}
               </div>

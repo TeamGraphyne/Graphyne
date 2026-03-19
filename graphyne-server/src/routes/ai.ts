@@ -5,6 +5,7 @@ import fs from "fs";
 
 interface GenerateBody {
   prompt: string;
+  currentDesign?: any;
 }
 
 // Path to the graphyne-ai directory (sibling of graphyne-server)
@@ -32,24 +33,29 @@ function getPythonBin(): string {
  * validated graphic design JSON. The client loads this as a draft —
  * no file is written to disk until the user saves from the editor.
  */
-async function runPipeline(prompt: string): Promise<object> {
+async function runPipeline(prompt: string, currentDesign?: any): Promise<object> {
   return new Promise((resolve, reject) => {
     const pythonBin = getPythonBin();
 
-    const child = spawn(
-      pythonBin,
-      [
-        "-c",
-        // Inline script: import generate_only and print result as JSON
-        `
+    const args = [
+      "-c",
+      // Inline script: import generate_only and print result as JSON
+      `
 import sys, json
 sys.path.insert(0, ${JSON.stringify(AI_DIR)})
 from pipeline import generate_only
-result = generate_only(sys.argv[1])
+result = generate_only(sys.argv[1], 3, sys.argv[2] if len(sys.argv) > 2 else None)
 print(json.dumps(result))
-        `.trim(),
-        prompt,
-      ],
+      `.trim(),
+      prompt,
+    ];
+    if (currentDesign) {
+      args.push(JSON.stringify(currentDesign));
+    }
+
+    const child = spawn(
+      pythonBin,
+      args,
       {
         cwd: AI_DIR,
         // Pass through the current environment so OPENAI_API_KEY is available
@@ -111,7 +117,7 @@ export const aiRoutes = async (fastify: FastifyInstance) => {
   fastify.post<{ Body: GenerateBody }>(
     "/api/ai/generate",
     async (request, reply) => {
-      const { prompt } = request.body;
+      const { prompt, currentDesign } = request.body;
 
       if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
         return reply.code(400).send({ error: "prompt is required" });
@@ -126,7 +132,7 @@ export const aiRoutes = async (fastify: FastifyInstance) => {
       console.log(`🤖 AI Generate request: "${prompt.trim()}"`);
 
       try {
-        const design = await runPipeline(prompt.trim());
+        const design = await runPipeline(prompt.trim(), currentDesign);
         return reply.code(200).send(design);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);

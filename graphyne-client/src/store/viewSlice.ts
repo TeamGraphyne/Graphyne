@@ -8,7 +8,7 @@ interface ViewState {
 }
 
 const initialState: ViewState = {
-  zoom: 1,
+  zoom: 0.7,
 };
 
 export const viewSlice = createSlice({

@@ -75,21 +75,24 @@ export const Artboard = () => {
 
   // --- AUTO-FIT CANVAS ON MOUNT ---
   useEffect(() => {
-    if (containerRef.current) {
-      const container = containerRef.current;
-      const padding = 40; // padding around canvas
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        const padding = 100; // Much larger padding to breathe
 
-      const availableWidth = container.clientWidth - padding;
-      const availableHeight = container.clientHeight - padding;
+        const availableWidth = container.clientWidth - padding;
+        const availableHeight = container.clientHeight - padding;
 
-      const scaleX = availableWidth / config.width;
-      const scaleY = availableHeight / config.height;
+        const scaleX = availableWidth / config.width;
+        const scaleY = availableHeight / config.height;
 
-      // Use the smaller scale to fit both dimensions
-      const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+        // Use the smaller scale to fit both dimensions
+        const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
 
-      dispatch(setZoom(initialZoom));
-    }
+        dispatch(setZoom(initialZoom));
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, [config.width, config.height, dispatch]); // Only run once on mount
 
   // --- TRANSFORMER SYNC ---
@@ -699,6 +702,7 @@ export const Artboard = () => {
                 <Text 
                   key={el.id} 
                   {...commonProps} 
+                  fill={el.fill}
                   verticalAlign="middle" 
                   // COMBINE WEIGHT AND STYLE HERE
                   fontStyle={`${el.fontStyle || 'normal'} ${el.fontWeight || 'normal'}`}
