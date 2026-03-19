@@ -116,8 +116,8 @@ export const LayersPanel = () => {
   }, [editingId]);
 
   return (
-    <div className="w-80 bg-fuchsia-950/40 border-r border-fuchsia-200/30 p-3 h-full flex flex-col">
-      <h3 className="text-[14px] text-xs text-gray-400 mb-3 font-bold uppercase tracking-wider">Layers</h3>
+    <div className="w-80 bg-panel border-r border-border p-3 h-full flex flex-col">
+      <h3 className="text-[14px] text-txt mb-3 font-bold uppercase tracking-wider">Layers</h3>
 
       <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
         {[...elements].reverse().map((el, index) => {
@@ -138,18 +138,18 @@ export const LayersPanel = () => {
                 onClick={(e) => handleLayerClick(el.id, e)}
                 className={`
                     flex items-center justify-between p-2 rounded transition-all group border
-                    ${isDragging ? 'opacity-50 dashed border-fuchsia-400' : ''}
-                    ${isOver ? 'border-t-2 border-t-fuchsia-400' : ''}
+                    ${isDragging ? 'opacity-50 dashed border-border' : ''}
+                    ${isOver ? 'border-t-2 border-t-select' : ''}
                     ${isSelected 
-                        ? 'bg-fuchsia-900/80 border-fuchsia-500/50 shadow-md ring-1 ring-fuchsia-500/30' 
-                        : 'bg-fuchsia-950/50 border-transparent hover:bg-fuchsia-900/50'
+                        ? 'bg-btnSelect border-border shadow-md ring-1 ring-border' 
+                        : 'bg-btnUnfocused border-transparent hover:bg-btnHover'
                     }
                 `}
               >
                 {/* Layer Name + Drag Handle */}
                 <div className="flex items-center gap-2 flex-1 overflow-hidden">
                     {!isEditing && (
-                      <div className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-300">
+                      <div className="cursor-grab active:cursor-grabbing text-txt hover:text-txtHover">
                         <GripVertical size={14} />
                       </div>
                     )}
@@ -163,7 +163,7 @@ export const LayersPanel = () => {
                           onChange={(e) => setEditingName(e.target.value)}
                           onKeyDown={handleKeyDown}
                           onBlur={saveRename}
-                          className="flex-1 px-2 py-1 text-sm bg-fuchsia-900/50 border border-fuchsia-500 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-fuchsia-400"
+                          className="flex-1 px-2 py-1 text-[14px] bg-panel border border-border rounded text-txt focus:outline-none focus:ring-1 focus:ring-border"
                           onClick={(e) => e.stopPropagation()}
                         />
                         <button
@@ -189,15 +189,15 @@ export const LayersPanel = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 flex-1 overflow-hidden">
-                        <span className={`text-sm truncate select-none ${isSelected ? 'text-gray-200 font-medium' : 'text-gray-400'}`}>
+                        <span className={`text-sm truncate select-none ${isSelected ? 'text-txtSelect font-medium' : 'text-txt'}`}>
                           {el.name}
                         </span>
                         <button
                           onClick={(e) => startEditing(el.id, el.name, e)}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-fuchsia-700/50 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-1 group/button hover:bg-select rounded transition-opacity"
                           title="Rename Layer"
                         >
-                          <Edit2 size={12} className="text-gray-400 hover:text-gray-200" />
+                          <Edit2 size={12} className="text-txtHover group-hover/button:text-btnDark" />
                         </button>
                       </div>
                     )}
@@ -206,20 +206,20 @@ export const LayersPanel = () => {
                 {/* Controls - Only show when not editing */}
                 {!isEditing && (
                   <div className={`flex items-center space-x-1 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-100 sm:opacity-60 sm:group-hover:opacity-100'}`}>
-                    <button onClick={() => dispatch(toggleVisibility(el.id))} title={el.isVisible ? 'Hide' : 'Show'} className="group/button p-1 hover:bg-orange-300 rounded">
-                      {el.isVisible ? <Eye size={14} className="text-gray-300 group-hover/button:text-gray-800" /> : <EyeOff size={14} className="text-gray-300 group-hover/button:text-gray-800" />}
+                    <button onClick={() => dispatch(toggleVisibility(el.id))} title={el.isVisible ? 'Hide' : 'Show'} className="group/button p-1 hover:bg-select rounded">
+                      {el.isVisible ? <Eye size={14} className="text-txtSelect group-hover/button:text-btnDark" /> : <EyeOff size={14} className="text-txtSelect group-hover/button:text-btnDark" />}
                     </button>
 
-                    <button onClick={() => dispatch(toggleLock(el.id))} title={el.isLocked ? 'Unlock' : 'Lock'} className="group/button p-1 hover:bg-orange-300 rounded">
-                      {el.isLocked ? <Lock size={14} className="text-gray-300 group-hover/button:text-gray-800" /> : <Unlock size={14} className="text-gray-300 group-hover/button:text-gray-800" />}
+                    <button onClick={() => dispatch(toggleLock(el.id))} title={el.isLocked ? 'Unlock' : 'Lock'} className="group/button p-1 hover:bg-select rounded">
+                      {el.isLocked ? <Lock size={14} className="text-txtSelect group-hover/button:text-btnDark" /> : <Unlock size={14} className="text-txtSelect group-hover/button:text-btnDark" />}
                     </button>
 
-                    <button onClick={() => dispatch(moveLayerUp(el.id))} title="Move Up" className="group/button p-1 hover:bg-orange-300 rounded">
-                      <ChevronUp size={14} className="text-gray-300 group-hover/button:text-gray-800" />
+                    <button onClick={() => dispatch(moveLayerUp(el.id))} title="Move Up" className="group/button p-1 hover:bg-select rounded">
+                      <ChevronUp size={14} className="text-txtSelect group-hover/button:text-btnDark" />
                     </button>
 
-                    <button onClick={() => dispatch(moveLayerDown(el.id))} title="Move Down" className="group/button p-1 hover:bg-orange-300 rounded">
-                      <ChevronDown size={14} className="text-gray-300 group-hover/button:text-gray-800" />
+                    <button onClick={() => dispatch(moveLayerDown(el.id))} title="Move Down" className="group/button p-1 hover:bg-select rounded">
+                      <ChevronDown size={14} className="text-txtSelect group-hover/button:text-btnDark" />
                     </button>
                     
                     <button onClick={() => dispatch(removeElement(el.id))} title="Delete" className="group/button p-1 hover:bg-red-900/50 rounded text-red-600">

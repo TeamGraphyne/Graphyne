@@ -13,9 +13,11 @@
   --color-btn:          #BDBDBD;
   --color-btnHover:     #4A044E;
   --color-btnSelect:    #4A044E;
+  --color-btnUnfocused: #330e36;
+  --color-btnDark:      #19171a;
 
   --color-hover:        #826024;
-  --color-select:       #d6a95a;
+  --color-select:       #FFB74D;
 
   --color-border:       #693e69;
 
