@@ -18,7 +18,7 @@ export const AnimationPanel = () => {
     state.canvas.present.elements.find((el) => el.id === selectedId)
   );
 
-  if (!element) return <div className="p-4 text-gray-400 text-sm">Select an object to animate</div>;
+  if (!element) return <div className="p-4 text-txt text-[14px]">Select an object to animate</div>;
 
   // 4. FIX: Flatten payload to match canvasSlice.ts
   const updateAnim = (phase: 'inAnimation' | 'outAnimation', key: string, val: string | number) => {
@@ -190,20 +190,20 @@ export const AnimationPanel = () => {
   };
 
   return (
-    <div className="p-4 text-gray-400 bg-gray-920 h-full overflow-y-auto space-y-8">
+    <div className="p-4 text-txt bg-panel h-full overflow-y-auto space-y-8">
       
       {/* IN TRANSITION */}
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">In Transition</h3>
+          <h3 className="font-bold text-[14px] uppercase tracking-wider text-txt">In Transition</h3>
           <button 
             onClick={handlePreviewIn}
-            className="group bg-fuchsia-900/50 px-2 py-1 rounded
-            hover:bg-orange-300 
-            focus:bg-orange-300
+            className="group bg-btn2  px-2 py-1 rounded
+            hover:bg-hover 
+            focus:bg-select
             transition-colors"
           >
-            <svg className="w-6 h-6 text-gray-300 group-hover:text-gray-800 group-focus:text-gray-800 transition-colors" 
+            <svg className="w-6 h-6 text-txt group-hover:text-btnDark group-focus:text-btnDark transition-colors" 
                   aria-hidden="true" 
                   xmlns="http://www.w3.org/2000/svg" 
                   width="24" height="24" 
@@ -217,13 +217,13 @@ export const AnimationPanel = () => {
         
         {/* Type Selection */}
         <div className="mb-4 space-y-2">
-          <label className="text-xs text-gray-400">TYPE</label>
+          <label className="text-[10px] text-txt">TYPE</label>
           <select 
             value={element.inAnimation?.type || 'none'}
             onChange={(e) => updateAnim('inAnimation', 'type', e.target.value)}
-            className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
-            focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
-            [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+            className="w-full bg-panel border rounded p-2 text-sm outline-none border-border text-txt
+            focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect
+            [&>option]:bg-panel [&>option]:text-txt"
           >
             <option value="none">None</option>
             <option value="fade">Fade In</option>
@@ -238,40 +238,40 @@ export const AnimationPanel = () => {
         {/* Duration & Delay */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="space-y-1">
-            <label className="text-xs text-gray-400">DURATION (S)</label>
+            <label className="text-[10px] text-txt">DURATION (S)</label>
             <input 
               type="number" 
               step="0.1"
               value={element.inAnimation?.duration || 0.5}
               onChange={(e) => updateAnim('inAnimation', 'duration', parseFloat(e.target.value))}
-              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+              className="w-full bg-panel border border-border rounded p-2 text-[14px] focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-gray-500">DELAY (S)</label>
+            <label className="text-[10px] text-txt">DELAY (S)</label>
             <input 
               type="number" 
               step="0.1"
               value={element.inAnimation?.delay || 0}
               onChange={(e) => updateAnim('inAnimation', 'delay', parseFloat(e.target.value))}
-              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+              className="w-full bg-panel border border-border rounded p-2 text-[14px] focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect"
             />
           </div>
         </div>
       </div>
 
       {/* OUT TRANSITION */}
-      <div className="border-t border-gray-700 pt-6">
+      <div className="border-t border-border pt-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">Out Transition</h3>
+          <h3 className="font-bold text-[14px] uppercase tracking-wider text-txt">Out Transition</h3>
           <button 
             onClick={handlePreviewOut}
-            className="group bg-fuchsia-900/50 px-2 py-1 rounded
-            hover:bg-orange-300 
-            focus:bg-orange-300
+            className="group bg-btn2 px-2 py-1 rounded
+            hover:bg-hover 
+            focus:bg-select
             transition-colors"
           >
-            <svg className="w-6 h-6 text-gray-300 group-hover:text-gray-800 group-focus:text-gray-800 transition-colors" 
+            <svg className="w-6 h-6 text-txt group-hover:text-btnDark group-focus:text-btnDark transition-colors" 
                   aria-hidden="true" 
                   xmlns="http://www.w3.org/2000/svg" 
                   width="24" height="24" 
@@ -285,13 +285,13 @@ export const AnimationPanel = () => {
         
         {/* Type Selection */}
         <div className="mb-4 space-y-2">
-          <label className="text-xs text-gray-400">TYPE</label>
+          <label className="text-[10px] text-txt">TYPE</label>
           <select 
             value={element.outAnimation?.type || 'none'}
             onChange={(e) => updateAnim('outAnimation', 'type', e.target.value)}
-            className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-gray-400 text-gray-400
-            focus:border-orange-300 focus:outline-none hover:border-orange-300/50 
-            [&>option]:bg-fuchsia-950 [&>option]:text-gray-400"
+            className="w-full bg-fuchsia-950/10 border rounded p-2 text-sm outline-none border-border text-txt
+            focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect
+            [&>option]:bg-panel [&>option]:text-txt"
           >
             <option value="none">None</option>
             <option value="fade">Fade Out</option>
@@ -306,23 +306,23 @@ export const AnimationPanel = () => {
         {/* Duration & Delay */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="space-y-1">
-            <label className="text-xs text-gray-400">DURATION (S)</label>
+            <label className="text-[10px] text-txt">DURATION (S)</label>
             <input 
               type="number" 
               step="0.1"
               value={element.outAnimation?.duration || 0.5}
               onChange={(e) => updateAnim('outAnimation', 'duration', parseFloat(e.target.value))}
-              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+              className="w-full bg-panel border border-border rounded p-2 text-[14px] focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-gray-500">DELAY (S)</label>
+            <label className="text-[10px] text-txt">DELAY (S)</label>
             <input 
               type="number" 
               step="0.1"
               value={element.outAnimation?.delay || 0}
               onChange={(e) => updateAnim('outAnimation', 'delay', parseFloat(e.target.value))}
-              className="w-full bg-fuchsia-950/10 border border-gray-400 rounded p-2 text-sm focus:border-orange-300 focus:outline-none hover:border-orange-300/50"
+              className="w-full bg-panel border border-border rounded p-2 text-[14px] focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect"
             />
           </div>
         </div>
