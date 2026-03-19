@@ -41,9 +41,15 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
       if (panelState === 'idle') {
         setTimeout(() => textareaRef.current?.focus(), 100);
       }
+      
+      // Initialize the toggle based on canvas state ONLY when the panel first opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModifyCurrent(currentGraphic.elements.length > 0);
     }
-  }, [isOpen, panelState]);
+    // We intentionally omit currentGraphic to avoid overwriting the user's manual selection.
+    // We intentionally omit panelState so the checkbox doesn't reset when they click 'Generate'.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleGenerate = async () => {
     const trimmed = prompt.trim();
@@ -63,11 +69,11 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
       // Load the AI-generated design into the Redux editor state as a draft.
       // IF modifying, keep the old ID and name to allow saving it back correctly.
       dispatch(loadGraphic({
-        id: modifyCurrent ? currentGraphic.meta.id : '',
-        name: modifyCurrent ? currentGraphic.meta.name : design.name,
+        id: modifyCurrent ? (currentGraphic.meta.id ?? '') : '',
+        name: modifyCurrent ? (currentGraphic.meta.name ?? design.name) : design.name,
         elements: design.elements,
         config: {
-          ...design.config, // overwrite config from design safely
+          ...design.config,
         },
       }));
       if (!modifyCurrent) {

@@ -276,7 +276,7 @@ export function PlayoutPage() {
     try {
       const projects = await api.getProjects();
       if (projects.length > 0) {
-        const activeProject = await api.getProjectById(projects[1].id);
+        const activeProject = await api.getProjectById(projects[0].id);
         setProjectName(activeProject.name);
         setActiveProjectId(activeProject.id);
         const items = activeProject.items || [];
