@@ -27,7 +27,7 @@ export const PropertiesPanel = () => {
 
   if (!element) {
     return (
-      <div className="w-80 bg-panelColour border-l border-fuchsia-200/30 text-gray-500 flex items-center justify-center h-full text-sm">
+      <div className="w-80 bg-panel border-l border-border text-txt flex items-center justify-center h-full text-sm">
         Select an element to edit
       </div>
   )}
@@ -56,36 +56,36 @@ export const PropertiesPanel = () => {
   };
 
   return (
-    <div className="w-80 bg-fuchsia-950/40 border-l border-fuchsia-200/30 text-white flex flex-col h-full z-20">
+    <div className="w-80 bg-panel border-l border-border text-txt flex flex-col h-full z-20">
       
       {/* --- Tab Navigation (3 tabs now) --- */}
-      <div className="flex border-b border-fuchsia-200/30">
+      <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab('design')}
-          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+          className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-wider transition-colors ${
             activeTab === 'design' 
-              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
-              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
+              ? 'text-select border-b-2 border-select bg-btnHover' 
+              : 'text-txtDisabled hover:text-txtHover hover:bg-btnSelect'
           }`}
         >
           Design
         </button>
         <button
           onClick={() => setActiveTab('animate')}
-          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+          className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-wider transition-colors ${
             activeTab === 'animate' 
-              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
-              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
+              ? 'text-select border-b-2 border-select bg-btnHover' 
+              : 'text-txtDisabled hover:text-txtHover hover:bg-btnSelect'
           }`}
         >
           Animate
         </button>
         <button
           onClick={() => setActiveTab('data')}
-          className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${
+          className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-wider transition-colors ${
             activeTab === 'data' 
-              ? 'text-orange-300 border-b-2 border-orange-300 bg-fuchsia-950' 
-              : 'text-gray-500 hover:text-gray-300 hover:bg-fuchsia-950'
+              ? 'text-select border-b-2 border-select bg-btnHover' 
+              : 'text-txtDisabled hover:text-txtHover hover:bg-btnSelect'
           }`}
         >
           Data
@@ -101,19 +101,19 @@ export const PropertiesPanel = () => {
 
             {/* TYPOGRAPHY SECTION (Text Only) */}
             {element.type === 'text' && (
-              <div className="border-b border-gray-800 pb-6">
-                <h2 className="font-bold mb-3 text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <div className="border-b border-border pb-6">
+                <h2 className="font-bold mb-3 text-[14px] text-txt uppercase tracking-wider flex items-center gap-2">
                   <Type size={12} /> Typography
                 </h2>
                 
                 {/* Text Content */}
                 <div className="mb-4">
-                  <label className="text-[10px] text-gray-400 block mb-1 uppercase">Content</label>
+                  <label className="text-[10px] text-txt block mb-1 uppercase">Content</label>
                   <textarea
                     value={element.text || ""}
                     onChange={(e) => handleChange('text', e.target.value)}
                     rows={3}
-                    className="w-full bg-gray-950 p-2 rounded text-sm border border-gray-800 focus:border-blue-500 focus:outline-none text-white resize-none font-sans"
+                    className="w-full bg-panel p-2 rounded text-[14px] border border-border hover:border-hover focus:border-select focus:outline-none text-txt focus:text-txtSelect resize-none font-sans"
                     placeholder="Enter text..."
                   />
                 </div>
@@ -122,20 +122,20 @@ export const PropertiesPanel = () => {
                     {/* Font Family & Size */}
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="text-[10px] text-gray-400 block mb-1 uppercase">Size (px)</label>
+                            <label className="text-[10px] text-txt block mb-1 uppercase">Size (px)</label>
                             <input 
                                 type="number" 
                                 value={element.fontSize || 20} 
                                 onChange={(e) => handleChange('fontSize', Number(e.target.value))}
-                                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300"
+                                className="w-full bg-panel p-2 rounded text-[14px] border border-border hover:border-hover focus:border-select focus:outline-none text-txt focus:text-txtSelect"
                             />
                         </div>
                          <div>
-                            <label className="text-[10px] text-gray-400 block mb-1 uppercase">Font</label>
+                            <label className="text-[10px] text-txt block mb-1 uppercase">Font</label>
                             <select 
                                 value={element.fontFamily || 'Arial, sans-serif'} 
                                 onChange={(e) => handleChange('fontFamily', e.target.value)}
-                                className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300"
+                                className="w-full bg-panel p-2 rounded text-[14px] border border-border hover:border-hover focus:border-select focus:outline-none text-txt focus:text-txtSelect"
                             >
                                 <option value="Arial, sans-serif">Arial</option>
                                 <option value="'Times New Roman', serif">Times New Roman</option>
@@ -149,12 +149,12 @@ export const PropertiesPanel = () => {
 
                     {/* Formatting Buttons */}
                     <div>
-                         <label className="text-[10px] text-gray-400 block mb-1 uppercase">Formatting</label>
-                         <div className="flex bg-gray-950 rounded border border-gray-800 p-1 gap-1">
+                         <label className="text-[10px] text-txt block mb-1 uppercase">Formatting</label>
+                         <div className="flex bg-panel rounded border border-border hover:border-hover p-1 gap-1">
                             {/* Bold */}
                             <button 
                                 onClick={() => handleChange('fontWeight', element.fontWeight === 'bold' ? 'normal' : 'bold')}
-                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.fontWeight === 'bold' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                className={`p-1.5 rounded hover:bg-btnHover flex-1 flex justify-center ${element.fontWeight === 'bold' ? 'bg-btnSelect text-txtSelect' : 'text-txt'}`}
                                 title="Bold"
                             >
                                 <Bold size={14} />
@@ -163,30 +163,30 @@ export const PropertiesPanel = () => {
                             {/* Italic */}
                             <button 
                                 onClick={() => handleChange('fontStyle', element.fontStyle === 'italic' ? 'normal' : 'italic')}
-                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.fontStyle === 'italic' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                className={`p-1.5 rounded hover:bg-btnHover flex-1 flex justify-center ${element.fontStyle === 'italic' ? 'bg-btnSelect text-txtSelect' : 'text-txt'}`}
                                 title="Italic"
                             >
                                 <Italic size={14} />
                             </button>
 
-                            <div className="w-px bg-gray-800 mx-1"></div>
+                            <div className="w-px bg-panel mx-1"></div>
 
                             {/* Alignment */}
                             <button 
                                 onClick={() => handleChange('align', 'left')}
-                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${(!element.align || element.align === 'left') ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                className={`p-1.5 rounded hover:bg-btnHover flex-1 flex justify-center ${(!element.align || element.align === 'left') ? 'bg-btnSelect0 text-txtSelect' : 'text-txt'}`}
                             >
                                 <AlignLeft size={14} />
                             </button>
                             <button 
                                 onClick={() => handleChange('align', 'center')}
-                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.align === 'center' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                className={`p-1.5 rounded hover:bg-btnHover flex-1 flex justify-center ${element.align === 'center' ? 'bg-btnSelect text-txtSelect' : 'text-txt'}`}
                             >
                                 <AlignCenter size={14} />
                             </button>
                             <button 
                                 onClick={() => handleChange('align', 'right')}
-                                className={`p-1.5 rounded hover:bg-gray-800 flex-1 flex justify-center ${element.align === 'right' ? 'bg-gray-800 text-blue-400' : 'text-gray-400'}`}
+                                className={`p-1.5 rounded hover:bg-btnHover flex-1 flex justify-center ${element.align === 'right' ? 'bg-btnSelect text-txtSelect' : 'text-txt'}`}
                             >
                                 <AlignRight size={14} />
                             </button>
@@ -198,42 +198,42 @@ export const PropertiesPanel = () => {
             
             {/* Dimensions */}
             <div>
-              <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Transform</h2>
+              <h2 className="text-[14px] font-bold mb-3 text-txt uppercase tracking-wider">Transform</h2>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">X Position</label>
+                  <label className="text-[10px] text-txt block mb-1 uppercase">X Position</label>
                   <input 
                     type="number" 
                     value={Math.round(element.x)} 
                     onChange={(e) => handleChange('x', Number(e.target.value))} 
-                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
+                    className="w-full bg-panel p-2 rounded text-[14px] border border-border focus:border-select focus:outline-none hover:border-hover text-txt focus:text-txtSelect" 
                   />
                 </div>
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Y Position</label>
+                  <label className="text-[10px] text-txt block mb-1 uppercase">Y Position</label>
                   <input 
                     type="number" 
                     value={Math.round(element.y)} 
                     onChange={(e) => handleChange('y', Number(e.target.value))} 
-                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
+                    className="w-full bg-panel p-2 rounded text-[14px] border border-border focus:border-select focus:outline-none hover:border-hover text-txt focus:text-txtSelect" 
                   />
                 </div>
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Width</label>
+                  <label className="text-[10px] text-txt block mb-1 uppercase">Width</label>
                   <input 
                     type="number" 
                     value={Math.round(element.width)} 
                     onChange={(e) => handleChange('width', Number(e.target.value))} 
-                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
+                    className="w-full bg-panel p-2 rounded text-[14px] border border-border focus:border-select focus:outline-none hover:border-hover text-txt focus:text-txtSelect" 
                   />
                 </div>
                 <div>
-                  <label className="text-[12px] text-gray-400 block mb-1 uppercase">Height</label>
+                  <label className="text-[10px] text-txt block mb-1 uppercase">Height</label>
                   <input 
                     type="number" 
                     value={Math.round(element.height)} 
                     onChange={(e) => handleChange('height', Number(e.target.value))} 
-                    className="w-full bg-fuchsia-950/10 p-2 rounded text-xs border border-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50 text-gray-400" 
+                    className="w-full bg-panel p-2 rounded text-[14px] border border-border focus:border-select focus:outline-none hover:border-hover text-txt focus:text-txtSelect" 
                   />
                 </div>
               </div>
@@ -241,13 +241,13 @@ export const PropertiesPanel = () => {
 
             {/* Appearance */}
             <div>
-              <h2 className="text-[14px] font-bold mb-3 text-xs text-gray-400 uppercase tracking-wider">Appearance</h2>
+              <h2 className="text-[14px] font-bold mb-3 text-xs text-txt uppercase tracking-wider">Appearance</h2>
               <div className="space-y-3">
 
                 {/* Fill Type — MODIFIED: hidden for image elements (images don't have a fill colour) */}
                 {element.type !== 'image' && (
                   <div>
-                    <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">Fill Type</label>
+                    <label className="text-[10px] text-txt mb-1 uppercase flex justify-between">Fill Type</label>
                     <select 
                       value={element.fillType || 'solid'}
                       onChange={(e) => {
@@ -256,7 +256,7 @@ export const PropertiesPanel = () => {
                           handleChange('fillSecondary', "#62a0ea");
                         }
                       }}
-                      className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-orange-300 focus:outline-none text-gray-300" 
+                      className="w-full bg-panel p-2 rounded text-[14px] border border-border focus:border-select hover:border-hover focus:outline-none text-txt focus:text-txtSelect" 
                     >
                       <option value="solid">Solid</option>
                       <option value="linear">Linear Gradient</option>
@@ -268,17 +268,17 @@ export const PropertiesPanel = () => {
                 {/* Solid Fill */}
                 {element.type !== 'image' && (
                   <div>
-                    <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">
+                    <label className="text-[10px] text-txt block mb-1 uppercase justify-between">
                       {element.fillType && element.fillType !== 'solid' ? 'Start Color' : 'Fill Color'}
                     </label>
-                    <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                    <div className="flex items-center gap-2 bg-panel p-1 rounded border border-border hover:border-hover focus:border-select">
                       <input 
                         type="color" 
                         value={element.fill} 
                         onChange={(e) => handleChange('fill', e.target.value)} 
                         className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
                       />
-                      <span className="text-xs text-gray-400 font-mono">{element.fill}</span>
+                      <span className="text-[14px] text-txt font-mono">{element.fill}</span>
                     </div>
                   </div>
                 )}
@@ -286,15 +286,15 @@ export const PropertiesPanel = () => {
                 {/* Secondary Color — only for non-image gradient fills */}
                 {element.type !== 'image' && element.fillType && element.fillType !== 'solid' && (
                   <div>
-                    <label className="text-[10px] text-gray-400 block mb-1 uppercase justify-between">End Color</label>
-                    <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                    <label className="text-[10px] text-txt block mb-1 uppercase justify-between">End Color</label>
+                    <div className="flex items-center gap-2 bg-panel p-1 rounded border border-border hover:border-hover focus:border-select">
                       <input 
                         type="color" 
                         value={element.fillSecondary || "#62a0ea"}
                         onChange={(e) => handleChange('fillSecondary', e.target.value)} 
                         className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent"
                       />
-                      <span className="text-xs text-gray-400 font-mono">{element.fillSecondary}</span>
+                      <span className="text-[14px] text-txt font-mono">{element.fillSecondary}</span>
                     </div>
                   </div>
                 )}
@@ -302,7 +302,7 @@ export const PropertiesPanel = () => {
                 {/* Stroke Width — not applicable to images */}
                 {element.type !== 'image' && (
                   <div>
-                    <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
+                    <label className="text-[10px] text-txt mb-1 uppercase flex justify-between">
                       <span>Stroke Width</span>
                     </label>
                     <input
@@ -312,7 +312,7 @@ export const PropertiesPanel = () => {
                       step={1}
                       value={element.strokeWidth || 0}
                       onChange={(e) => handleChange("strokeWidth", Number(e.target.value))} 
-                      className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                      className="w-full bg-panel p-2 rounded text-[14px] border border-border hover:border-hover focus:border-select focus:outline-none text-txt focus:text-txtSelect" 
                     />
                   </div>
                 )}
@@ -320,15 +320,15 @@ export const PropertiesPanel = () => {
                 {/* Stroke Fill — not applicable to images */}
                 {element.type !== 'image' && (
                   <div>
-                    <label className="text-[10px] text-gray-400 block mb-1 uppercase">Stroke Fill</label>
-                    <div className="flex items-center gap-2 bg-gray-950 p-1 rounded border border-gray-800">
+                    <label className="text-[10px] text-txt block mb-1 uppercase">Stroke Fill</label>
+                    <div className="flex items-center gap-2 bg-panel p-1 rounded border border-border hover:border-hover focus:border-select">
                       <input 
                         type="color" 
                         value={element.stroke} 
                         onChange={(e) => handleChange('stroke', e.target.value)} 
                         className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent" 
                       />
-                      <span className="text-xs text-gray-400 font-mono">{element.stroke}</span>
+                      <span className="text-[14px] text-txt font-mono">{element.stroke}</span>
                     </div>
                   </div>
                 )}
@@ -336,7 +336,7 @@ export const PropertiesPanel = () => {
                 {/* Corner Radius — MODIFIED: only for rect and image elements */}
                 {(element.type === 'rect' || element.type === 'image') && (
                   <div>
-                    <label className="text-[10px] text-gray-400 mb-1 uppercase flex justify-between">
+                    <label className="text-[10px] text-txt mb-1 uppercase flex justify-between">
                       <span>Corner Radius</span>
                     </label>
                     <input
@@ -346,14 +346,14 @@ export const PropertiesPanel = () => {
                       step={1}
                       value={element.cornerRadius || 0}
                       onChange={(e) => handleChange("cornerRadius", Number(e.target.value))} 
-                      className="w-full bg-gray-950 p-2 rounded text-xs border border-gray-800 focus:border-blue-500 focus:outline-none text-gray-300" 
+                      className="w-full bg-panel p-2 rounded text-[14px] border border-border hover:border-hover focus:border-select focus:outline-none text-txt focus:text-txtSelect" 
                     />
                   </div>
                 )}
 
                 {/* Opacity */}
                 <div>
-                    <label className="text-[12px] text-gray-400 mb-1 uppercase flex justify-between">
+                    <label className="text-[10px] text-txt mb-1 uppercase flex justify-between">
                         <span>Opacity</span>
                         <span>{Math.round((element.opacity || 1) * 100)}%</span>
                     </label>
@@ -364,19 +364,19 @@ export const PropertiesPanel = () => {
                         step="0.01"
                         value={element.opacity ?? 1}
                         onChange={(e) => handleChange('opacity', parseFloat(e.target.value))}
-                        className="w-full h-1 bg-gray-400/50 rounded-lg appearance-none cursor-pointer
+                        className="w-full h-1 bg-border rounded-lg appearance-none cursor-pointer
                         [&::-webkit-slider-thumb]:appearance-none 
                         [&::-webkit-slider-thumb]:w-4
                         [&::-webkit-slider-thumb]:h-2
                         [&::-webkit-slider-thumb]:rounded-full 
-                        [&::-webkit-slider-thumb]:bg-white/50
-                        hover:[&::-webkit-slider-thumb]:bg-orange-300"
+                        [&::-webkit-slider-thumb]:bg-btn
+                        hover:[&::-webkit-slider-thumb]:bg-select"
                     />
                 </div>
 
                 {/* Shadow Controls */}
                 <div> 
-                  <h3 className="text-[14px] font-bold mb-2 text-gray-400 flex items-center gap-2">
+                  <h3 className="text-[14px] font-bold mb-2 text-txt flex items-center gap-2">
                     SHADOWS
                     <input 
                         type="checkbox" 
@@ -385,60 +385,60 @@ export const PropertiesPanel = () => {
                             if (!e.target.checked) handleChange('shadow', undefined);
                             else handleShadowChange('blur', 10);
                         }}
-                        className="accent-orange-300"
+                        className="accent-select"
                     />
                   </h3>
                   
                   {element.shadow && (
-                      <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-orange-300">
+                      <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-select">
                         <div className="col-span-2">
-                          <label className="text-[12px] text-gray-400 block mb-1 uppercase">Blur Radius</label>
+                          <label className="text-[10px] text-txt block mb-1 uppercase">Blur Radius</label>
                           <input 
                             type="range" 
                             min="0" 
                             max="50" 
                             value={element.shadow.blur || 0} 
                             onChange={(e) => handleShadowChange('blur', Number(e.target.value))} 
-                            className="w-full appearance-none h-1 bg-gray-400/50 rounded-lg cursor-pointer
+                            className="w-full appearance-none h-1 bg-border rounded-lg cursor-pointer
                             [&::-webkit-slider-thumb]:appearance-none 
                              [&::-webkit-slider-thumb]:w-4
                             [&::-webkit-slider-thumb]:h-2
                             [&::-webkit-slider-thumb]:rounded-full 
-                            [&::-webkit-slider-thumb]:bg-white/50
-                            hover:[&::-webkit-slider-thumb]:bg-orange-300"
+                            [&::-webkit-slider-thumb]:bg-btn
+                            hover:[&::-webkit-slider-thumb]:bg-select"
                           />
                         </div>
                         
                         <div>
-                          <label className="text-[12px] text-gray-400 block mb-1 uppercase">Offset X</label>
+                          <label className="text-[10px] text-txt block mb-1 uppercase">Offset X</label>
                           <input 
                             type="number" 
                             value={element.shadow.offsetX || 0} 
                             onChange={(e) => handleShadowChange('offsetX', Number(e.target.value))} 
-                            className="w-full bg-fuchsia-950/10 p-1 rounded text-xs border border-gray-400 text-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50" 
+                            className="w-full bg-panel p-1 rounded text-[14px] border border-border text-txt focus:text-txtSelect hover:border-hover focus:border-orange-300 focus:outline-none" 
                           />
                         </div>
 
                         <div>
-                          <label className="text-[12px] text-gray-400 block mb-1 uppercase">Offset Y</label>
+                          <label className="text-[10px] text-txt block mb-1 uppercase">Offset Y</label>
                           <input 
                             type="number" 
                             value={element.shadow.offsetY || 0} 
                             onChange={(e) => handleShadowChange('offsetY', Number(e.target.value))} 
-                            className="w-full bg-fuchsia-950/10 p-1 rounded text-xs border border-gray-400 text-gray-400 focus:border-orange-300 focus:outline-none hover:border-orange-300/50" 
+                            className="w-full bg-panel p-1 rounded text-[14px] border border-border text-txt focus:border-select focus:outline-none hover:border-hover focus:text-txtSelect" 
                           />
                         </div>
 
                         <div className="col-span-2">
-                             <label className="text-[10px] text-gray-400 block mb-1 uppercase">Shadow Color</label>
-                             <div className="flex items-center gap-2 bg-fuchsia-950/10 p-1 rounded border border-gray-400 hover:border-orange-300">
+                             <label className="text-[10px] text-txt block mb-1 uppercase">Shadow Color</label>
+                             <div className="flex items-center gap-2 bg-panel p-1 rounded border border-border hover:border-hover">
                                 <input 
                                 type="color" 
                                 value={element.shadow.color || '#000000'} 
                                 onChange={(e) => handleShadowChange('color', e.target.value)} 
                                 className="w-6 h-6 rounded cursor-pointer border-none p-0 bg-transparent" 
                                 />
-                                <span className="text-xs text-gray-400 font-mono">{element.shadow.color}</span>
+                                <span className="text-[14px] text-txt font-mono">{element.shadow.color}</span>
                             </div>
                         </div>
                       </div>

@@ -1,33 +1,32 @@
-/* @import "tailwindcss/tailwind.css";
-
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-  @apply bg-gray-950 text-white; 
-  margin: 0;
-  min-height: 100vh;
-}  */
-
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 
 @theme {
-  --color-bgColour: #1e1e1e;
-  --color-panelColour: #1e1e1e;
-  --color-highlight: #FFB74D;
-  --color-hover: #BDBDBD;
-  --color-selected: #BDBDBD;
-  --color-borderColour: rgba(245, 208, 254, 0.3);
-  --color-guideline: #00a1ff;
-  --color-centreGuide: #ad0ec2;
+  --color-bg:           #1e1e1e;
+  --color-panel:        #250c29;
 
-  --font-size-normalText: 1rem;
-  --font-size-subTopic: 1.5rem;
-  --font-size-topic: 2rem;
+  --color-txt:          #BDBDBD;
+  --color-txtHover:     #FFFFFF;
+  --color-txtSelect:    #FFFFFF;
+  --color-txtDisabled:  #71717A;
+
+  --color-btn:          #BDBDBD;
+  --color-btnHover:     #4A044E;
+  --color-btnSelect:    #4A044E;
+
+  --color-hover:        #826024;
+  --color-select:       #d6a95a;
+
+  --color-border:       #693e69;
+
+  --color-guide:        #00a1ff;
+  --color-centerGuide:  #ad0ec2;
+
+  /* FONT SIZES */
+  /* Small text - 10px
+    Editable text - 14px
+    Topics - 14px
+  */
 }
 
 body {
