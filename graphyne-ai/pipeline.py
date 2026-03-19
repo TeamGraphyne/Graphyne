@@ -282,7 +282,7 @@ def _to_dict(design: GraphicDesign) -> dict:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def generate_only(prompt: str, max_retries: int = 3) -> dict:
+def generate_only(prompt: str, max_retries: int = 3, current_design_json: str | None = None) -> dict:
     """
     Generate and validate a graphic design from a natural language prompt.
     Returns the validated design as a plain dict — does NOT save to Graphyne.
@@ -292,9 +292,19 @@ def generate_only(prompt: str, max_retries: int = 3) -> dict:
     """
     # google.genai uses types.Content objects for multi-turn conversation
     # "model" is the role name for assistant turns (not "assistant")
-    contents: list[types.Content] = [
-        types.Content(role="user", parts=[types.Part(text=prompt)]),
-    ]
+    contents: list[types.Content] = []
+    
+    if current_design_json:
+        user_message = (
+            f"Here is the existing graphic JSON:\n```json\n{current_design_json}\n```\n\n"
+            f"Modification Request: {prompt}\n\n"
+            f"Please modify this JSON based on the request and return the complete updated JSON. "
+            f"IMPORTANT: Preserve all existing 'id' fields (UUIDs) for elements you modify or keep. "
+            f"If adding new elements, generate new UUIDs for them."
+        )
+        contents.append(types.Content(role="user", parts=[types.Part(text=user_message)]))
+    else:
+        contents.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
 
     last_error: str | None = None
     last_raw: str = ""

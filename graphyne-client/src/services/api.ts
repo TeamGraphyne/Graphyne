@@ -15,8 +15,8 @@ export interface AiDesignResult {
 
 export const api = {
 
-    generateGraphic: async (prompt: string): Promise<AiDesignResult> => {
-    const response = await client.post<AiDesignResult>('/ai/generate', { prompt });
+    generateGraphic: async (prompt: string, currentDesign?: { config: CanvasConfig; elements: CanvasElement[] }): Promise<AiDesignResult> => {
+    const response = await client.post<AiDesignResult>('/ai/generate', { prompt, currentDesign });
     return response.data;
   },
   
