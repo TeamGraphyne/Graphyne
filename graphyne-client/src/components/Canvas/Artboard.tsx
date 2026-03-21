@@ -216,6 +216,7 @@ export const Artboard = () => {
       if (!stage) return;
 
       dispatch(selectElement(null));
+      setActiveGuides([]);
 
       const pos = stage.getPointerPosition();
       if (pos) {
