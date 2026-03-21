@@ -71,3 +71,16 @@ model DataSource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Asset {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "image" | "video" | "font"
+  mimeType    String
+  filePath    String
+  fileSize    Int
+  altText     String?
+  tags       String   @default("") // stored as array
+  uploadedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
