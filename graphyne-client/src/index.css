@@ -4,6 +4,9 @@
 @theme {
   --color-bg:           #1e1e1e;
   --color-panel:        #250c29;
+  --color-tab:          #171717;
+
+  --color-blur:         rgba(0, 0, 0, 0.75);
 
   --color-txt:          #BDBDBD;
   --color-txtHover:     #FFFFFF;
@@ -25,6 +28,11 @@
 
   --color-guide:        #00a1ff;
   --color-centerGuide:  #ad0ec2;
+
+  --color-logoOrange:   #fca728;
+  --color-lgOrngDis:    #7d5d2e;
+  --color-logoPurple:   #700f75; 
+  --color-lgPurpDis:    #542157;
 
   /* FONT SIZES */
   /* Small text - 10px
