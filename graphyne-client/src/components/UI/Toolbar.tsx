@@ -21,15 +21,49 @@ import {
   ZoomOut,
   Grid3X3,
   ChevronDown,
+   ImageUp,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+/* import { useDispatch, useSelector } from "react-redux";
+import { fetchAssets, setFilter, setSort, setSearch, deleteAsset, setEditingId } from "../../store/assetSlice";
+import type { RootState, AppDispatch } from "../../store/store"; */
+import AssetLibrary from "./AssetLibrary";
 
 export const Toolbar = () => {
+  // const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- CONNECT TO REDUX GRID STATE ---
   const grid = useAppSelector((state) => (state.canvas.present || state.canvas).grid);
   const [showGridMenu, setShowGridMenu] = useState(false);  
+
+  // --- Assets Library ---
+  const [showAssetPanel, setShowAssetPanel] = useState(false);
+  const [panelPos, setPanelPos] = useState({ x: 120, y: 80 });
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+
+  const handlePanelMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    dragOffset.current = {
+      x: e.clientX - panelPos.x,
+      y: e.clientY - panelPos.y,
+    };
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    setPanelPos({
+      x: e.clientX - dragOffset.current.x,
+      y: e.clientY - dragOffset.current.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
 
   // Hardcode snap size to 20 for newly added elements
   const snap = (value: number) =>
@@ -169,6 +203,7 @@ export const Toolbar = () => {
   };
 
   return (
+    <>
     <div className="h-14 bg-fuchsia-950 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
       {/* Hidden File Input for Image Upload */}
       <input
@@ -208,6 +243,15 @@ export const Toolbar = () => {
         >
           <ImageIcon size={20} className="group-hover/button:text-gray-800" />
         </button>
+        <button
+            onClick={() => setShowAssetPanel(prev => !prev)}
+            className={`group/button p-2 rounded transition-colors ${
+              showAssetPanel ? "bg-orange-300 text-fuchsia-950" : "hover:bg-orange-300"
+            }`}
+            title="Asset Library"
+          >
+            <ImageUp size={20} className="group-hover/button:text-gray-800" />
+          </button>
       </div>
       
       {/* GRID DROPDOWN */}
@@ -312,5 +356,22 @@ export const Toolbar = () => {
         </button>
       </div>
     </div>
+    {showAssetPanel && (
+        <div className="fixed bottom-6 right-6 z-50 w-[720px] h-[520px] bg-[#0e0f11] border border-[#2e3140] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-4 py-2 bg-fuchsia-950 border-b border-[#2e3140] shrink-0">
+            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Asset Library</span>
+            <button
+              onClick={() => setShowAssetPanel(false)}
+              className="text-gray-500 hover:text-white text-lg leading-none transition-colors"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <AssetLibrary />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
