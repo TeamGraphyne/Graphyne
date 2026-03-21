@@ -180,6 +180,8 @@ export const Artboard = () => {
     setIsDragging(false);
   };
 
+  
+
   // --- SNAP TO GRID HELPER ---
   const GRID_SIZE = 20;
 
