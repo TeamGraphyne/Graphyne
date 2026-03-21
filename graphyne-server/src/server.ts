@@ -10,6 +10,7 @@ import { graphicRoutes } from './routes/graphics';
 import { datasourceRoutes } from './routes/datasources';
 import { DataPollerService } from './services/dataPoller';
 import { aiRoutes } from './routes/ai';
+import { assetRoutes } from "./routes/assets"; 
 
 // ── Detect pkg binary ──────────────────────────────────────────────────────────
 const isPkg = Object.prototype.hasOwnProperty.call(process, 'pkg');
@@ -182,6 +183,7 @@ app.register(projectRoutes);
 app.register(graphicRoutes(DATA_DIR));
 app.register(datasourceRoutes(dataPoller));
 app.register(aiRoutes);
+app.register(assetRoutes); ///////////////////////////////////////////////////////////////////
 
 // ── SPA catch-all ─────────────────────────────────────────────────────────────
 app.setNotFoundHandler(async (request, reply) => {
