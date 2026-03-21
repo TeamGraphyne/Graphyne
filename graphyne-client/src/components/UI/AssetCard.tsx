@@ -63,12 +63,12 @@ export default function AssetCard({ asset }: Props) {
   };
 
   return (
-    <div className="group relative bg-[#16181c] border border-[#2e3140] rounded-xl overflow-hidden hover:border-violet-500/50 transition-all">
+    <div className="group relative bg-tab border border-border rounded-xl overflow-hidden hover:border-btn transition-all">
 
       {/* Thumbnail — clicking anywhere here adds to canvas */}
       <div
         onClick={asset.type === "image" ? handleAddToCanvas : undefined}
-        className={`relative aspect-video bg-[#0e0f11] flex items-center justify-center overflow-hidden ${asset.type === "image" ? "cursor-pointer" : ""}`}
+        className={`relative aspect-video bg-tab flex items-center justify-center overflow-hidden ${asset.type === "image" ? "cursor-pointer" : ""}`}
       >
         {asset.type === "image" ? (
           <img
@@ -81,10 +81,10 @@ export default function AssetCard({ asset }: Props) {
         )}
 
         {/* Edit + Delete buttons overlaid on thumbnail */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+        <div className="absolute inset-0 bg-tab opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <button
             onClick={handleEdit}
-            className="bg-[#1e2026] border border-[#3a3f50] text-xs text-white px-3 py-1.5 rounded-lg hover:border-violet-500 transition-all"
+            className="bg-tab border border-btn text-xs text-txt px-3 py-1.5 rounded-lg hover:border-hover transition-all"
           >
             Edit
           </button>
@@ -94,7 +94,7 @@ export default function AssetCard({ asset }: Props) {
             className={`text-xs px-3 py-1.5 rounded-lg border transition-all
               ${confirmDelete
                 ? "bg-red-500/20 border-red-500 text-red-400"
-                : "bg-[#1e2026] border-[#3a3f50] text-white hover:border-red-500/50"}`}
+                : "bg-tab border-btn text-txt hover:border-red-500/50"}`}
           >
             {confirmDelete ? "Confirm" : "Delete"}
           </button>
@@ -103,15 +103,15 @@ export default function AssetCard({ asset }: Props) {
 
       {/* Info bar — always visible below thumbnail */}
       <div className="px-3 py-2">
-        <p className="text-xs font-medium text-white truncate">{asset.name}</p>
+        <p className="text-xs font-medium text-txt truncate">{asset.name}</p>
         <div className="flex items-center justify-between mt-1">
           <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium
-            ${asset.type === "image" ? "bg-blue-500/15 text-blue-400" :
-              asset.type === "video" ? "bg-amber-500/15 text-amber-400" :
-              "bg-green-500/15 text-green-400"}`}>
+            ${asset.type === "image" ? "bg-btn2 text-txtDisabled" :
+              asset.type === "video" ? "bg-btn3 text-txtDisabled" :
+              "bg-green-800/30 text-txt"}`}>
             {asset.type}
           </span>
-          <span className="text-[10px] text-slate-500">{formatSize(asset.fileSize)}</span>
+          <span className="text-[10px] text-txt">{formatSize(asset.fileSize)}</span>
         </div>
       </div>
 
