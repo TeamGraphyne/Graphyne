@@ -531,7 +531,7 @@ export function PlayoutPage() {
               </div>
 
               {/* Monitor frames */}
-              <div className="p-2 sm:p-4 sm:pb-0">
+              <div className="p-2 sm:p-4 sm:pb-0 max-w-5xl mx-auto w-full">
                 {/* Mobile: single active monitor */}
                 <div className="sm:hidden">
                   {activeMonitor === 'preview' ? (
