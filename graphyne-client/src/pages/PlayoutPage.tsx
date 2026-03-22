@@ -59,7 +59,7 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
   }, []);
 
   const handleLoad = () => {
-    if (onIframeLoad) onIframeLoad();
+    if (onIframeLoad) {onIframeLoad();}
     if (autoPlay && activeRef.current?.contentWindow) {
       activeRef.current.contentWindow.postMessage('play', '*');
     }
@@ -396,25 +396,39 @@ export function PlayoutPage() {
     setActiveMonitor('preview');
   };
 
-  const handleTake = () => {
-    if (!previewItem) return;
-    const elements = parseGraphicElements(previewItem);
-    const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
-    if (programItem) {
-      programIframeRef.current?.contentWindow?.postMessage('out', '*');
-      socketService.emit("command:clear");
-      setTimeout(() => {
+const handleTake = () => {
+    if (previewItem) {
+      const elements = parseGraphicElements(previewItem);
+      const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
+
+      if (programItem) {
+        if (programIframeRef.current?.contentWindow) {
+          programIframeRef.current.contentWindow.postMessage('out', '*');
+        }
+        
+        socketService.emit("command:clear");
+
+        setTimeout(() => {
+          setProgramItem(previewItem);
+          setProgramElements(elements);
+          console.log("🚀 Emitting TAKE:", fullUrl);
+          socketService.emit("command:take", {
+            url: fullUrl,
+            elements: elements,
+            liveData: liveData
+          });
+        }, 1500);
+      } else {
         setProgramItem(previewItem);
         setProgramElements(elements);
-        socketService.emit("command:take", { url: fullUrl, elements, liveData });
-      }, 1500);
-    } else {
-      setProgramItem(previewItem);
-      setProgramElements(elements);
-      socketService.emit("command:take", { url: fullUrl, elements, liveData });
+        console.log("🚀 Emitting TAKE:", fullUrl);
+        socketService.emit("command:take", {
+          url: fullUrl,
+          elements: elements,
+          liveData: liveData 
+        });
+      }
     }
-    // Switch to program view on mobile after take
-    setActiveMonitor('program');
   };
 
   const handleClearProgram = () => {
