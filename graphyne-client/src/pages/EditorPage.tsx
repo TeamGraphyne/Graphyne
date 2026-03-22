@@ -23,10 +23,12 @@ import type { DataUpdatePayload, DataErrorPayload, DataField } from "../types/da
 import { AiDesignPanel } from "../components/UI/AiDesignPanel";
 
 import transLogo from "../assets/TransLogo.png";
+import HotkeyManager from "../components/UI/HotkeyManager";
 
 export function EditorPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isHotkeyMgrOpen, setHotkeyMgrOpen] = useState(false);
 
   // 3. Access Redux State (wrapped in .present due to redux-undo)
   const { config, elements, selectedIds, meta } = useAppSelector(
@@ -38,6 +40,10 @@ export function EditorPage() {
   const [isProjectMgrOpen, setProjectMgrOpen] = useState(false);
   const [isDataMgrOpen, setDataMgrOpen] = useState(false); // NEW: Data Source Manager modal
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
+  <HotkeyManager
+  isOpen={isHotkeyMgrOpen}
+  onClose={() => setHotkeyMgrOpen(false)}
+/>
 
   // 4. Fetch Projects on Mount + Connect Socket for live data preview
   useEffect(() => {
@@ -197,6 +203,15 @@ export function EditorPage() {
                    PROJECTS
                </button>
 
+               <button
+                onClick={() => setHotkeyMgrOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-900/30 hover:bg-indigo-800/50 text-indigo-300 border border-indigo-800/50 rounded text-xs font-bold transition-colors"
+              >
+
+                  <FolderOpen size={14} />
+                    HOTKEYS
+                  </button>
+
               {/* NEW: Data Source Manager Button */}
               <button 
                  onClick={() => setDataMgrOpen(true)}
@@ -280,3 +295,15 @@ export function EditorPage() {
     </div>
   );
 }
+
+// Add import
+
+
+// Add state
+
+
+// Add modal in the modals section
+
+
+// Add button in the header alongside PROJECTS, DATA etc.
+
