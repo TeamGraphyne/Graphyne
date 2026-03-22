@@ -88,6 +88,43 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         dispatch(setGraphicMeta({ projectId: id }));
     };
 
+    //load an existing graphic into the editor
+    const handleLoadGraphic = async (graphic: Graphic) => {
+        try {
+            const data = await api.getGraphics(graphic.id);
+            dispatch(loadGraphic({
+                id: data.id,
+                name: data.name,
+                elements: data.elements,
+                config: data.config,
+            }));
+            dispatch(setGraphicMeta({
+                projectId: selectedProject!.id,
+                graphicId: data.id,
+                name: data.name,
+            }));
+            onClose();
+        } catch (error) {
+            alert("Failed to load graphic: " + error);
+        }
+    };
+
+    //start a blank graphic tied to the selected project
+    const handleNewGraphic = () => {
+        dispatch(loadGraphic({
+            id: '',
+            name: 'New Graphic',
+            elements: [],
+            config: { width: 1920, height: 1080, background: '#000000'},
+        }));
+        dispatch(setGraphicMeta({
+            projectId: selectedProject?.id ?? '',
+            graphicId: '',
+            name: 'New Graphic',
+        }));
+        onClose();
+    };
+
     // 4. Import HTML File to Editor (Open from Disk)
     const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -100,7 +137,10 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                 elements: state.elements,
                 config: state.config
             }));
-            dispatch(setGraphicMeta({ name: file.name.replace('.html', '') }));
+            dispatch(setGraphicMeta({ 
+                name: file.name.replace('.html', ''),
+                graphicId: '',
+            }));
             onClose();
         }).catch(err => alert(err));
     };
