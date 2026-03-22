@@ -16,7 +16,6 @@ import {
   Image as ImageIcon,
   Undo,
   Redo,
-  MousePointer2,
   ZoomIn,
   ZoomOut,
   Grid3X3,
@@ -320,10 +319,6 @@ export const Toolbar = () => {
           className="group/button p-2 hover:bg-orange-300 rounded"
           title="Select Tool"
         >
-          <MousePointer2
-            size={20}
-            className="group-hover/button:text-gray-800"
-          />
         </button>
       </div>
     </div>
