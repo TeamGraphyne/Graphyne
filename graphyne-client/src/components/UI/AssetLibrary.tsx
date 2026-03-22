@@ -35,7 +35,7 @@ export default function AssetLibrary() {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-[#0e0f11] text-white">
+    <div className="h-full flex flex-col bg-[#0e0f11] text-txt">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e3140]">
         <div>
