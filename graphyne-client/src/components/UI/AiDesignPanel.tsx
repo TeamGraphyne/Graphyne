@@ -58,7 +58,6 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
           setTimeout(() => textareaRef.current?.focus(), 100);
         }
         // Initialize the modify toggle based on canvas state ONLY when first opening.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         setModifyCurrent(currentGraphic.elements.length > 0);
       }
       
