@@ -43,7 +43,6 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
       }
       
       // Initialize the toggle based on canvas state ONLY when the panel first opens.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModifyCurrent(currentGraphic.elements.length > 0);
     }
     // We intentionally omit currentGraphic to avoid overwriting the user's manual selection.
@@ -128,7 +127,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-fuchsia-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-orange-400 to-fuchsia-500 flex items-center justify-center">
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
@@ -237,7 +236,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   disabled={!prompt.trim()}
                   className="flex-1 flex items-center justify-center gap-2
                              px-4 py-2.5 rounded-xl text-sm font-bold
-                             bg-gradient-to-r from-orange-400 to-fuchsia-500
+                             bg-linear-to-r from-orange-400 to-fuchsia-500
                              hover:from-orange-300 hover:to-fuchsia-400
                              text-white shadow-lg shadow-orange-500/20
                              disabled:opacity-40 disabled:cursor-not-allowed
