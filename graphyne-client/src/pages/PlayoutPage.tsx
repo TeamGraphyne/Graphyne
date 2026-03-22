@@ -276,6 +276,14 @@ export function PlayoutPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dataSources, liveData]);
 
+  // ADDED: Auto-focus effect for rename input
+  useEffect(() => {
+    if (editingItemId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingItemId]);
+
   const loadRundown = async () => {
     setIsLoading(true);
     try {
