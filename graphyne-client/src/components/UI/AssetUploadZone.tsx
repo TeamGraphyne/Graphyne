@@ -23,8 +23,8 @@ export default function AssetUploadZone() {
       onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
       className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
         ${dragging
-          ? "border-violet-500 bg-violet-500/10"
-          : "border-[#2e3140] hover:border-violet-500/50 hover:bg-white/5"}`}
+          ? "border-select bg-tab"
+          : "border-btnUnfocused hover:border-select hover:bg-white/5 "}`}
     >
       <input
         ref={inputRef}
@@ -35,8 +35,8 @@ export default function AssetUploadZone() {
         onChange={e => handleFiles(e.target.files)}
       />
       <div className="text-3xl mb-2">↑</div>
-      <p className="text-sm font-medium text-white">Drop files or click to upload</p>
-      <p className="text-xs text-slate-500 mt-1">Images, videos, fonts supported</p>
+      <p className="text-sm font-medium text-txt hover:text-txtSelect">Drop files or click to upload</p>
+      <p className="text-xs text-txtDisabled mt-1">Images, videos, fonts supported</p>
     </div>
   );
 }
