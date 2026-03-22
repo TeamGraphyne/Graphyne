@@ -306,19 +306,37 @@ export function PlayoutPage() {
     }
   };
 
-  const handleRemoveItem = async (e: React.MouseEvent, index: number) => {
-    e.stopPropagation();
-    if (!activeProjectId) return;
-    const updated = [...playlist];
-    updated.splice(index, 1);
-    setPlaylist(updated);
-    try {
-      await api.updateProject(activeProjectId, projectName, updated.map((item, idx) => ({ graphicId: item.graphicId, order: idx })));
-    } catch (err) {
-      console.error("Failed to remove item:", err);
-      loadRundown();
-    }
-  };
+  const handleRenameItem = async (graphicId: string, newName: string) => {
+  if (!newName.trim() || !activeProjectId) {
+    setEditingItemId(null);
+    return;
+  }
+
+  // Find the existing item in the playlist to access its content
+  const itemToRename = playlist.find((item) => item.graphic.id === graphicId);
+
+  if (!itemToRename) {
+    setEditingItemId(null);
+    return;
+  }
+
+  try {
+    await api.saveGraphic({
+      id: graphicId,
+      name: newName.trim(),
+      projectId: activeProjectId,
+      // Use .htmlContent from the PlaylistItem type for the 'html' field
+      html: itemToRename.graphic.htmlContent || "", 
+      json: JSON.parse(itemToRename.graphic.rawJson || "{}"),
+    });
+
+    await loadRundown(); // Refresh the UI
+    setEditingItemId(null);
+  } catch (err) {
+    console.error("Failed to rename rundown item:", err);
+    setEditingItemId(null);
+  }
+};
 
   const handleImportGraphic = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
