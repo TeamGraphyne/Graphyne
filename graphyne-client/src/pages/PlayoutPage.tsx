@@ -15,6 +15,7 @@ import {
   Menu,
   ChevronDown,
   ChevronUp,
+  Edit2, // ADDED: Icon for renaming
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
@@ -733,11 +734,50 @@ export function PlayoutPage() {
                       {isProgram && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_6px_rgba(239,68,68,1)]" />}
                       {!isProgram && isPreview && <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_6px_rgba(59,130,246,1)]" />}
                     </div>
-                    <div className="flex-1 flex flex-col justify-center min-w-0">
-                      <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"}`}>
-                        {item.graphic.name}
-                      </span>
-                      <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide hidden sm:block">HTML5 SOURCE</span>
+                    <div className="flex-1 flex flex-col justify-center min-w-0 h-10">
+                      {editingItemId === item.graphic.id ? (
+                        <div className="flex items-center w-full">
+                          <input
+                            ref={editInputRef}
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onBlur={() => handleRenameItem(item.graphic.id, editingName)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleRenameItem(item.graphic.id, editingName);
+                              if (e.key === 'Escape') setEditingItemId(null);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-gray-900 border border-blue-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 group/name overflow-hidden">
+                          <span
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setEditingItemId(item.graphic.id);
+                              setEditingName(item.graphic.name);
+                            }}
+                            className={`text-sm font-bold truncate cursor-text select-none ${
+                              isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"
+                            }`}
+                            title="Double-click to rename"
+                          >
+                            {item.graphic.name}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingItemId(item.graphic.id);
+                              setEditingName(item.graphic.name);
+                            }}
+                            className="opacity-0 group-hover/name:opacity-100 p-1 text-gray-500 hover:text-blue-400 transition-all"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                      <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide hidden sm:block leading-none mt-0.5">HTML5 SOURCE</span>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                       {(isProgram || isPreview) && (
