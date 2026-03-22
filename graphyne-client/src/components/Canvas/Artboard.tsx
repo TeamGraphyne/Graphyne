@@ -180,6 +180,8 @@ export const Artboard = () => {
     setIsDragging(false);
   };
 
+  
+
   // --- SNAP TO GRID HELPER ---
   const GRID_SIZE = 20;
 
@@ -214,6 +216,7 @@ export const Artboard = () => {
       if (!stage) return;
 
       dispatch(selectElement(null));
+      setActiveGuides([]);
 
       const pos = stage.getPointerPosition();
       if (pos) {

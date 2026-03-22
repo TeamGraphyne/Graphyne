@@ -38,17 +38,17 @@ const SOURCE_TYPE_OPTIONS: {
   {
     value: "rest-api",
     label: "REST API",
-    icon: <Globe size={18} className="text-blue-400" />,
+    icon: <Globe size={18} className="text-txt" />,
   },
   {
     value: "json-file",
     label: "JSON File",
-    icon: <FileJson size={18} className="text-yellow-400" />,
+    icon: <FileJson size={18} className="text-select" />,
   },
   {
     value: "csv-file",
     label: "CSV File",
-    icon: <FileSpreadsheet size={18} className="text-green-400" />,
+    icon: <FileSpreadsheet size={18} className="text-btnSelect" />,
   },
 ];
 
