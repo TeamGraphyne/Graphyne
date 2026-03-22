@@ -100,7 +100,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
             }));
             dispatch(setGraphicMeta({
                 projectId: selectedProject!.id,
-                graphicId: data.id,
+                id: data.id,
                 name: data.name,
             }));
             onClose();
@@ -119,7 +119,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         }));
         dispatch(setGraphicMeta({
             projectId: selectedProject?.id ?? '',
-            graphicId: '',
+            id: '',
             name: 'New Graphic',
         }));
         onClose();
@@ -139,7 +139,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
             }));
             dispatch(setGraphicMeta({ 
                 name: file.name.replace('.html', ''),
-                graphicId: '',
+                id: '',
             }));
             onClose();
         }).catch(err => alert(err));
