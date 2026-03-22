@@ -11,6 +11,51 @@ interface SaveProjectBody {
   }[];
 }
 
+interface CreateGraphicBody {
+  name: string;
+  html: string;
+  json: any;
+  thumbnail?: string;
+}
+
+interface UpdateGraphicBody {
+  name: string;
+  html: string;
+  json: any;
+  thumbnail?: string;
+}
+
+//list all graphics belonging to a specific project
+export const graphicRoutes = (dataDir: string) => async (fastify: FastifyInstance) => {
+  fastify.get<{ Params: { projectId: string } }> (
+    "/api/projects/:projectId/graphics",
+    async (request, reply) => {
+      try {
+        const items = await prisma.playlistItem.findMany({
+          where: { projectId: request.params.projectId },
+          orderBy: { order: "asc" },
+          include: { 
+            graphic: {
+              select: {
+                id: true,
+                name: true,
+                thumbnail: true,
+                filePath: true,
+                updatedAt: true,
+              },
+            },
+          },
+        });
+        //return just the graphics array 
+        return items.map(item => item.graphic);
+      } catch (error) {
+        request.log.error(error);
+        return reply.code(500).send({ error: "Failed to fetch graphics" });
+      }
+    }
+  );
+}
+
 export const projectRoutes = async (fastify: FastifyInstance) => {
   // GET: List All Projects (Playlists)
   fastify.get("/api/projects", async () => {
