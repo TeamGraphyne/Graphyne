@@ -215,6 +215,11 @@ export function PlayoutPage() {
   const [showOutputDialog, setShowOutputDialog] = useState(false);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
+  // ADDED: Renaming State
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+
   // Mobile-specific state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMonitor, setActiveMonitor] = useState<'preview' | 'program'>('preview');
