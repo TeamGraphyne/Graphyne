@@ -11,6 +11,7 @@ import { datasourceRoutes } from './routes/datasources';
 import { DataPollerService } from './services/dataPoller';
 import { aiRoutes } from './routes/ai';
 import { assetRoutes } from "./routes/assets"; 
+import {hotkeyRoutes} from  './routes/hotkeys';
 
 // ── Detect pkg binary ──────────────────────────────────────────────────────────
 const isPkg = Object.prototype.hasOwnProperty.call(process, 'pkg');
@@ -149,6 +150,7 @@ async function runMigrations() {
 const app = Fastify({ logger: true });
 
 // ── Plugins ────────────────────────────────────────────────────────────────────
+app.register(hotkeyRoutes);
 app.register(cors, { origin: '*' });
 app.register(multipart);
 
@@ -303,5 +305,6 @@ const start = async () => {
     process.exit(1);
   }
 };
+
 
 start();
