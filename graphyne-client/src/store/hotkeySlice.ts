@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { hotkeyService } from "../services/hotkeyService";
-import type { Hotkey, HotkeyState } from "../types/hotkey";
+import type {HotkeyState } from "../types/hotkey";
 
 const initialState: HotkeyState = {
   items: [],

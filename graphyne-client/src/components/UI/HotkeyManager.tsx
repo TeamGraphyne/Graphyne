@@ -5,7 +5,7 @@ import {
   fetchHotkeys, createHotkey, updateHotkey,
   deleteHotkey, setEditingId
 } from "../../store/hotkeySlice";
-import { RESERVED_KEYS, DEFAULT_HOTKEYS } from "../../types/hotkey";
+import { RESERVED_KEYS } from "../../types/hotkey";
 
 type Props = {
   isOpen: boolean;
