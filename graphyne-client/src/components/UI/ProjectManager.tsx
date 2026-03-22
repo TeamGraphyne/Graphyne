@@ -10,6 +10,12 @@ interface ProjectManagerProps {
     onClose: () => void;
 }
 
+interface Graphic {
+    id: string;
+    name: string;
+    updatedAt: string;
+}
+
 export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
     const dispatch = useAppDispatch();
     const [projects, setProjects] = useState<{ id: string, name: string }[]>([]);
@@ -17,10 +23,19 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
     const [newProjectName, setNewProjectName] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // --- NEW STATE ---
+    const [selectedProject, setSelectedProject] = useState<{id: string, name: string} | null>(null);
+    const [graphics, setGraphics] = useState<Graphic[]>([]);
+    const [isLoadingGraphics, setIsLoadingGraphics] = useState(false);
+
     // 1. Fetch Projects when opened
     useEffect(() => {
         if (isOpen) {
             loadProjects();
+        } else {
+            //reset panel state on close
+            setSelectedProject(null);
+            setGraphics([]);
         }
     }, [isOpen]);
 
