@@ -307,37 +307,37 @@ export function PlayoutPage() {
   };
 
   const handleRenameItem = async (graphicId: string, newName: string) => {
-  if (!newName.trim() || !activeProjectId) {
-    setEditingItemId(null);
-    return;
-  }
+    if (!newName.trim() || !activeProjectId) {
+      setEditingItemId(null);
+      return;
+    }
 
-  // Find the existing item in the playlist to access its content
-  const itemToRename = playlist.find((item) => item.graphic.id === graphicId);
+    // Find the playlist item. The graphicId is stored inside item.graphic.id
+    const itemToRename = playlist.find((item) => item.graphic.id === graphicId);
 
-  if (!itemToRename) {
-    setEditingItemId(null);
-    return;
-  }
+    if (!itemToRename) {
+      setEditingItemId(null);
+      return;
+    }
 
-  try {
-    await api.saveGraphic({
-      id: graphicId,
-      name: newName.trim(),
-      projectId: activeProjectId,
-      // Use .htmlContent from the PlaylistItem type for the 'html' field
-      html: itemToRename.graphic.htmlContent || "", 
-      json: JSON.parse(itemToRename.graphic.rawJson || "{}"),
-    });
+    try {
+      await api.saveGraphic({
+        id: graphicId,
+        name: newName.trim(),
+        projectId: activeProjectId,
+        // FIX: Access htmlContent directly from itemToRename, NOT from itemToRename.graphic
+        html: itemToRename.htmlContent || "", 
+        json: JSON.parse(itemToRename.graphic.rawJson || "{}"),
+      });
 
-    await loadRundown(); // Refresh the UI
-    setEditingItemId(null);
-  } catch (err) {
-    console.error("Failed to rename rundown item:", err);
-    setEditingItemId(null);
-  }
-};
-
+      await loadRundown();
+      setEditingItemId(null);
+    } catch (err) {
+      console.error("Failed to rename rundown item:", err);
+      setEditingItemId(null);
+    }
+  };
+  
   const handleImportGraphic = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
