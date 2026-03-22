@@ -51,6 +51,20 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         }
     };
 
+    //fetching graphics for a project
+    const loadGraphicsForProject = async (projectId: string) => {
+        setIsLoadingGraphics(true);
+        setGraphics([]);
+        try{
+            const data = await api.getGraphics(projectId);
+            setGraphics(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoadingGraphics(false);
+        }
+    };
+
     // 2. Create New Project
     const handleCreate = async () => {
         if (!newProjectName.trim()) return;
@@ -66,11 +80,12 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         }
     };
 
-    // 3. Select Project (Connects Editor to this Project ID)
+    // 3. UPDATED: selected project now opens the graphics panel
     const handleSelectProject = (id: string, name: string) => {
+        setSelectedProject({ id, name });
+        loadGraphicsForProject(id);
+        //set the active project in redux
         dispatch(setGraphicMeta({ projectId: id }));
-        alert(`Switched to Project: ${name}`);
-        onClose();
     };
 
     // 4. Import HTML File to Editor (Open from Disk)
