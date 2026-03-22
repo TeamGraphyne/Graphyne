@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Folder, Plus, Trash2, FileCode, Upload, X } from 'lucide-react';
+import { Folder, Plus, Trash2, FileCode, Upload, X, Image, Clock, ChevronRight } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAppDispatch } from '../../store/hooks';
 import { loadGraphic, setGraphicMeta } from '../../store/canvasSlice';
@@ -23,17 +23,14 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
     const [newProjectName, setNewProjectName] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // --- NEW STATE ---
-    const [selectedProject, setSelectedProject] = useState<{id: string, name: string} | null>(null);
+    const [selectedProject, setSelectedProject] = useState<{ id: string, name: string } | null>(null);
     const [graphics, setGraphics] = useState<Graphic[]>([]);
     const [isLoadingGraphics, setIsLoadingGraphics] = useState(false);
 
-    // 1. Fetch Projects when opened
     useEffect(() => {
         if (isOpen) {
             loadProjects();
         } else {
-            //reset panel state on close
             setSelectedProject(null);
             setGraphics([]);
         }
@@ -51,11 +48,10 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         }
     };
 
-    //fetching graphics for a project
     const loadGraphicsForProject = async (projectId: string) => {
         setIsLoadingGraphics(true);
         setGraphics([]);
-        try{
+        try {
             const data = await api.getGraphics(projectId);
             setGraphics(data);
         } catch (error) {
@@ -65,33 +61,28 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         }
     };
 
-    // 2. Create New Project
     const handleCreate = async () => {
         if (!newProjectName.trim()) return;
         try {
             const newProj = await api.createProject(newProjectName);
             setProjects([...projects, newProj]);
             setNewProjectName("");
-            
-            // Auto-select the new project
             handleSelectProject(newProj.id, newProj.name);
         } catch (error) {
             alert("Failed to create project: " + error);
         }
     };
 
-    // 3. UPDATED: selected project now opens the graphics panel
     const handleSelectProject = (id: string, name: string) => {
         setSelectedProject({ id, name });
         loadGraphicsForProject(id);
-        //set the active project in redux
         dispatch(setGraphicMeta({ projectId: id }));
     };
 
-    //load an existing graphic into the editor
+    // FIX: was calling api.getGraphics (list) instead of api.getGraphic (single)
     const handleLoadGraphic = async (graphic: Graphic) => {
         try {
-            const data = await api.getGraphics(graphic.id);
+            const data = await api.getGraphic(graphic.id);
             dispatch(loadGraphic({
                 id: data.id,
                 name: data.name,
@@ -109,52 +100,58 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         }
     };
 
-    //start a blank graphic tied to the selected project
     const handleNewGraphic = () => {
         dispatch(loadGraphic({
-            id: '',
+            id: null,
             name: 'New Graphic',
             elements: [],
-            config: { width: 1920, height: 1080, background: '#000000'},
+            config: { width: 1920, height: 1080, background: '#000000' },
         }));
         dispatch(setGraphicMeta({
-            projectId: selectedProject?.id ?? '',
-            id: '',
+            projectId: selectedProject?.id ?? null,
+            id: null,
             name: 'New Graphic',
         }));
         onClose();
     };
 
-    // 4. Import HTML File to Editor (Open from Disk)
     const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         parseHtmlGraphic(file).then((state) => {
             dispatch(loadGraphic({
-                id: '', // New ID (it's a copy)
+                id: null,
                 name: file.name.replace('.html', ''),
                 elements: state.elements,
-                config: state.config
+                config: state.config,
             }));
-            dispatch(setGraphicMeta({ 
+            dispatch(setGraphicMeta({
                 name: file.name.replace('.html', ''),
-                id: '',
+                id: null,
             }));
             onClose();
         }).catch(err => alert(err));
     };
 
+    const formatDate = (iso: string) =>
+        new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="w-200 h-150 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
-                
+            <div className={`bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${selectedProject ? 'w-[900px]' : 'w-[640px]'} h-[560px]`}>
+
                 {/* Header */}
-                <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-950">
+                <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-950 shrink-0">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         <Folder className="text-fuchsia-500" /> Project Manager
+                        {selectedProject && (
+                            <span className="flex items-center gap-1 text-neutral-400 font-normal text-base">
+                                <ChevronRight size={16} />
+                                <span className="text-fuchsia-400">{selectedProject.name}</span>
+                            </span>
+                        )}
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full text-neutral-400">
                         <X size={20} />
@@ -162,7 +159,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                 </div>
 
                 <div className="flex flex-1 overflow-hidden">
-                    
+
                     {/* Column 1: Project List */}
                     <div className="w-56 border-r border-neutral-800 p-4 flex flex-col gap-3 bg-neutral-900 shrink-0">
                         <div className="flex gap-2">
@@ -201,7 +198,10 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                                     </div>
                                     <button
                                         className="text-neutral-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 shrink-0"
-                                        onClick={e => { e.stopPropagation(); api.deleteProject(p.id).then(loadProjects); }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            api.deleteProject(p.id).then(loadProjects);
+                                        }}
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -210,7 +210,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                         </div>
                     </div>
 
-                    {/* Column 2: Graphics Panel (slides in when project selected) */}
+                    {/* Column 2: Graphics Panel */}
                     {selectedProject && (
                         <div className="flex-1 border-r border-neutral-800 flex flex-col bg-neutral-900/80 min-w-0">
                             <div className="px-4 py-3 border-b border-neutral-800 flex items-center justify-between shrink-0">
@@ -218,7 +218,9 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                                     <Image size={14} className="text-fuchsia-400" />
                                     Graphics in this project
                                 </span>
-                                <span className="text-xs text-neutral-500">{graphics.length} file{graphics.length !== 1 ? 's' : ''}</span>
+                                <span className="text-xs text-neutral-500">
+                                    {graphics.length} file{graphics.length !== 1 ? 's' : ''}
+                                </span>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-3 space-y-2">
