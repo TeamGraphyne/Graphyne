@@ -15,11 +15,12 @@ export interface AiDesignResult {
 
 export const api = {
 
-    generateGraphic: async (prompt: string, currentDesign?: { config: CanvasConfig; elements: CanvasElement[] }): Promise<AiDesignResult> => {
-    const response = await client.post<AiDesignResult>('/ai/generate', { prompt, currentDesign });
+  // MODIFIED: Added apiKey parameter — forwarded to server, which uses it to call Gemini SDK
+  generateGraphic: async (prompt: string, apiKey: string, currentDesign?: { config: CanvasConfig; elements: CanvasElement[] }): Promise<AiDesignResult> => {
+    const response = await client.post<AiDesignResult>('/ai/generate', { prompt, apiKey, currentDesign });
     return response.data;
   },
-  
+
   // --- Graphics ---
   saveGraphic: async (payload: {
     id?: string | null;
