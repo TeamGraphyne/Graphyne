@@ -306,6 +306,20 @@ export function PlayoutPage() {
     }
   };
 
+  const handleRemoveItem = async (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    if (!activeProjectId) return;
+    const updated = [...playlist];
+    updated.splice(index, 1);
+    setPlaylist(updated);
+    try {
+      await api.updateProject(activeProjectId, projectName, updated.map((item, idx) => ({ graphicId: item.graphicId, order: idx })));
+    } catch (err) {
+      console.error("Failed to remove item:", err);
+      loadRundown();
+    }
+  };
+
   const handleRenameItem = async (graphicId: string, newName: string) => {
     if (!newName.trim() || !activeProjectId) {
       setEditingItemId(null);
