@@ -54,6 +54,18 @@ export const graphicRoutes = (dataDir: string) => async (fastify: FastifyInstanc
       }
     }
   );
+
+  //fetch a single graphic with full json data for loading into the editor
+  fastify.get<{ Params: { id: string} }>(
+    "/api/graphics/:id",
+    async (request, reply) => {
+      const graphic = await prisma.graphic.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!graphic) return reply.code(404).send({ error: "Graphic not found" });
+      return { ...graphic, json: JSON.parse(graphic.rawJson) };
+    }
+  );
 }
 
 export const projectRoutes = async (fastify: FastifyInstance) => {
