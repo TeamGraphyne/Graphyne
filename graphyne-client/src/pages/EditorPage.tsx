@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MonitorPlay, Loader2, Save, FolderOpen, Database, Sparkles,} from "lucide-react";
+import { MonitorPlay, Loader2, Save, FolderOpen, Database, Sparkles} from "lucide-react";
 
 // 1. Imports for Logic
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -23,10 +23,12 @@ import type { DataUpdatePayload, DataErrorPayload, DataField } from "../types/da
 import { AiDesignPanel } from "../components/UI/AiDesignPanel";
 
 import transLogo from "../assets/TransLogo.png";
+import HotkeyManager from "../components/UI/HotkeyManager";
 
 export function EditorPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isHotkeyMgrOpen, setHotkeyMgrOpen] = useState(false);
 
   // 3. Access Redux State (wrapped in .present due to redux-undo)
   const { config, elements, selectedIds, meta } = useAppSelector(
@@ -38,6 +40,8 @@ export function EditorPage() {
   const [isProjectMgrOpen, setProjectMgrOpen] = useState(false);
   const [isDataMgrOpen, setDataMgrOpen] = useState(false); // NEW: Data Source Manager modal
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
+
+
 
   // 4. Fetch Projects on Mount + Connect Socket for live data preview
   useEffect(() => {
@@ -163,6 +167,11 @@ export function EditorPage() {
         onClose={() => setAiPanelOpen(false)}
       />
 
+      <HotkeyManager
+      isOpen={isHotkeyMgrOpen}
+      onClose={() => setHotkeyMgrOpen(false)}
+     />
+
       {/* --- HEADER --- */}
       <header className="h-20 bg-neutral-950 border-b border-none flex flex-col justify-center z-20">
         <div className="flex items-center w-full">
@@ -206,6 +215,15 @@ export function EditorPage() {
                    <FolderOpen size={14} />
                    PROJECTS
                </button>
+
+               <button
+                onClick={() => setHotkeyMgrOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-900/30 hover:bg-indigo-800/50 text-indigo-300 border border-indigo-800/50 rounded text-xs font-bold transition-colors"
+              >
+
+                  <FolderOpen size={14} />
+                    HOTKEYS
+                  </button>
 
               {/* NEW: Data Source Manager Button */}
               <button 
@@ -290,3 +308,6 @@ export function EditorPage() {
     </div>
   );
 }
+
+
+
