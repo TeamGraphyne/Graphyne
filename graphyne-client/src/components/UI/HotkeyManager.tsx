@@ -83,7 +83,7 @@ export default function HotkeyManager({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-[#16181c] border border-[#2e3140] rounded-2xl w-[560px] max-h-[80vh] flex flex-col overflow-hidden">
+      <div className="bg-[#16181c] border border-[#2e3140] rounded-2xl w-140 max-h-[80vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e3140] shrink-0">
           <div>
             <h2 className="text-sm font-semibold text-white">
