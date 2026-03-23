@@ -79,15 +79,16 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
         dispatch(setGraphicMeta({ projectId: id }));
     };
 
-    // FIX: was calling api.getGraphics (list) instead of api.getGraphic (single)
     const handleLoadGraphic = async (graphic: Graphic) => {
         try {
             const data = await api.getGraphic(graphic.id);
+            const state = data.json || JSON.parse(data.rawJson);
+
             dispatch(loadGraphic({
                 id: data.id,
                 name: data.name,
-                elements: data.elements,
-                config: data.config,
+                elements: state.elements || [],
+                config: state.config,
             }));
             dispatch(setGraphicMeta({
                 projectId: selectedProject!.id,
@@ -140,7 +141,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className={`bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${selectedProject ? 'w-[900px]' : 'w-[640px]'} h-[560px]`}>
+            <div className={`bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${selectedProject ? 'w-240' : 'w-170'} h-140`}>
 
                 {/* Header */}
                 <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-950 shrink-0">
@@ -161,7 +162,8 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                 <div className="flex flex-1 overflow-hidden">
 
                     {/* Column 1: Project List */}
-                    <div className="w-56 border-r border-neutral-800 p-4 flex flex-col gap-3 bg-neutral-900 shrink-0">
+                    {/* MODIFIED: Added transition-all and conditional flex-1 so it splits space evenly with the actions column initially */}
+                    <div className={`border-r border-neutral-800 p-4 flex flex-col gap-3 bg-neutral-900 transition-all ${selectedProject ? 'w-56 shrink-0' : 'flex-1'}`}>
                         <div className="flex gap-2">
                             <input
                                 className="flex-1 bg-neutral-950 border border-neutral-700 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-500 focus:border-fuchsia-500 outline-none min-w-0"
@@ -223,7 +225,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                                 </span>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-2">
                                 {isLoadingGraphics ? (
                                     <div className="flex items-center justify-center h-24 text-neutral-500 text-sm">
                                         Loading graphics...
@@ -259,15 +261,15 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                     )}
 
                     {/* Column 3: Actions */}
-                    <div className="w-52 p-6 flex flex-col justify-center items-center gap-5 bg-neutral-900/50 shrink-0">
+                    <div className={`p-6 flex flex-col justify-center items-center gap-6 bg-neutral-900/50 transition-all ${selectedProject ? 'w-64 shrink-0' : 'flex-1'}`}>
                         <div className="text-center space-y-1">
                             <h3 className="text-base font-bold text-white">Actions</h3>
-                            <p className="text-xs text-neutral-400">
+                            <p className="text-xs text-neutral-400 px-2 truncate">
                                 {selectedProject ? `In "${selectedProject.name}"` : 'Select a project first'}
                             </p>
                         </div>
 
-                        <div className="flex flex-col gap-3 w-full">
+                        <div className="flex flex-col gap-4 w-full max-w-65">
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -278,23 +280,23 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
 
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2.5 p-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 rounded-lg text-white transition-all hover:scale-105"
+                                className="w-full flex items-center gap-3 p-3.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 rounded-lg text-white transition-all hover:scale-105 group"
                             >
-                                <Upload size={18} className="text-blue-400 shrink-0" />
-                                <div className="text-left">
-                                    <div className="font-bold text-xs">Import HTML</div>
-                                    <div className="text-xs text-neutral-500 mt-0.5">Open from disk</div>
+                                <Upload size={20} className="text-blue-400 shrink-0 group-hover:-translate-y-0.5 transition-transform" />
+                                <div className="text-left flex-1 min-w-0">
+                                    <div className="font-bold text-sm truncate">Import HTML</div>
+                                    <div className="text-xs text-neutral-400 mt-0.5 truncate">Open from disk</div>
                                 </div>
                             </button>
 
                             <button
                                 onClick={handleNewGraphic}
-                                className="flex items-center gap-2.5 p-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 rounded-lg text-white transition-all hover:scale-105"
+                                className="w-full flex items-center gap-3 p-3.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 rounded-lg text-white transition-all hover:scale-105 group"
                             >
-                                <FileCode size={18} className="text-green-400 shrink-0" />
-                                <div className="text-left">
-                                    <div className="font-bold text-xs">New Graphic</div>
-                                    <div className="text-xs text-neutral-500 mt-0.5">Start from scratch</div>
+                                <FileCode size={20} className="text-green-400 shrink-0 group-hover:scale-110 transition-transform" />
+                                <div className="text-left flex-1 min-w-0">
+                                    <div className="font-bold text-sm truncate">New Graphic</div>
+                                    <div className="text-xs text-neutral-400 mt-0.5 truncate">Start from scratch</div>
                                 </div>
                             </button>
                         </div>

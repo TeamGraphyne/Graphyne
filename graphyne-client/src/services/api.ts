@@ -38,14 +38,16 @@ export const api = {
         return response.data;
     },
 
+    // FIXED: Changed payload signature to accept projectId and route to point to the correct endpoint
     // CREATE — always tied to a project
-    createGraphic: async (projectId: string, payload: {
+    createGraphic: async (payload: {
         name: string;
         html: string;
         json: object;
+        projectId?: string | null;
     }) => {
         const response = await client.post<{ success: true; id: string; filePath: string }>(
-            `/projects/${projectId}/graphics`,
+            `/graphics`,
             payload,
         );
         return response.data;

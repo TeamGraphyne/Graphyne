@@ -108,17 +108,27 @@ export function EditorPage() {
       // A. Compile State to HTML String
       const htmlContent = await compileGraphicToHTML(config, elements);
 
-      // B. Send to Backend
-      const result = await api.saveGraphic({
-        id: meta.id,
-        name: graphicName,
-        html: htmlContent,
-        json: { config, elements, selectedIds }, 
-        projectId: meta.projectId 
-      });
+      let result;
 
-      if (result.status === 200 || result.data.success) {
-        dispatch(setGraphicMeta({ id: result.data.id }));
+      // FIXED: Use correct API calls based on whether we are updating or creating
+      if (meta.id) {
+        result = await api.updateGraphic(meta.id, {
+          name: graphicName,
+          html: htmlContent,
+          json: { config, elements, selectedIds }
+        });
+      } else {
+        result = await api.createGraphic({
+          name: graphicName,
+          html: htmlContent,
+          json: { config, elements, selectedIds }, 
+          projectId: meta.projectId 
+        });
+      }
+
+      // FIXED: Only check result.success since response.data is directly returned by API utility
+      if (result.success) {
+        dispatch(setGraphicMeta({ id: result.id }));
         alert(`✅ Saved "${graphicName}" to ${meta.projectId ? 'Project & ' : ''}Library!`);
         
         // Refresh project list just in case
