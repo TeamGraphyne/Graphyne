@@ -50,7 +50,7 @@ export async function hotkeyRoutes(fastify: FastifyInstance) {
 
     const existing = await prisma.hotkey.findFirst({
       where: {
-        keys: { equals: normalisedKeys, mode: "insensitive" },
+        keys: { equals: normalisedKeys },
       },
     });
 
@@ -80,7 +80,7 @@ export async function hotkeyRoutes(fastify: FastifyInstance) {
 
     const existing = await prisma.hotkey.findFirst({
       where: {
-        keys: { equals: normalisedKeys, mode: "insensitive" },
+        keys: { equals: normalisedKeys },
         NOT: { id },
       },
     });
