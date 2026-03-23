@@ -511,7 +511,7 @@ export function PlayoutPage() {
 
           {!monitorsCollapsed && (
             <>
-              {/* Mobile: tab switcher between PVW and PGM */}
+              {/* Mobile: tab switcher between PVW and PGM! */}
               <div className="sm:hidden flex border-b border-purple-900/30 bg-[#1a0f2e]">
                 <button
                   onClick={() => setActiveMonitor('preview')}
