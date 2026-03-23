@@ -198,7 +198,7 @@ export function EditorPage() {
               <button
                 onClick={() => setAiPanelOpen(true)}
                 className="flex items-center gap-2 px-3 py-1.5
-                           bg-linear-to-r from-lgOrngDis to-lgPurpDis
+                           bg-linear-to-r from-lgPurpDis to-lgPurpDis
                            hover:from-logoOrange hover:to-logoPurple
                            text-txt border border-select
                            hover:border-orange-400/60 rounded text-xs font-bold transition-all hover:text-txtSelect"
