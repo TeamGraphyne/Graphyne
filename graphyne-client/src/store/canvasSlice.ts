@@ -47,13 +47,15 @@ export const canvasSlice = createSlice({
   reducers: {
 
     // --- METADATA ---
-    setGraphicMeta: (state, action: PayloadAction<{ id?: string; name?: string; projectId?: string | null }>) => {
+    // FIXED: Allow id to be explicitly null
+    setGraphicMeta: (state, action: PayloadAction<{ id?: string | null; name?: string; projectId?: string | null }>) => {
       if (action.payload.id !== undefined) state.meta.id = action.payload.id;
       if (action.payload.name !== undefined) state.meta.name = action.payload.name;
       if (action.payload.projectId !== undefined) state.meta.projectId = action.payload.projectId;
     },
 
-    loadGraphic: (state, action: PayloadAction<{ id: string; name: string; elements: CanvasElement[]; config: CanvasConfig }>) => {
+    // FIXED: Allow id to be explicitly null
+    loadGraphic: (state, action: PayloadAction<{ id: string | null; name: string; elements: CanvasElement[]; config: CanvasConfig }>) => {
       state.meta.id = action.payload.id;
       state.meta.name = action.payload.name;
       state.elements = action.payload.elements;
@@ -164,7 +166,6 @@ export const canvasSlice = createSlice({
       });
     },
 
-    // FIX: was incorrectly nested inside setGridStyle — now a proper sibling reducer
     duplicateElements: (state, action: PayloadAction<string[]>) => {
       const newIds: string[] = [];
       action.payload.forEach((id) => {
@@ -199,7 +200,6 @@ export const canvasSlice = createSlice({
       state.grid.snap = action.payload;
     },
 
-    // FIX: was missing its closing brace, causing duplicateElements to nest inside it
     setGridStyle: (state, action: PayloadAction<'lines' | 'dots' | 'graph'>) => {
       state.grid.style = action.payload;
     },

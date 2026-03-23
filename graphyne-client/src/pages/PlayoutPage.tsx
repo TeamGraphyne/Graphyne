@@ -359,8 +359,14 @@ export function PlayoutPage() {
     reader.onload = async (event) => {
       const htmlContent = event.target?.result as string;
       try {
-        const response = await api.saveGraphic({ name: file.name, html: htmlContent, json: {}, projectId: activeProjectId });
-        if (response.data.success) await loadRundown();
+        // FIXED: Replaced api.saveGraphic with api.createGraphic and checked response.success directly
+        const response = await api.createGraphic({ 
+            name: file.name.replace('.html', ''), // Optional: cleaner name without extension
+            html: htmlContent, 
+            json: {}, 
+            projectId: activeProjectId 
+        });
+        if (response.success) await loadRundown();
       } catch (err) {
         console.error("Failed to persist imported graphic:", err);
       }
@@ -565,7 +571,7 @@ const handleTake = () => {
 
           {!monitorsCollapsed && (
             <>
-              {/* Mobile: tab switcher between PVW and PGM */}
+              {/* Mobile: tab switcher between PVW and PGM! */}
               <div className="sm:hidden flex border-b border-purple-900/30 bg-[#1a0f2e]">
                 <button
                   onClick={() => setActiveMonitor('preview')}

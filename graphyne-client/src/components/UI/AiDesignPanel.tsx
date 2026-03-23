@@ -174,7 +174,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-[560px] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-140 bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
@@ -202,7 +202,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
           {panelState === 'api-key' && (
             <div className="flex flex-col gap-5">
               <div className="flex flex-col items-center gap-3 pt-2">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400/20 to-fuchsia-500/20
+                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-orange-400/20 to-fuchsia-500/20
                                 border border-orange-400/30 flex items-center justify-center">
                   <Key size={22} className="text-orange-400" />
                 </div>
@@ -264,7 +264,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   disabled={!apiKeyInput.trim()}
                   className="flex-1 flex items-center justify-center gap-2
                              px-4 py-2.5 rounded-xl text-sm font-bold
-                             bg-gradient-to-r from-orange-400 to-fuchsia-500
+                             bg-linear-to-r from-orange-400 to-fuchsia-500
                              hover:from-orange-300 hover:to-fuchsia-400
                              text-white shadow-lg shadow-orange-500/20
                              disabled:opacity-40 disabled:cursor-not-allowed

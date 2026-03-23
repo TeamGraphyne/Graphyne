@@ -1,4 +1,5 @@
 import type { DataSourceData } from "./datasource";
+import type { CanvasConfig, CanvasElement } from "./canvas";
 
 // 1. The Visual Asset (What the Editor creates)
 export interface GraphicData {
@@ -7,6 +8,11 @@ export interface GraphicData {
     thumbnail?: string;
     filePath: string;  // The HTML URL
     rawJson: string;   // The Redux State for editing
+    json?: {           // FIXED: Added json payload returned by the API
+        config: CanvasConfig;
+        elements: CanvasElement[];
+        selectedIds?: string[];
+    };
     updatedAt: string;
 }
 
