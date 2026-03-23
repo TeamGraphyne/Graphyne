@@ -40,10 +40,8 @@ export function EditorPage() {
   const [isProjectMgrOpen, setProjectMgrOpen] = useState(false);
   const [isDataMgrOpen, setDataMgrOpen] = useState(false); // NEW: Data Source Manager modal
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
-  <HotkeyManager
-  isOpen={isHotkeyMgrOpen}
-  onClose={() => setHotkeyMgrOpen(false)}
-/>
+
+
 
   // 4. Fetch Projects on Mount + Connect Socket for live data preview
   useEffect(() => {
@@ -158,6 +156,11 @@ export function EditorPage() {
         isOpen={isAiPanelOpen}
         onClose={() => setAiPanelOpen(false)}
       />
+
+      <HotkeyManager
+      isOpen={isHotkeyMgrOpen}
+      onClose={() => setHotkeyMgrOpen(false)}
+     />
 
       {/* --- HEADER --- */}
       <header className="h-20 bg-neutral-950 border-b border-none flex flex-col justify-center z-20">
@@ -296,14 +299,5 @@ export function EditorPage() {
   );
 }
 
-// Add import
 
-
-// Add state
-
-
-// Add modal in the modals section
-
-
-// Add button in the header alongside PROJECTS, DATA etc.
 
