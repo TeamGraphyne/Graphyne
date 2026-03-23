@@ -154,7 +154,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                             </span>
                         )}
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full text-neutral-400">
+                    <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full text-txt">
                         <X size={20} />
                     </button>
                 </div>
@@ -175,7 +175,7 @@ export const ProjectManager = ({ isOpen, onClose }: ProjectManagerProps) => {
                             <button
                                 onClick={handleCreate}
                                 disabled={!newProjectName}
-                                className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-2 rounded disabled:opacity-50 shrink-0"
+                                className="bg-btn hover:bg-select text-tab px-4 rounded disabled:opacity-50"
                             >
                                 <Plus size={16} />
                             </button>

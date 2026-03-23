@@ -4,14 +4,20 @@
 @theme {
   --color-bg:           #1e1e1e;
   --color-panel:        #250c29;
+  --color-tab:          #171717;
+
+  --color-blur:         rgba(0, 0, 0, 0.75);
 
   --color-txt:          #BDBDBD;
+  --color-txt2:         #171717;
   --color-txtHover:     #FFFFFF;
   --color-txtSelect:    #FFFFFF;
   --color-txtDisabled:  #71717A;
 
   --color-btn:          #BDBDBD;
   --color-btn2:         #3d1e42;
+  --color-btn3:         #3b2b13;
+
   --color-btnHover:     #4A044E;
   --color-btnSelect:    #4A044E;
   --color-btnUnfocused: #330e36;
@@ -25,6 +31,11 @@
 
   --color-guide:        #00a1ff;
   --color-centerGuide:  #ad0ec2;
+
+  --color-logoOrange:   #fca728;
+  --color-lgOrngDis:    #7d5d2e;
+  --color-logoPurple:   #700f75; 
+  --color-lgPurpDis:    #542157;
 
   /* FONT SIZES */
   /* Small text - 10px

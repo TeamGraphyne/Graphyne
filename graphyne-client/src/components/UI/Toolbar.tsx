@@ -174,7 +174,7 @@ export const Toolbar = () => {
 
   return (
     <>
-    <div className="h-14 bg-fuchsia-950 border-b border-none flex items-center px-4 space-x-4 text-gray-300">
+    <div className="h-14 bg-fuchsia-950 border-b border-none flex items-center px-4 space-x-4 text-txt">
       {/* Hidden File Input for Image Upload */}
       <input
         type="file"
@@ -187,40 +187,40 @@ export const Toolbar = () => {
       <div className="flex space-x-2   border-r border-none pr-4">
         <button
           onClick={addRect}
-          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          className="group/button p-2 hover:bg-select rounded transition-colors"
           title="Add Rectangle"
         >
-          <Square size={20} className="group-hover/button:text-gray-800" />
+          <Square size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={addCircle}
-          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          className="group/button p-2 hover:bg-select rounded transition-colors"
           title="Add Circle"
         >
-          <Circle size={20} className="group-hover/button:text-gray-800" />
+          <Circle size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={addText}
-          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          className="group/button p-2 hover:bg-select rounded transition-colors"
           title="Add Text"
         >
-          <Type size={20} className="group-hover/button:text-gray-800" />
+          <Type size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          className="group/button p-2 hover:bg-select rounded transition-colors"
           title="Add Image"
         >
-          <ImageIcon size={20} className="group-hover/button:text-gray-800" />
+          <ImageIcon size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
             onClick={() => setShowAssetPanel(prev => !prev)}
             className={`group/button p-2 rounded transition-colors ${
-              showAssetPanel ? "bg-orange-300 text-fuchsia-950" : "hover:bg-orange-300"
+              showAssetPanel ? "bg-select text-txt2" : "hover:bg-select"
             }`}
             title="Asset Library"
           >
-            <ImageUp size={20} className="group-hover/button:text-gray-800" />
+            <ImageUp size={20} className="group-hover/button:text-txt2" />
           </button>
       </div>
       
@@ -228,51 +228,51 @@ export const Toolbar = () => {
       <div className="relative border-r pr-4">
         <button
           onClick={() => setShowGridMenu(!showGridMenu)}
-          className={`flex items-center gap-2 p-2 hover:bg-orange-300 rounded ${showGridMenu ? 'bg-orange-300 text-fuchsia-950' : ''}`}
+          className={`group/button flex items-center gap-2 p-2 hover:bg-select rounded ${showGridMenu ? 'bg-select hover:text-txt2 focus:text-txt2' : ''}`}
         >
-          <Grid3X3 size={20} />
-          <ChevronDown size={14} />
+          <Grid3X3 size={20} className="group-hover/button:text-txt2" />
+          <ChevronDown size={14} className="group-hover/button:text-txt2" />
         </button>
 
         {showGridMenu && (
-          <div className="absolute top-12 left-0 w-56 bg-fuchsia-950 border border-indigo-800 shadow-lg rounded text-sm p-3 space-y-3 z-50">
+          <div className="absolute top-12 left-0 w-56 bg-panel border border-border shadow-lg rounded text-sm p-3 space-y-3 z-50">
             
-            <label className="flex items-center justify-between cursor-pointer hover:text-white">
+            <label className="flex items-center justify-between cursor-pointer hover:text-txtSelect">
               <span>Show Background Grid</span>
               <input
                 type="checkbox"
                 checked={grid.show}
                 onChange={() => dispatch(setShowGrid(!grid.show))}
-                className="accent-orange-400 w-4 h-4 cursor-pointer"
+                className="accent-select w-4 h-4 cursor-pointer"
               />
             </label>
 
-            <label className="flex items-center justify-between cursor-pointer hover:text-white">
+            <label className="flex items-center justify-between cursor-pointer hover:text-txtSelect">
               <span>Snap To Grid</span>
               <input
                 type="checkbox"
                 checked={grid.snap}
                 onChange={() => dispatch(setSnap(!grid.snap))}
-                className="accent-orange-400 w-4 h-4 cursor-pointer"
+                className="accent-select w-4 h-4 cursor-pointer"
               />
             </label>
 
-            <label className="flex items-center justify-between cursor-pointer hover:text-white">
+            <label className="flex items-center justify-between cursor-pointer hover:text-txtSelect">
               <span>Show Alignment Guides</span>
               <input
                 type="checkbox"
                 checked={grid.showAlignmentGuides}
                 onChange={() => dispatch(setShowAlignmentGuides(!grid.showAlignmentGuides))}
-                className="accent-orange-400 w-4 h-4 cursor-pointer"
+                className="accent-select w-4 h-4 cursor-pointer"
               />
             </label>
 
             <div className="pt-1">
-              <span className="block mb-1 text-gray-400 text-xs uppercase">Grid Style</span>
+              <span className="block mb-1 text-txt text-xs uppercase">Grid Style</span>
               <select
                 value={grid.style}
                 onChange={(e) => dispatch(setGridStyle(e.target.value as "lines" | "dots" | "graph"))}
-                className="w-full bg-indigo-900 rounded px-2 py-1.5 outline-none cursor-pointer"
+                className="w-full bg-panel border border-border rounded px-2 py-1.5 outline-none cursor-pointer hover:border-hover focus:border-select hover:text-txtSelect focus:text-txtSelect"
               >
                 <option value="lines">Lines</option>
                 <option value="dots">Dots</option>
@@ -288,47 +288,47 @@ export const Toolbar = () => {
       <div className="flex space-x-2">
         <button
           onClick={() => dispatch(ActionCreators.undo())}
-          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          className="group/button p-2 hover:bg-select rounded transition-colors"
           title="Undo"
         >
-          <Undo size={20} className="group-hover/button:text-gray-800" />
+          <Undo size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={() => dispatch(ActionCreators.redo())}
-          className="group/button p-2 hover:bg-orange-300 rounded transition-colors"
+          className="group/button p-2 hover:bg-select rounded transition-colors"
           title="Redo"
         >
-          <Redo size={20} className="group-hover/button:text-gray-800" />
+          <Redo size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={handleZoomIn}
-          className="group/button p-2 hover:bg-orange-300 rounded"
+          className="group/button p-2 hover:bg-select rounded"
           title="Zoom In"
         >
-          <ZoomIn size={20} className="group-hover/button:text-gray-800" />
+          <ZoomIn size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={handleZoomOut}
-          className="group/button p-2 hover:bg-orange-300 rounded"
+          className="group/button p-2 hover:bg-select rounded"
           title="Zoom Out"
         >
-          <ZoomOut size={20} className="group-hover/button:text-gray-800" />
+          <ZoomOut size={20} className="group-hover/button:text-txt2" />
         </button>
         <button
           onClick={selectTool}
-          className="group/button p-2 hover:bg-orange-300 rounded"
+          className="group/button p-2 hover:bg-select rounded"
           title="Select Tool"
         >
         </button>
       </div>
     </div>
     {showAssetPanel && (
-        <div className="fixed bottom-6 right-6 z-50 w-[720px] h-[520px] bg-[#0e0f11] border border-[#2e3140] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-4 py-2 bg-fuchsia-950 border-b border-[#2e3140] shrink-0">
-            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Asset Library</span>
+        <div className="fixed bottom-6 right-6 z-50 w-[720px] h-[520px] bg-tab border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-4 py-2 bg-border border-b border-border shrink-0">
+            <span className="text-xs font-bold text-txt uppercase tracking-widest">Asset Library</span>
             <button
               onClick={() => setShowAssetPanel(false)}
-              className="text-gray-500 hover:text-white text-lg leading-none transition-colors"
+              className="text-txtDisabled hover:text-txtSelect text-lg leading-none transition-colors"
             >
               ×
             </button>

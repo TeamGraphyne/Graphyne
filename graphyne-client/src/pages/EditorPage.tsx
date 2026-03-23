@@ -147,7 +147,7 @@ export function EditorPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-950 text-gray-300 overflow-hidden">
+    <div className="h-screen flex flex-col bg-tab text-txt overflow-hidden">
       
       {/* --- MODALS --- */}
       <ProjectManager 
@@ -173,21 +173,21 @@ export function EditorPage() {
      />
 
       {/* --- HEADER --- */}
-      <header className="h-20 bg-neutral-950 border-b border-none flex flex-col justify-center z-20">
+      <header className="h-20 bg-tab border-b border-none flex flex-col justify-center z-20">
         <div className="flex items-center w-full">
 
         <div className="flex items-center gap-6 px-4 py-2 w-full justify-between">  
           {/* Logo & Info */}
             <div className="flex items-center gap-4 justify-start">
               <img src={transLogo} alt="Graphyne Logo" className="w-8 h-8" />
-                <span className="text-gray-400 text-xs font-normal">EDITOR</span>
+                <span className="text-txt text-xs font-normal">EDITOR</span>
               
               {/* Quick Name Edit */}
               <input 
                 type="text" 
                 value={meta.name} 
                 onChange={handleNameChange}
-                className="bg-transparent border border-transparent hover:border-fuchsia-200/30 focus:border-orange-300 text-sm px-2 py-1 rounded outline-none transition-colors"
+                className="bg-transparent border border-transparent hover:border-border focus:border-orange-300 text-sm px-2 py-1 rounded outline-none transition-colors"
               />
             </div>
 
@@ -198,10 +198,10 @@ export function EditorPage() {
               <button
                 onClick={() => setAiPanelOpen(true)}
                 className="flex items-center gap-2 px-3 py-1.5
-                           bg-linear-to-r from-orange-500/20 to-fuchsia-500/20
-                           hover:from-orange-500/40 hover:to-fuchsia-500/40
-                           text-orange-300 border border-orange-500/30
-                           hover:border-orange-400/60 rounded text-xs font-bold transition-all"
+                           bg-linear-to-r from-lgPurpDis to-lgPurpDis
+                           hover:from-logoOrange hover:to-logoPurple
+                           text-txt border border-select
+                           hover:border-orange-400/60 rounded text-xs font-bold transition-all hover:text-txtSelect"
               >
                 <Sparkles size={14} />
                 AI DESIGN
@@ -210,7 +210,8 @@ export function EditorPage() {
               {/* Project Manager Button */}
               <button 
                  onClick={() => setProjectMgrOpen(true)}
-                 className="flex items-center gap-2 px-3 py-1.5 bg-fuchsia-900/40 hover:bg-fuchsia-800 text-fuchsia-200 border border-fuchsia-800 rounded text-xs font-bold transition-colors mr-1"
+                 className="flex items-center gap-2 px-3 py-1.5 bg-none text-txt border border-border rounded text-xs font-bold transition-colors mr-1
+                            hover:bg-none hover:border-select hover:text-txtSelect"
                >
                    <FolderOpen size={14} />
                    PROJECTS
@@ -228,7 +229,8 @@ export function EditorPage() {
               {/* NEW: Data Source Manager Button */}
               <button 
                  onClick={() => setDataMgrOpen(true)}
-                 className="flex items-center gap-2 px-3 py-1.5 bg-orange-900/30 hover:bg-orange-800/50 text-orange-300 border border-orange-800/50 rounded text-xs font-bold transition-colors mr-2"
+                 className="flex items-center gap-2 px-3 py-1.5 bg-none text-txt border border-border rounded text-xs font-bold transition-colors mr-2
+                            hover:bg-none hover:text-txtSelect hover:border-select"
                >
                    <Database size={14} />
                    DATA
@@ -236,13 +238,13 @@ export function EditorPage() {
 
               {/* Project Selector (Quick Switcher) */}
               <div className="flex items-center gap-2 mr-4">
-                  <span className="text-xs text-gray-400 uppercase font-bold">Target:</span>
+                  <span className="text-xs text-txt uppercase font-bold">Target:</span>
                   <select 
                       value={meta.projectId || ""} 
                       onChange={handleProjectChange}
-                      className="bg-neutral-700/40 border border-fuchsia-200/30 text-xs rounded px-2 py-1.5 
-                      focus:border-orange-300 outline-none focus:bg-neutral-700/50 focus:text-gray-800
-                      hover:border-orange-300/50 max-w-37.5"
+                      className="bg-tab border border-border text-xs rounded px-2 py-1.5 
+                                  outline-none focus:text-txtSelect focus:border-select
+                                hover:border-hover max-w-37.5"
                   >
                       <option value="">(Library Only)</option>
                       {projects.map(p => (
@@ -257,7 +259,7 @@ export function EditorPage() {
                 disabled={isSaving}
                 className={`
                   flex items-center gap-2 px-4 py-1.5 rounded text-xs font-bold transition-colors shadow-lg
-                  ${isSaving ? "bg-orange-300 text-gray-800 cursor-wait" : "bg-gray-300 hover:bg-orange-300 text-gray-800"}
+                  ${isSaving ? "bg-hover text-txt2 cursor-wait" : "bg-btn hover:bg-select text-txt2"}
                 `}
               >
                 {isSaving ? (
@@ -270,8 +272,8 @@ export function EditorPage() {
 
               {/* PLAYOUT NAVIGATION */}
               <button
-                className="flex items-center gap-2 px-3 py-1.5 bg-transparent text-xs font-bold rounded text-gray-300 border border-fuchsia-200/30 ml-2
-                hover:border-orange-300/50 focus:border-orange-300"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded text-txt2 border border-none bg-select ml-2
+                hover:bg-btn focus:bg-btn"
                 onClick={() => navigate("/playout")}
               >
                 <MonitorPlay size={14} /> PLAYOUT
@@ -291,7 +293,7 @@ export function EditorPage() {
         <LayersPanel />
 
         {/* Center: Canvas */}
-        <div className="flex-1 bg-gray-800/50 relative overflow-hidden flex flex-col">
+        <div className="flex-1 bg-tab relative overflow-hidden flex flex-col">
           <div className="flex-1 flex items-center justify-center overflow-auto p-8">
             <div className="shadow-2xl shadow-black/50">
               <Artboard />
@@ -300,8 +302,8 @@ export function EditorPage() {
         </div>
 
         {/* Right: Properties */}
-        <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col z-10">
-          <div className="flex border-b border-gray-800"></div>
+        <div className="w-80 bg-tab flex flex-col z-10">
+          <div className="flex border-b border-border"></div>
           <PropertiesPanel />
         </div>
       </div>

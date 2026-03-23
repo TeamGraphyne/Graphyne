@@ -173,23 +173,23 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-140 bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-blur backdrop-blur-sm">
+      <div className="w-[560px] bg-tab border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-blur">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-orange-400 to-fuchsia-500 flex items-center justify-center">
-              <Sparkles size={16} className="text-white" />
+            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-logoPurple to-logoOrange flex items-center justify-center">
+              <Sparkles size={16} className="text-txt" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">AI Graphic Designer</h2>
-              <p className="text-xs text-neutral-500">Describe a graphic — it loads as a draft in the editor</p>
+              <h2 className="text-[14px] font-bold text-txt">AI Graphic Designer</h2>
+              <p className="text-[10px] text-txt">Describe a graphic — it loads as a draft in the editor</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-white transition-colors p-1 rounded"
+            className="text-txt hover:text-txtSelect transition-colors p-1 rounded"
           >
             <X size={18} />
           </button>
@@ -282,7 +282,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
             <>
               {/* Prompt textarea */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                <label className="text-[10px] font-semibold text-txt uppercase tracking-wider">
                   Describe your graphic
                 </label>
                 <div className="relative">
@@ -294,11 +294,11 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                     placeholder='e.g. "Lower third with player name SARAH JONES and title GOALKEEPER, white text on dark transparent bar"'
                     rows={4}
                     maxLength={500}
-                    className="w-full bg-neutral-800 border border-neutral-700 focus:border-orange-400
-                               text-sm text-white placeholder:text-neutral-600 rounded-xl
+                    className="w-full bg-tab border border-border hover:border-hover focus:border-select
+                               text-[12px] text-txt placeholder:text-txtDisabled rounded-xl
                                px-4 py-3 resize-none outline-none transition-colors"
                   />
-                  <span className="absolute bottom-3 right-3 text-xs text-neutral-600">
+                  <span className="absolute bottom-3 right-3 text-[12px] text-txtDisabled">
                     {prompt.length}/500
                   </span>
                 </div>
@@ -319,9 +319,9 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                       id="modify-current"
                       checked={modifyCurrent}
                       onChange={(e) => setModifyCurrent(e.target.checked)}
-                      className="accent-orange-500 rounded border-neutral-700 bg-neutral-800 w-4 h-4"
+                      className="accent-select rounded border-border bg-tab w-4 h-4"
                     />
-                    <label htmlFor="modify-current" className="text-xs font-semibold text-neutral-300 select-none cursor-pointer">
+                    <label htmlFor="modify-current" className="text-xs font-semibold text-txt select-none cursor-pointer">
                       Modify existing graphic setup
                     </label>
                   </div>
@@ -331,8 +331,8 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
               {/* Suggested prompts */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <ChevronDown size={12} className="text-neutral-600" />
-                  <span className="text-xs text-neutral-600 uppercase tracking-wider font-semibold">
+                  <ChevronDown size={12} className="text-txt" />
+                  <span className="text-xs text-txtDisabled uppercase tracking-wider font-semibold">
                     Suggestions
                   </span>
                 </div>
@@ -341,9 +341,9 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                     <button
                       key={s}
                       onClick={() => handleSuggestionClick(s)}
-                      className="text-left text-xs text-neutral-400 hover:text-white
-                                 px-3 py-2 rounded-lg hover:bg-neutral-800
-                                 border border-transparent hover:border-neutral-700
+                      className="text-left text-xs text-txt hover:text-txtSelect
+                                 px-3 py-2 rounded-lg hover:bg-lgPurpDis
+                                 border border-transparent hover:border-lgOrngDis
                                  transition-all truncate"
                     >
                       {s}
@@ -357,8 +357,8 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                 <button
                   onClick={onClose}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold
-                             text-neutral-400 border border-neutral-700
-                             hover:border-neutral-500 hover:text-white transition-colors"
+                             text-border border border-border
+                             hover:border-btn hover:text-txt transition-colors"
                 >
                   Cancel
                 </button>
@@ -367,9 +367,9 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   disabled={!prompt.trim()}
                   className="flex-1 flex items-center justify-center gap-2
                              px-4 py-2.5 rounded-xl text-sm font-bold
-                             bg-linear-to-r from-orange-400 to-fuchsia-500
-                             hover:from-orange-300 hover:to-fuchsia-400
-                             text-white shadow-lg shadow-orange-500/20
+                             bg-linear-to-r from-lgOrngDis to-lgPurpDis
+                             hover:from-logoOrange hover:to-logoPurple
+                             text-txt shadow-lg 
                              disabled:opacity-40 disabled:cursor-not-allowed
                              transition-all"
                 >
@@ -396,14 +396,14 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
           {panelState === 'loading' && (
             <div className="flex flex-col items-center justify-center gap-4 py-10">
               <div className="relative">
-                <div className="w-14 h-14 rounded-full border-2 border-neutral-700" />
-                <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-t-orange-400
-                                animate-spin border-r-fuchsia-500 border-b-transparent border-l-transparent" />
-                <Sparkles size={20} className="absolute inset-0 m-auto text-orange-300" />
+                <div className="w-14 h-14 rounded-full border-2 border-border" />
+                <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-t-logoOrange
+                                animate-spin border-r-logoPurple border-b-transparent border-l-transparent" />
+                <Sparkles size={20} className="absolute inset-0 m-auto text-select" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-white">Designing your graphic…</p>
-                <p className="text-xs text-neutral-500 mt-1">
+                <p className="text-sm font-semibold text-txt">Designing your graphic…</p>
+                <p className="text-xs text-txtDisabled mt-1">
                   The AI is generating and validating your layout
                 </p>
               </div>
@@ -412,7 +412,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-orange-400"
+                    className="w-1.5 h-1.5 rounded-full bg-select"
                     style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                   />
                 ))}
@@ -430,20 +430,20 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   <Sparkles size={22} className="text-green-400" />
                 </div>
                 <div className="text-center">
-                  <p className="text-base font-bold text-white">Draft loaded into editor</p>
-                  <p className="text-sm text-neutral-400 mt-1">
-                    <span className="text-orange-300 font-semibold">{lastGeneratedName}</span>
+                  <p className="text-base font-bold text-txt">Draft loaded into editor</p>
+                  <p className="text-sm text-txt mt-1">
+                    <span className="text-txtSelect font-semibold">{lastGeneratedName}</span>
                     {' '}·{' '}
-                    <span className="text-neutral-300">{elementCount} elements</span>
+                    <span className="text-txt">{elementCount} elements</span>
                   </p>
                 </div>
               </div>
 
               {/* Instruction */}
-              <div className="bg-neutral-800/60 border border-neutral-700 rounded-xl px-4 py-3">
-                <p className="text-xs text-neutral-300 leading-relaxed">
+              <div className="bg-tab border border-border rounded-xl px-4 py-3">
+                <p className="text-xs text-txt leading-relaxed">
                   The graphic is now on the canvas as a draft. Tweak it in the editor,
-                  then hit <span className="font-bold text-orange-300">SAVE</span> to
+                  then hit <span className="font-bold text-select">SAVE</span> to
                   compile and store it.
                 </p>
               </div>
@@ -454,8 +454,8 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   onClick={handleReset}
                   className="flex items-center gap-2 flex-1 justify-center
                              px-4 py-2.5 rounded-xl text-sm font-semibold
-                             text-neutral-400 border border-neutral-700
-                             hover:border-neutral-500 hover:text-white transition-colors"
+                             text-txt border border-border
+                             hover:border-hover hover:text-txtSelect transition-colors"
                 >
                   <RotateCcw size={14} />
                   Generate Another
@@ -463,8 +463,8 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                 <button
                   onClick={onClose}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold
-                             bg-neutral-700 hover:bg-neutral-600
-                             text-white transition-colors"
+                             bg-tab hover:bg-hover
+                             text-txt transition-colors"
                 >
                   Back to Editor
                 </button>
