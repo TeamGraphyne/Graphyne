@@ -335,11 +335,9 @@ export function PlayoutPage() {
     }
 
     try {
-      await api.saveGraphic({
-        id: graphicId,
+      // FIXED: Used updateGraphic API mapping instead of saveGraphic
+      await api.updateGraphic(graphicId, {
         name: newName.trim(),
-        projectId: activeProjectId,
-        // FIX: Access htmlContent directly from itemToRename, NOT from itemToRename.graphic
         html: itemToRename.htmlContent || "", 
         json: JSON.parse(itemToRename.graphic.rawJson || "{}"),
       });
@@ -361,7 +359,7 @@ export function PlayoutPage() {
       try {
         // FIXED: Replaced api.saveGraphic with api.createGraphic and checked response.success directly
         const response = await api.createGraphic({ 
-            name: file.name.replace('.html', ''), // Optional: cleaner name without extension
+            name: file.name.replace('.html', ''), 
             html: htmlContent, 
             json: {}, 
             projectId: activeProjectId 
