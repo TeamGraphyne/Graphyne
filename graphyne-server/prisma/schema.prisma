@@ -1,7 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "darwin", "darwin-arm64", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-arm64-openssl-1.1.x", "linux-arm64-openssl-3.0.x"]
 }
-
 datasource db {
   // MODIFIED: Switched from postgresql to sqlite for local-first deployment
   // No Docker required — DB is a file at the path specified by DATABASE_URL
@@ -83,4 +83,12 @@ model Asset {
   tags       String   @default("") // stored as array
   uploadedAt  DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Hotkey {
+  id        String   @id @default(cuid())
+  action    String
+  keys      String   @unique
+  isCustom  Boolean  @default(true)
+  createdAt DateTime @default(now())
 }

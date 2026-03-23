@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MonitorPlay, Loader2, Save, FolderOpen, Database, Sparkles,} from "lucide-react";
+import { MonitorPlay, Loader2, Save, FolderOpen, Database, Sparkles} from "lucide-react";
 
 // 1. Imports for Logic
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -23,10 +23,12 @@ import type { DataUpdatePayload, DataErrorPayload, DataField } from "../types/da
 import { AiDesignPanel } from "../components/UI/AiDesignPanel";
 
 import transLogo from "../assets/TransLogo.png";
+import HotkeyManager from "../components/UI/HotkeyManager";
 
 export function EditorPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isHotkeyMgrOpen, setHotkeyMgrOpen] = useState(false);
 
   // 3. Access Redux State (wrapped in .present due to redux-undo)
   const { config, elements, selectedIds, meta } = useAppSelector(
@@ -38,6 +40,8 @@ export function EditorPage() {
   const [isProjectMgrOpen, setProjectMgrOpen] = useState(false);
   const [isDataMgrOpen, setDataMgrOpen] = useState(false); // NEW: Data Source Manager modal
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
+
+
 
   // 4. Fetch Projects on Mount + Connect Socket for live data preview
   useEffect(() => {
@@ -108,17 +112,27 @@ export function EditorPage() {
       // A. Compile State to HTML String
       const htmlContent = await compileGraphicToHTML(config, elements);
 
-      // B. Send to Backend
-      const result = await api.saveGraphic({
-        id: meta.id,
-        name: graphicName,
-        html: htmlContent,
-        json: { config, elements, selectedIds }, 
-        projectId: meta.projectId 
-      });
+      let result;
 
-      if (result.status === 200 || result.data.success) {
-        dispatch(setGraphicMeta({ id: result.data.id }));
+      // FIXED: Use correct API calls based on whether we are updating or creating
+      if (meta.id) {
+        result = await api.updateGraphic(meta.id, {
+          name: graphicName,
+          html: htmlContent,
+          json: { config, elements, selectedIds }
+        });
+      } else {
+        result = await api.createGraphic({
+          name: graphicName,
+          html: htmlContent,
+          json: { config, elements, selectedIds }, 
+          projectId: meta.projectId 
+        });
+      }
+
+      // FIXED: Only check result.success since response.data is directly returned by API utility
+      if (result.success) {
+        dispatch(setGraphicMeta({ id: result.id }));
         alert(`✅ Saved "${graphicName}" to ${meta.projectId ? 'Project & ' : ''}Library!`);
         
         // Refresh project list just in case
@@ -152,6 +166,11 @@ export function EditorPage() {
         isOpen={isAiPanelOpen}
         onClose={() => setAiPanelOpen(false)}
       />
+
+      <HotkeyManager
+      isOpen={isHotkeyMgrOpen}
+      onClose={() => setHotkeyMgrOpen(false)}
+     />
 
       {/* --- HEADER --- */}
       <header className="h-20 bg-tab border-b border-none flex flex-col justify-center z-20">
@@ -197,6 +216,15 @@ export function EditorPage() {
                    <FolderOpen size={14} />
                    PROJECTS
                </button>
+
+               <button
+                onClick={() => setHotkeyMgrOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-900/30 hover:bg-indigo-800/50 text-indigo-300 border border-indigo-800/50 rounded text-xs font-bold transition-colors"
+              >
+
+                  <FolderOpen size={14} />
+                    HOTKEYS
+                  </button>
 
               {/* NEW: Data Source Manager Button */}
               <button 
@@ -282,3 +310,6 @@ export function EditorPage() {
     </div>
   );
 }
+
+
+

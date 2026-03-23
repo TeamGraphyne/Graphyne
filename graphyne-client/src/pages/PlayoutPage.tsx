@@ -15,6 +15,7 @@ import {
   Menu,
   ChevronDown,
   ChevronUp,
+  Edit2, // ADDED: Icon for renaming
 } from "lucide-react";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
@@ -58,7 +59,7 @@ const ScaledFrame = ({ src, title, autoPlay, iframeRef, onIframeLoad }: ScaledFr
   }, []);
 
   const handleLoad = () => {
-    if (onIframeLoad) onIframeLoad();
+    if (onIframeLoad) {onIframeLoad();}
     if (autoPlay && activeRef.current?.contentWindow) {
       activeRef.current.contentWindow.postMessage('play', '*');
     }
@@ -215,6 +216,11 @@ export function PlayoutPage() {
   const [showOutputDialog, setShowOutputDialog] = useState(false);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
+  // ADDED: Renaming State
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+
   // Mobile-specific state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMonitor, setActiveMonitor] = useState<'preview' | 'program'>('preview');
@@ -271,6 +277,14 @@ export function PlayoutPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dataSources, liveData]);
 
+  // ADDED: Auto-focus effect for rename input
+  useEffect(() => {
+    if (editingItemId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingItemId]);
+
   const loadRundown = async () => {
     setIsLoading(true);
     try {
@@ -306,6 +320,36 @@ export function PlayoutPage() {
     }
   };
 
+  const handleRenameItem = async (graphicId: string, newName: string) => {
+    if (!newName.trim() || !activeProjectId) {
+      setEditingItemId(null);
+      return;
+    }
+
+    // Find the playlist item. The graphicId is stored inside item.graphic.id
+    const itemToRename = playlist.find((item) => item.graphic.id === graphicId);
+
+    if (!itemToRename) {
+      setEditingItemId(null);
+      return;
+    }
+
+    try {
+      // FIXED: Used updateGraphic API mapping instead of saveGraphic
+      await api.updateGraphic(graphicId, {
+        name: newName.trim(),
+        html: itemToRename.htmlContent || "", 
+        json: JSON.parse(itemToRename.graphic.rawJson || "{}"),
+      });
+
+      await loadRundown();
+      setEditingItemId(null);
+    } catch (err) {
+      console.error("Failed to rename rundown item:", err);
+      setEditingItemId(null);
+    }
+  };
+  
   const handleImportGraphic = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -313,8 +357,14 @@ export function PlayoutPage() {
     reader.onload = async (event) => {
       const htmlContent = event.target?.result as string;
       try {
-        const response = await api.saveGraphic({ name: file.name, html: htmlContent, json: {}, projectId: activeProjectId });
-        if (response.data.success) await loadRundown();
+        // FIXED: Replaced api.saveGraphic with api.createGraphic and checked response.success directly
+        const response = await api.createGraphic({ 
+            name: file.name.replace('.html', ''), 
+            html: htmlContent, 
+            json: {}, 
+            projectId: activeProjectId 
+        });
+        if (response.success) await loadRundown();
       } catch (err) {
         console.error("Failed to persist imported graphic:", err);
       }
@@ -350,25 +400,39 @@ export function PlayoutPage() {
     setActiveMonitor('preview');
   };
 
-  const handleTake = () => {
-    if (!previewItem) return;
-    const elements = parseGraphicElements(previewItem);
-    const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
-    if (programItem) {
-      programIframeRef.current?.contentWindow?.postMessage('out', '*');
-      socketService.emit("command:clear");
-      setTimeout(() => {
+const handleTake = () => {
+    if (previewItem) {
+      const elements = parseGraphicElements(previewItem);
+      const fullUrl = getGraphicUrl(previewItem.graphic.filePath);
+
+      if (programItem) {
+        if (programIframeRef.current?.contentWindow) {
+          programIframeRef.current.contentWindow.postMessage('out', '*');
+        }
+        
+        socketService.emit("command:clear");
+
+        setTimeout(() => {
+          setProgramItem(previewItem);
+          setProgramElements(elements);
+          console.log("🚀 Emitting TAKE:", fullUrl);
+          socketService.emit("command:take", {
+            url: fullUrl,
+            elements: elements,
+            liveData: liveData
+          });
+        }, 1500);
+      } else {
         setProgramItem(previewItem);
         setProgramElements(elements);
-        socketService.emit("command:take", { url: fullUrl, elements, liveData });
-      }, 1500);
-    } else {
-      setProgramItem(previewItem);
-      setProgramElements(elements);
-      socketService.emit("command:take", { url: fullUrl, elements, liveData });
+        console.log("🚀 Emitting TAKE:", fullUrl);
+        socketService.emit("command:take", {
+          url: fullUrl,
+          elements: elements,
+          liveData: liveData 
+        });
+      }
     }
-    // Switch to program view on mobile after take
-    setActiveMonitor('program');
   };
 
   const handleClearProgram = () => {
@@ -505,7 +569,7 @@ export function PlayoutPage() {
 
           {!monitorsCollapsed && (
             <>
-              {/* Mobile: tab switcher between PVW and PGM */}
+              {/* Mobile: tab switcher between PVW and PGM! */}
               <div className="sm:hidden flex border-b border-purple-900/30 bg-[#1a0f2e]">
                 <button
                   onClick={() => setActiveMonitor('preview')}
@@ -531,7 +595,7 @@ export function PlayoutPage() {
               </div>
 
               {/* Monitor frames */}
-              <div className="p-2 sm:p-4 sm:pb-0">
+              <div className="p-2 sm:p-4 sm:pb-0 max-w-5xl mx-auto w-full">
                 {/* Mobile: single active monitor */}
                 <div className="sm:hidden">
                   {activeMonitor === 'preview' ? (
@@ -720,11 +784,50 @@ export function PlayoutPage() {
                       {isProgram && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_6px_rgba(239,68,68,1)]" />}
                       {!isProgram && isPreview && <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_6px_rgba(59,130,246,1)]" />}
                     </div>
-                    <div className="flex-1 flex flex-col justify-center min-w-0">
-                      <span className={`text-sm font-bold truncate ${isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"}`}>
-                        {item.graphic.name}
-                      </span>
-                      <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide hidden sm:block">HTML5 SOURCE</span>
+                    <div className="flex-1 flex flex-col justify-center min-w-0 h-10">
+                      {editingItemId === item.graphic.id ? (
+                        <div className="flex items-center w-full">
+                          <input
+                            ref={editInputRef}
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onBlur={() => handleRenameItem(item.graphic.id, editingName)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleRenameItem(item.graphic.id, editingName);
+                              if (e.key === 'Escape') setEditingItemId(null);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-gray-900 border border-blue-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 group/name overflow-hidden">
+                          <span
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setEditingItemId(item.graphic.id);
+                              setEditingName(item.graphic.name);
+                            }}
+                            className={`text-sm font-bold truncate cursor-text select-none ${
+                              isProgram ? "text-red-400" : isPreview ? "text-purple-300" : "text-gray-200"
+                            }`}
+                            title="Double-click to rename"
+                          >
+                            {item.graphic.name}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingItemId(item.graphic.id);
+                              setEditingName(item.graphic.name);
+                            }}
+                            className="opacity-0 group-hover/name:opacity-100 p-1 text-gray-500 hover:text-blue-400 transition-all"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                      <span className="text-[10px] uppercase font-mono text-gray-500 tracking-wide hidden sm:block leading-none mt-0.5">HTML5 SOURCE</span>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                       {(isProgram || isPreview) && (

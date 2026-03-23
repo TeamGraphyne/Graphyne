@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { updateAsset, replaceAssetFile, setEditingId } from "../../store/assetSlice";
@@ -9,18 +9,24 @@ export default function AssetEditModal() {
   const asset = items.find(a => a.id === editingId);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState("");
-  const [altText, setAltText] = useState("");
+  // 1. Initialize state with the current asset values
+  const [name, setName] = useState(asset?.name ?? "");
+  const [altText, setAltText] = useState(asset?.altText ?? "");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(asset?.tags ?? []);
 
-  useEffect(() => {
-    if (asset) {
-      setName(asset.name);
-      setAltText(asset.altText ?? "");
-      setTags(asset.tags);
-    }
-  }, [asset]);
+  // 2. Track the ID we are currently editing to detect changes
+  const [prevEditingId, setPrevEditingId] = useState<string | null>(editingId);
+
+  // 3. If the editingId changes (e.g., user selects a different asset),
+  // update the state immediately during this render cycle.
+  if (editingId !== prevEditingId) {
+    setPrevEditingId(editingId);
+    setName(asset?.name ?? "");
+    setAltText(asset?.altText ?? "");
+    setTags(asset?.tags ?? []);
+    setTagInput("");
+  }
 
   if (!asset) return null;
 

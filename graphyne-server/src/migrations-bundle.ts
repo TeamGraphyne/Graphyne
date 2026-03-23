@@ -54,4 +54,37 @@ CREATE TABLE "DataSource" (
 );
 `,
   },
+  {
+    name: "20260321195009_add_asset",
+    sql: `-- CreateTable
+CREATE TABLE "Asset" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "mimeType" TEXT NOT NULL,
+    "filePath" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "altText" TEXT,
+    "tags" TEXT NOT NULL DEFAULT '',
+    "uploadedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+`,
+  },
+  {
+    name: "20260322122223_add_hotkeys",
+    sql: `-- CreateTable
+CREATE TABLE "Hotkey" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "action" TEXT NOT NULL,
+    "keys" TEXT NOT NULL,
+    "isCustom" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Hotkey_action_key" ON "Hotkey"("action");
+`,
+  },
 ];

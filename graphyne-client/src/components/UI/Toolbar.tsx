@@ -16,17 +16,12 @@ import {
   Image as ImageIcon,
   Undo,
   Redo,
-  MousePointer2,
   ZoomIn,
   ZoomOut,
   Grid3X3,
   ChevronDown,
    ImageUp,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-/* import { useDispatch, useSelector } from "react-redux";
-import { fetchAssets, setFilter, setSort, setSearch, deleteAsset, setEditingId } from "../../store/assetSlice";
-import type { RootState, AppDispatch } from "../../store/store"; */
 import AssetLibrary from "./AssetLibrary";
 
 export const Toolbar = () => {
@@ -40,31 +35,6 @@ export const Toolbar = () => {
 
   // --- Assets Library ---
   const [showAssetPanel, setShowAssetPanel] = useState(false);
-  const [panelPos, setPanelPos] = useState({ x: 120, y: 80 });
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const isDragging = useRef(false);
-
-  const handlePanelMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    dragOffset.current = {
-      x: e.clientX - panelPos.x,
-      y: e.clientY - panelPos.y,
-    };
-    e.preventDefault();
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
-    setPanelPos({
-      x: e.clientX - dragOffset.current.x,
-      y: e.clientY - dragOffset.current.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    isDragging.current = false;
-  };
-
   // Hardcode snap size to 20 for newly added elements
   const snap = (value: number) =>
     grid.snap ? Math.round(value / 20) * 20 : value;
@@ -349,10 +319,6 @@ export const Toolbar = () => {
           className="group/button p-2 hover:bg-select rounded"
           title="Select Tool"
         >
-          <MousePointer2
-            size={20}
-            className="group-hover/button:text-txt2"
-          />
         </button>
       </div>
     </div>

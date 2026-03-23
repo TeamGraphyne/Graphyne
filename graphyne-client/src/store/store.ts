@@ -5,6 +5,7 @@ import dataReducer from './dataSlice';
 import { undoFilter, undoGroupBy } from './undoConfig'; // Import undo config
 import viewReducer from './viewSlice'; // NEW: Import view slice reducer
 import assetReducer from "./assetSlice";
+import hotkeyReducer from './hotkeySlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     }),
     data: dataReducer,
     view: viewReducer, // NEW: Added view slice for zoom and other view-only state.
+    hotkeys: hotkeyReducer,
     assets: assetReducer,
   }
 });

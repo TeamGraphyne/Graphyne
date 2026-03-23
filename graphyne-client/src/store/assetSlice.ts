@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { assetService } from "../services/assetServices";
-import type { Asset, AssetFilter, AssetSort, AssetState, AssetUpdatePayload } from "../types/asset";
+import type { AssetFilter, AssetSort, AssetState, AssetUpdatePayload } from "../types/asset";
 
 const initialState: AssetState = {
   items: [],

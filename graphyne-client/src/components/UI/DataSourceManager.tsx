@@ -192,7 +192,7 @@ export const DataSourceManager = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-[750px] h-[550px] bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-187.5 h-137.5 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="h-14 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-950 shrink-0">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -484,7 +484,7 @@ export const DataSourceManager = ({
                             >
                               <span className="text-green-400">{f.path}</span>
                               <span className="text-neutral-500">{f.type}</span>
-                              <span className="text-neutral-400 truncate max-w-[150px]">
+                              <span className="text-neutral-400 truncate max-w-37.5">
                                 {f.sampleValue}
                               </span>
                             </div>

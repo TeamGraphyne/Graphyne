@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Send, AlertCircle, RotateCcw, ChevronDown } from 'lucide-react';
+import { Sparkles, X, Send, AlertCircle, RotateCcw, ChevronDown, Key, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loadGraphic, setGraphicMeta } from '../../store/canvasSlice';
 import { api } from '../../services/api';
@@ -18,7 +18,10 @@ const SUGGESTED_PROMPTS = [
   'Top-right score bug, compact, gold and black colour scheme',
 ];
 
-type PanelState = 'idle' | 'loading' | 'success' | 'error';
+const LS_KEY = 'gemini_api_key';
+
+// NEW: Panel now has an 'api-key' state for the first-use key-entry screen
+type PanelState = 'api-key' | 'idle' | 'loading' | 'success' | 'error';
 
 export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
   const dispatch = useAppDispatch();
@@ -33,27 +36,68 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
   const canModify = currentGraphic.elements.length > 0;
   const [modifyCurrent, setModifyCurrent] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // NEW: API key state
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [showKeyInput, setShowKeyInput] = useState(false);
 
-  // Focus textarea when panel opens
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const apiKeyRef   = useRef<HTMLInputElement>(null);
+
+  // NEW: On panel open, check localStorage for the API key.
+  // If missing → show the key-entry screen. Otherwise → go to idle.
   useEffect(() => {
     if (isOpen) {
-      if (panelState === 'idle') {
-        setTimeout(() => textareaRef.current?.focus(), 100);
+      const storedKey = localStorage.getItem(LS_KEY) ?? '';
+      if (!storedKey) {
+        setApiKeyInput('');
+        setPanelState('api-key');
+        setTimeout(() => apiKeyRef.current?.focus(), 100);
+      } else {
+        if (panelState === 'api-key') setPanelState('idle');
+        if (panelState === 'idle') {
+          setTimeout(() => textareaRef.current?.focus(), 100);
+        }
+        // Initialize the modify toggle based on canvas state ONLY when first opening.
+        setModifyCurrent(currentGraphic.elements.length > 0);
       }
       
       // Initialize the toggle based on canvas state ONLY when the panel first opens.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModifyCurrent(currentGraphic.elements.length > 0);
     }
-    // We intentionally omit currentGraphic to avoid overwriting the user's manual selection.
-    // We intentionally omit panelState so the checkbox doesn't reset when they click 'Generate'.
+    // We intentionally keep dependencies minimal to avoid resetting manual selections.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // NEW: Save the API key and move to the normal idle state
+  const handleSaveApiKey = () => {
+    const trimmed = apiKeyInput.trim();
+    if (!trimmed) return;
+    localStorage.setItem(LS_KEY, trimmed);
+    setShowKeyInput(false);
+    setPanelState('idle');
+    setModifyCurrent(currentGraphic.elements.length > 0);
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  };
+
+  // NEW: Clear the saved key and show the key-entry screen again
+  const handleChangeApiKey = () => {
+    const storedKey = localStorage.getItem(LS_KEY) ?? '';
+    setApiKeyInput(storedKey);
+    setShowKeyInput(false);
+    setPanelState('api-key');
+    setTimeout(() => apiKeyRef.current?.focus(), 100);
+  };
 
   const handleGenerate = async () => {
     const trimmed = prompt.trim();
     if (!trimmed || panelState === 'loading') return;
+
+    // NEW: Retrieve key from localStorage at call time
+    const apiKey = localStorage.getItem(LS_KEY) ?? '';
+    if (!apiKey) {
+      handleChangeApiKey();
+      return;
+    }
 
     setPanelState('loading');
     setErrorMessage('');
@@ -64,7 +108,8 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
         elements: currentGraphic.elements
       } : undefined;
 
-      const design = await api.generateGraphic(trimmed, requestDesign);
+      // MODIFIED: Pass apiKey as second argument
+      const design = await api.generateGraphic(trimmed, apiKey, requestDesign);
 
       // Load the AI-generated design into the Redux editor state as a draft.
       // IF modifying, keep the old ID and name to allow saving it back correctly.
@@ -89,8 +134,14 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
       // Surface a user-friendly message — the full error goes to the console
       const isConnectionError = message.toLowerCase().includes('network') ||
                                 message.toLowerCase().includes('connect');
+      const isAuthError       = message.toLowerCase().includes('api key') ||
+                                message.toLowerCase().includes('401') ||
+                                message.toLowerCase().includes('unauthorized') ||
+                                message.toLowerCase().includes('invalid key');
       setErrorMessage(
-        isConnectionError
+        isAuthError
+          ? 'Invalid API key. Click "Change API key" below to update it.'
+          : isConnectionError
           ? 'Could not reach the server. Make sure Graphyne is running.'
           : 'Generation failed. Try rephrasing your prompt or check the console for details.'
       );
@@ -147,6 +198,85 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
         {/* ── Body ── */}
         <div className="p-6 flex flex-col gap-5">
 
+          {/* ── NEW: API Key Entry State ── */}
+          {panelState === 'api-key' && (
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col items-center gap-3 pt-2">
+                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-orange-400/20 to-fuchsia-500/20
+                                border border-orange-400/30 flex items-center justify-center">
+                  <Key size={22} className="text-orange-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-white">Enter your Gemini API Key</p>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Your key is stored locally in your browser and never sent to any third party.
+                  </p>
+                </div>
+              </div>
+
+              {/* Key input */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                  API Key
+                </label>
+                <div className="relative">
+                  <input
+                    ref={apiKeyRef}
+                    type={showKeyInput ? 'text' : 'password'}
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveApiKey(); }}
+                    placeholder="AIzaSy…"
+                    className="w-full bg-neutral-800 border border-neutral-700 focus:border-orange-400
+                               text-sm text-white placeholder:text-neutral-600 rounded-xl
+                               px-4 py-3 pr-10 outline-none transition-colors font-mono"
+                  />
+                  <button
+                    onClick={() => setShowKeyInput(!showKeyInput)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
+                  >
+                    {showKeyInput ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 transition-colors w-fit"
+                >
+                  <ExternalLink size={11} />
+                  Get a free key from Google AI Studio
+                </a>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold
+                             text-neutral-400 border border-neutral-700
+                             hover:border-neutral-500 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveApiKey}
+                  disabled={!apiKeyInput.trim()}
+                  className="flex-1 flex items-center justify-center gap-2
+                             px-4 py-2.5 rounded-xl text-sm font-bold
+                             bg-linear-to-r from-orange-400 to-fuchsia-500
+                             hover:from-orange-300 hover:to-fuchsia-400
+                             text-white shadow-lg shadow-orange-500/20
+                             disabled:opacity-40 disabled:cursor-not-allowed
+                             transition-all"
+                >
+                  <Key size={14} />
+                  Save &amp; Continue
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── Idle / Input State ── */}
           {(panelState === 'idle' || panelState === 'error') && (
             <>
@@ -181,7 +311,7 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   </div>
                 )}
 
-                {/* Modfify switch */}
+                {/* Modify switch */}
                 {canModify && (
                   <div className="flex items-center gap-2 mt-1">
                     <input
@@ -246,6 +376,17 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                   <Send size={14} />
                   Generate
                   <span className="text-xs font-normal opacity-70 ml-1">⌘↵</span>
+                </button>
+              </div>
+
+              {/* NEW: Change API key link */}
+              <div className="flex justify-center">
+                <button
+                  onClick={handleChangeApiKey}
+                  className="flex items-center gap-1.5 text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
+                >
+                  <Key size={11} />
+                  Change API key
                 </button>
               </div>
             </>
@@ -326,6 +467,17 @@ export const AiDesignPanel = ({ isOpen, onClose }: AiDesignPanelProps) => {
                              text-txt transition-colors"
                 >
                   Back to Editor
+                </button>
+              </div>
+
+              {/* NEW: Change API key link */}
+              <div className="flex justify-center">
+                <button
+                  onClick={handleChangeApiKey}
+                  className="flex items-center gap-1.5 text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
+                >
+                  <Key size={11} />
+                  Change API key
                 </button>
               </div>
             </div>
