@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
+import { requireRole } from "../server";
 
 const RESERVED = [
   "delete",
@@ -27,6 +28,9 @@ const normalise = (keys: string) => keys.toLowerCase().trim();
 const isReserved = (keys: string) => RESERVED.includes(normalise(keys));
 
 export async function hotkeyRoutes(fastify: FastifyInstance) {
+
+  fastify.addHook('preHandler', requireRole(['admin', 'editor', 'playout']));
+  
   fastify.get("/api/hotkeys", async (_req, reply) => {
     const hotkeys = await prisma.hotkey.findMany({
       orderBy: { createdAt: "asc" },

@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 import fs from 'fs-extra';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { requireRole } from '../server';
 
 // Updated Interface
 interface SaveGraphicBody {
@@ -30,6 +31,10 @@ interface UpdateGraphicBody {
 
 //list all graphics belonging to a specific project
 export const graphicRoutes = (dataDir: string) => async (fastify: FastifyInstance) => {
+
+    fastify.addHook('preHandler', requireRole(['admin', 'editor']));
+
+    
   fastify.get<{ Params: { projectId: string } }> (
     "/api/projects/:projectId/graphics",
     async (request, reply) => {

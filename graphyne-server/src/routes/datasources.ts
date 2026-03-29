@@ -2,9 +2,13 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 import type { DataPollerService } from '../services/dataPoller';
+import { requireRole } from '../server';
 
 // The route factory accepts the poller so routes can trigger test/start/stop
 export const datasourceRoutes = (poller: DataPollerService) => async (fastify: FastifyInstance) => {
+
+        fastify.addHook('preHandler', requireRole(['admin', 'editor']));
+    
 
     // --- GET: List all data sources for a project ---
     fastify.get<{ Params: { projectId: string } }>(

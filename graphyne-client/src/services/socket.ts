@@ -53,3 +53,23 @@ class SocketService {
 
 // Export a single instance for the whole app
 export const socketService = new SocketService();
+
+// Helper to get the Better Auth session cookie
+function getSessionToken() {
+  const match = document.cookie.match(new RegExp('(^| )better-auth.session_token=([^;]+)'));
+  if (match) return match[2];
+  return null;
+}
+
+export const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
+  auth: (cb) => {
+    // Dynamically fetch the token every time the socket connects/reconnects
+    cb({ token: getSessionToken() });
+  },
+  withCredentials: true // Ensures cookies are sent if needed
+});
+
+socket.on('connect_error', (err) => {
+  console.error('Socket connection error:', err.message);
+  // If unauthorized, you could trigger a window.location.reload() to force a login redirect
+});

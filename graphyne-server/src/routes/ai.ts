@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { generateOnly } from "../services/aiPipeline";
+import { requireRole } from "../server";
 
 // MODIFIED: Removed Python child-process spawn. The pipeline now runs as native
 // TypeScript via aiPipeline.ts, which works inside the packaged Tauri binary.
@@ -11,6 +12,10 @@ interface GenerateBody {
 }
 
 export const aiRoutes = async (fastify: FastifyInstance) => {
+
+  fastify.addHook('preHandler', requireRole(['admin', 'editor', 'playout']));
+  
+
   /**
    * POST /api/ai/generate
    * Body: { prompt: string, apiKey: string, currentDesign?: object }

@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import { pipeline } from "stream/promises";
 import { createWriteStream } from "fs";
+import { requireRole } from "../server";
 
 const UPLOAD_DIR = path.resolve("data/uploads");
 
@@ -22,6 +23,9 @@ function inferType(mime: string): "image" | "video" | "font" {
 }
 
 export async function assetRoutes(fastify: FastifyInstance) {
+
+    fastify.addHook('preHandler', requireRole(['admin', 'editor']));
+
   // Setup — runs inside the async function where fastify is defined
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
 

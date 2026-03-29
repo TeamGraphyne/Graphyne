@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
 import { v4 as uuidv4 } from "uuid";
+import { requireRole } from '../server'; 
 
 interface SaveProjectBody {
     id?: string;
@@ -12,6 +13,8 @@ interface SaveProjectBody {
 }
 
 export const projectRoutes = async (fastify: FastifyInstance) => {
+
+    fastify.addHook('preHandler', requireRole(['admin', 'editor']));
 
     // GET: List all projects with item count
     fastify.get("/api/projects", async () => {

@@ -11,7 +11,12 @@ import { datasourceRoutes } from './routes/datasources';
 import { DataPollerService } from './services/dataPoller';
 import { aiRoutes } from './routes/ai';
 import { assetRoutes } from "./routes/assets"; 
-import {hotkeyRoutes} from  './routes/hotkeys';
+import { hotkeyRoutes } from  './routes/hotkeys';
+
+// ── Auth & Security Imports ────────────────────────────────────────────────────
+import { auth } from './lib/auth';
+import crypto from 'crypto';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 // ── Detect pkg binary ──────────────────────────────────────────────────────────
 const isPkg = Object.prototype.hasOwnProperty.call(process, 'pkg');
@@ -24,8 +29,6 @@ const DATA_DIR =
     : path.join(__dirname, '../data'));
 
 // ── DATABASE_URL ───────────────────────────────────────────────────────────────
-// Set before any route import triggers Prisma's schema-parse.
-// Forward-slashes required by Prisma even on Windows.
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = `file:${DATA_DIR.replace(/\\/g, '/')}/graphyne.db`;
 }
@@ -37,21 +40,15 @@ function resolveClientDir(): string {
   }
   if (isPkg) {
     const siblingClient = path.join(path.dirname(process.execPath), 'client');
-    if (fs.existsSync(path.join(siblingClient, 'index.html'))) {
-      return siblingClient;
-    }
+    if (fs.existsSync(path.join(siblingClient, 'index.html'))) return siblingClient;
     const parentClient = path.join(path.dirname(process.execPath), '..', 'client');
-    if (fs.existsSync(path.join(parentClient, 'index.html'))) {
-      return parentClient;
-    }
+    if (fs.existsSync(path.join(parentClient, 'index.html'))) return parentClient;
     return siblingClient;
   }
   return path.join(__dirname, '../../graphyne-client/dist');
 }
 
 const CLIENT_DIR = resolveClientDir();
-
-// ── Setup runtime directories ──────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const GRAPHICS_DIR = path.join(DATA_DIR, 'graphics');
 
@@ -59,13 +56,8 @@ fs.ensureDirSync(UPLOADS_DIR);
 fs.ensureDirSync(GRAPHICS_DIR);
 
 // ── Migration runner ───────────────────────────────────────────────────────────
-// Uses migrations-bundle.ts (generated at build time by scripts/bundle-migrations.js)
-// so we never have to find .sql files inside the pkg snapshot at runtime.
 async function runMigrations() {
   const { prisma } = await import('./lib/prisma');
-
-  // Import the pre-bundled SQL. This is a plain JS module — no filesystem
-  // path resolution, works identically inside and outside a pkg binary.
   let MIGRATIONS: { name: string; sql: string }[];
   try {
     const bundle = await import('./migrations-bundle');
@@ -77,7 +69,6 @@ async function runMigrations() {
 
   console.log(`📦 Migrations bundle loaded — ${MIGRATIONS.length} migration(s) available.`);
 
-  // Ensure the tracking table exists
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
       "id"                  TEXT     NOT NULL PRIMARY KEY,
@@ -91,40 +82,22 @@ async function runMigrations() {
     )
   `);
 
-  // Fetch already-applied migrations
   const rows = await prisma.$queryRawUnsafe<{ migration_name: string }[]>(
     `SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL`
   );
   const applied = new Set(rows.map((r) => r.migration_name));
-  console.log(`   Already applied: ${applied.size === 0 ? '(none)' : [...applied].join(', ')}`);
 
   for (const { name, sql } of MIGRATIONS) {
-    if (applied.has(name)) {
-      console.log(`   ⏭  ${name} (already applied)`);
-      continue;
-    }
-
+    if (applied.has(name)) continue;
     console.log(`   🔄 Applying: ${name}`);
 
-    // Split on semicolons. Only skip truly empty chunks — do NOT filter
-    // lines starting with '--' because Prisma puts a comment before every
-    // statement (e.g. '-- CreateTable\nCREATE TABLE ...') and filtering on
-    // startsWith('--') would silently drop those entire CREATE TABLE blocks.
-    // SQLite handles -- comments inside a statement just fine.
-    const statements = sql
-      .split(/;[ \t]*(?:\r?\n|$)/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    const statements = sql.split(/;[ \t]*(?:\r?\n|$)/).map((s) => s.trim()).filter((s) => s.length > 0);
 
     for (const stmt of statements) {
       try {
         await prisma.$executeRawUnsafe(stmt);
       } catch (err: any) {
-        // "already exists" errors are safe to ignore (idempotent re-runs)
-        if (
-          err?.message?.includes('already exists') ||
-          err?.code === 'SQLITE_ERROR' && err?.message?.includes('duplicate')
-        ) {
+        if (err?.message?.includes('already exists') || err?.code === 'SQLITE_ERROR' && err?.message?.includes('duplicate')) {
           console.warn(`   ⚠️  Skipping statement (already exists): ${stmt.slice(0, 60)}...`);
         } else {
           console.error(`   ❌ Statement failed: ${stmt.slice(0, 120)}`);
@@ -133,103 +106,158 @@ async function runMigrations() {
       }
     }
 
-    // Record as applied
     await prisma.$executeRawUnsafe(`
-      INSERT INTO "_prisma_migrations"
-        (id, checksum, finished_at, migration_name, applied_steps_count)
-      VALUES
-        (lower(hex(randomblob(16))), '', datetime('now'), '${name}', 1)
+      INSERT INTO "_prisma_migrations" (id, checksum, finished_at, migration_name, applied_steps_count)
+      VALUES (lower(hex(randomblob(16))), '', datetime('now'), '${name}', 1)
     `);
     console.log(`   ✅ Applied: ${name}`);
   }
-
   await prisma.$disconnect();
 }
 
-// ── Fastify ────────────────────────────────────────────────────────────────────
+// ── Fastify Setup ──────────────────────────────────────────────────────────────
 const app = Fastify({ logger: true });
 
-// ── Plugins ────────────────────────────────────────────────────────────────────
 app.register(hotkeyRoutes);
 app.register(cors, { origin: '*' });
 app.register(multipart);
 
-app.register(fastifyStatic, {
-  root: UPLOADS_DIR,
-  prefix: '/uploads/',
+app.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/' });
+app.register(fastifyStatic, { root: GRAPHICS_DIR, prefix: '/graphics/', decorateReply: false });
+app.register(fastifyStatic, { root: CLIENT_DIR, prefix: '/', decorateReply: false, wildcard: false });
+
+// ── Auth Middleware & Routes ───────────────────────────────────────────────────
+
+// 1. Map Fastify Requests to Better Auth
+app.all("/api/auth/*", async (request, reply) => {
+  const url = `http://${request.headers.host}${request.url}`;
+  const webReq = new Request(url, {
+    method: request.method,
+    headers: request.headers as HeadersInit,
+    body: ["GET", "HEAD"].includes(request.method) ? undefined : JSON.stringify(request.body),
+  });
+
+  const response = await auth.handler(webReq);
+  
+  reply.status(response.status);
+  response.headers.forEach((value, key) => { reply.header(key, value); });
+  
+  if (response.body) {
+    const reader = response.body.getReader();
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    return Buffer.concat(chunks);
+  }
+  return reply.send();
 });
 
-app.register(fastifyStatic, {
-  root: GRAPHICS_DIR,
-  prefix: '/graphics/',
-  decorateReply: false,
-});
+// 2. Exportable Role Checker for other files
+export function requireRole(allowedRoles: string[]) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const session = await auth.api.getSession({ headers: request.headers as HeadersInit });
 
-app.register(fastifyStatic, {
-  root: CLIENT_DIR,
-  prefix: '/',
-  decorateReply: false,
-  wildcard: false,
+    if (!session || !session.user) {
+      return reply.code(401).send({ error: "Unauthorized. Please log in." });
+    }
+
+    const userRole = (session.user as any).role || 'editor'; 
+
+    if (!allowedRoles.includes(userRole)) {
+      return reply.code(403).send({ error: "Forbidden: Your role cannot perform this action." });
+    }
+    
+    (request as any).user = session.user;
+  };
+}
+
+// 3. System Activation Route
+function getMachineId() {
+  return crypto.createHash('sha256').update(process.platform + process.arch).digest('hex');
+}
+
+app.post('/api/system/activate', async (request, reply) => {
+  const { licenseKey, adminEmail, adminPassword, adminName } = request.body as any;
+  const { prisma } = await import('./lib/prisma');
+
+  // Verify with remote server (replace with your actual validation logic/URL)
+  try {
+    const remoteCheck = await fetch('https://api.yourdomain.com/verify-license', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: licenseKey, hardwareId: getMachineId() })
+    });
+    if (!remoteCheck.ok) return reply.code(403).send({ error: "Invalid or expired License" });
+  } catch (error) {
+    // For local dev, you might want to bypass this catch block temporarily
+    console.warn("Could not reach license server.");
+  }
+
+  // Save license locally
+  await prisma.license.create({
+    data: { licenseKey, deviceId: getMachineId(), isValid: true }
+  });
+
+  // Create Master Admin
+  const adminUser = await auth.api.signUpEmail({
+    body: { email: adminEmail, password: adminPassword, name: adminName },
+    asResponse: false
+  });
+
+  // Assign Admin Role
+  await prisma.user.update({
+    where: { id: adminUser.user.id },
+    data: { role: "admin" }
+  });
+
+  return { success: true, message: "System activated and Admin created." };
 });
 
 // ── Socket.io ──────────────────────────────────────────────────────────────────
-const io = new Server(app.server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
-});
-
-// ── Data Poller ────────────────────────────────────────────────────────────────
+const io = new Server(app.server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
 const dataPoller = new DataPollerService(io);
 
-// ── API Routes ─────────────────────────────────────────────────────────────────
-app.register(projectRoutes);
-app.register(graphicRoutes(DATA_DIR));
-app.register(datasourceRoutes(dataPoller));
-app.register(aiRoutes);
-app.register(assetRoutes); ///////////////////////////////////////////////////////////////////
+// Authenticate Socket Connections
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error("Authentication error: No token provided"));
 
-// ── SPA catch-all ─────────────────────────────────────────────────────────────
-app.setNotFoundHandler(async (request, reply) => {
-  const rawUrl = request.url.split('?')[0];
-
-  if (
-    rawUrl.startsWith('/api/') ||
-    rawUrl.startsWith('/graphics/') ||
-    rawUrl.startsWith('/uploads/') ||
-    rawUrl.startsWith('/socket.io/')
-  ) {
-    return reply.code(404).send({ error: 'Not found' });
-  }
-
-  if (path.extname(rawUrl)) {
-    return reply.code(404).send({ error: 'Not found' });
-  }
-
-  try {
-    const indexPath = path.join(CLIENT_DIR, 'index.html');
-    const html = await fs.readFile(indexPath, 'utf-8');
-    reply.header('content-type', 'text/html; charset=utf-8').send(html);
-  } catch {
-    reply.code(503).send(
-      `CLIENT_DIR (${CLIENT_DIR}) has no index.html. ` +
-      `Copy graphyne-client/dist/* into src-tauri/client/ and rebuild.`
-    );
-  }
-});
-
-// ── Socket.io event handlers ───────────────────────────────────────────────────
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  socket.on('join-session', (sessionId) => {
-    socket.join(sessionId);
+  const { prisma } = await import('./lib/prisma');
+  
+  const session = await prisma.session.findUnique({
+    where: { token },
+    include: { user: true }
   });
 
+  if (!session || session.expiresAt < new Date()) {
+    return next(new Error("Authentication error: Invalid or expired session"));
+  }
+
+  socket.data.user = session.user;
+  next();
+});
+
+io.on('connection', (socket) => {
+  console.log(`Client connected: ${socket.id} | User: ${socket.data.user.name} | Role: ${socket.data.user.role}`);
+
+  socket.on('join-session', (sessionId) => { socket.join(sessionId); });
+
   socket.on('command:take', (data) => {
-    socket.broadcast.emit('render:take', data);
+    // RBAC: Only Admin or Playout can trigger graphics
+    if (["admin", "playout"].includes(socket.data.user.role)) {
+      socket.broadcast.emit('render:take', data);
+    } else {
+      socket.emit('error', { message: "Your role is not permitted to trigger graphics." });
+    }
   });
 
   socket.on('command:clear', () => {
-    socket.broadcast.emit('render:clear');
+    if (["admin", "playout"].includes(socket.data.user.role)) {
+      socket.broadcast.emit('render:clear');
+    }
   });
 
   socket.on('data:start-polling', async (payload: { sourceId: string }) => {
@@ -239,23 +267,16 @@ io.on('connection', (socket) => {
       if (source) {
         const config = JSON.parse(source.config);
         dataPoller.start({
-          id: source.id, name: source.name,
-          type: source.type as 'rest-api' | 'json-file' | 'csv-file',
-          url: config.url, filePath: config.filePath,
-          headers: config.headers, rootPath: config.rootPath,
-          pollingInterval: source.pollingInterval,
+          id: source.id, name: source.name, type: source.type as any,
+          url: config.url, filePath: config.filePath, headers: config.headers, 
+          rootPath: config.rootPath, pollingInterval: source.pollingInterval,
         });
       }
     } catch (err) { console.error('Failed to start polling:', err); }
   });
 
-  socket.on('data:stop-polling', (payload: { sourceId: string }) => {
-    dataPoller.stop(payload.sourceId);
-  });
-
-  socket.on('data:csv-row', (payload: { sourceId: string; rowIndex: number }) => {
-    dataPoller.setCsvRow(payload.sourceId, payload.rowIndex);
-  });
+  socket.on('data:stop-polling', (payload: { sourceId: string }) => { dataPoller.stop(payload.sourceId); });
+  socket.on('data:csv-row', (payload: { sourceId: string; rowIndex: number }) => { dataPoller.setCsvRow(payload.sourceId, payload.rowIndex); });
 
   socket.on('data:fetch-once', async (payload: { sourceId: string }) => {
     try {
@@ -264,20 +285,44 @@ io.on('connection', (socket) => {
       if (source) {
         const config = JSON.parse(source.config);
         const result = await dataPoller.fetchOnce({
-          id: source.id, name: source.name,
-          type: source.type as 'rest-api' | 'json-file' | 'csv-file',
-          url: config.url, filePath: config.filePath,
-          headers: config.headers, rootPath: config.rootPath,
-          pollingInterval: 0,
+          id: source.id, name: source.name, type: source.type as any,
+          url: config.url, filePath: config.filePath, headers: config.headers, 
+          rootPath: config.rootPath, pollingInterval: 0,
         });
         io.emit('data:update', { sourceId: source.id, data: result.flat });
       }
     } catch (err) { console.error('Manual fetch failed:', err); }
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
+  socket.on('disconnect', () => { console.log('Client disconnected:', socket.id); });
+});
+
+// ── API Routes (Apply Middleware Here) ─────────────────────────────────────────
+// For fine-grained control, we pass the middleware into specific route registrations.
+app.register(projectRoutes); 
+app.register(graphicRoutes(DATA_DIR));
+app.register(datasourceRoutes(dataPoller));
+app.register(aiRoutes);
+app.register(assetRoutes); 
+
+// ── SPA catch-all ─────────────────────────────────────────────────────────────
+app.setNotFoundHandler(async (request, reply) => {
+  const rawUrl = request.url.split('?')[0];
+
+  if (rawUrl.startsWith('/api/') || rawUrl.startsWith('/graphics/') || rawUrl.startsWith('/uploads/') || rawUrl.startsWith('/socket.io/')) {
+    return reply.code(404).send({ error: 'Not found' });
+  }
+  if (path.extname(rawUrl)) {
+    return reply.code(404).send({ error: 'Not found' });
+  }
+
+  try {
+    const indexPath = path.join(CLIENT_DIR, 'index.html');
+    const html = await fs.readFile(indexPath, 'utf-8');
+    reply.header('content-type', 'text/html; charset=utf-8').send(html);
+  } catch {
+    reply.code(503).send(`CLIENT_DIR (${CLIENT_DIR}) has no index.html.`);
+  }
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────
@@ -286,10 +331,6 @@ const start = async () => {
     const clientIndexExists = fs.existsSync(path.join(CLIENT_DIR, 'index.html'));
     console.log('───────────────────────────────────────────');
     console.log('Graphyne Server — startup');
-    console.log('  isPkg:        ', isPkg);
-    console.log('  DATA_DIR:     ', DATA_DIR);
-    console.log('  CLIENT_DIR:   ', CLIENT_DIR);
-    console.log('  index.html:   ', clientIndexExists ? '✅ found' : '❌ MISSING');
     console.log('  DATABASE_URL: ', process.env.DATABASE_URL);
     console.log('───────────────────────────────────────────');
 
@@ -305,6 +346,5 @@ const start = async () => {
     process.exit(1);
   }
 };
-
 
 start();
