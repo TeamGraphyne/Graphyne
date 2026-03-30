@@ -1,6 +1,6 @@
 import type { Hotkey } from "../types/hotkey";
 
-const BASE = "http://localhost:3001/api/hotkeys";
+const BASE = "http://localhost:3002/api/hotkeys";
 
 export const hotkeyService = {
   fetchAll: (): Promise<Hotkey[]> =>
@@ -21,5 +21,5 @@ export const hotkeyService = {
     }).then(r => r.json()),
 
   remove: (id: string): Promise<void> =>
-    fetch(`${BASE}/${id}`, { method: "DELETE" }).then(() => {}),
+    fetch(`${BASE}/${id}`, { method: "DELETE" }).then(() => { }),
 };

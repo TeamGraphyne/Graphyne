@@ -71,9 +71,10 @@ export function EditorPage() {
     };
   }, [dispatch]);
 
-  // Load data sources when project changes
+  // Load data sources when project changes + persist selection to localStorage
   useEffect(() => {
     if (meta.projectId) {
+      localStorage.setItem('graphyne:activeProjectId', meta.projectId);
       api.getDataSources(meta.projectId).then(data => {
         dispatch(setSources(data));
       }).catch(console.error);

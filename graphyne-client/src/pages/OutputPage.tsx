@@ -6,76 +6,92 @@ import { resolveBindings, pushUpdatesToIframe } from "../services/dataResolver";
 
 export function OutputPage() {
   const [currentSrc, setCurrentSrc] = useState<string | null>(null);
+  // Key incremented on every TAKE forces React to remount the iframe even
+  // when the URL hasn't changed.
+  const [iframeKey, setIframeKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  // NEW: Cache the current graphic's elements for data binding resolution
   const [currentElements, setCurrentElements] = useState<CanvasElement[]>([]);
 
+  // Refs survive re-renders without triggering them – used to avoid stale closures
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set synchronously in the take handler so handleLoad always reads current intent
+  const shouldPlayRef = useRef(false);
+
   useEffect(() => {
-    // Connect to Socket
     socketService.connect();
 
-    // Listen for 'TAKE' (Load and Play new graphic)
-    // MODIFIED: Payload now includes elements for binding resolution
     const handleTake = (data: { url: string; elements?: CanvasElement[] }) => {
       console.log("📺 Output received TAKE:", data.url);
-      setCurrentSrc(data.url);
 
-      // Cache elements for data binding (if provided by PlayoutPage)
-      if (data.elements) {
-        setCurrentElements(data.elements);
-      } else {
-        setCurrentElements([]);
+      // Cancel any pending post-clear null-out so it does not wipe the new src
+      if (clearTimerRef.current !== null) {
+        clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = null;
       }
+
+      shouldPlayRef.current = true;
+      // Always bump the key – forces a fresh iframe mount even for the same URL
+      setIframeKey(k => k + 1);
+      setCurrentSrc(data.url);
+      setCurrentElements(data.elements ?? []);
     };
 
-    // Listen for 'CLEAR' (Play Out animation)
     const handleClear = () => {
       console.log("📺 Output received CLEAR");
+      shouldPlayRef.current = false;
       iframeRef.current?.contentWindow?.postMessage("out", "*");
-      // Don't clear currentElements immediately — the out animation may still be playing.
-      // Clear after a delay, or just let the next TAKE overwrite them.
+
+      // After the out-animation completes, remove the iframe entirely so the
+      // next TAKE always starts from a blank slate.
+      clearTimerRef.current = setTimeout(() => {
+        setCurrentSrc(null);
+        setCurrentElements([]);
+        clearTimerRef.current = null;
+      }, 1000);
     };
 
+    // Pass the exact callback references so cleanup removes only these listeners
     socketService.on("render:take", handleTake);
     socketService.on("render:clear", handleClear);
 
     return () => {
-      socketService.off("render:take");
-      socketService.off("render:clear");
-      socketService.off("data:update");
+      if (clearTimerRef.current !== null) {
+        clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = null;
+      }
+      socketService.off("render:take", handleTake);
+      socketService.off("render:clear", handleClear);
       socketService.disconnect();
     };
   }, []);
 
-  // NEW: Separate effect for data:update so it always has the latest currentElements
   useEffect(() => {
     const handleDataUpdate = (payload: DataUpdatePayload) => {
       if (currentElements.length === 0) return;
-
       const updates = resolveBindings(currentElements, payload.sourceId, payload.data);
       pushUpdatesToIframe(iframeRef.current, updates);
     };
 
     socketService.on("data:update", handleDataUpdate);
     return () => {
-      socketService.off("data:update");
+      socketService.off("data:update", handleDataUpdate);
     };
   }, [currentElements]);
 
-  // Auto-Play Logic
+  // Fires whenever the iframe finishes loading. Reads shouldPlayRef (a ref, not
+  // state) to avoid the stale-closure problem with currentSrc.
   const handleLoad = () => {
-    if (currentSrc && iframeRef.current?.contentWindow) {
-      setTimeout(() => {
-        iframeRef.current?.contentWindow?.postMessage("play", "*");
-      }, 50);
-    }
+    if (!shouldPlayRef.current) return;
+    setTimeout(() => {
+      iframeRef.current?.contentWindow?.postMessage("play", "*");
+    }, 50);
   };
 
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden">
       {currentSrc && (
         <iframe
+          key={iframeKey}
           ref={iframeRef}
           src={currentSrc}
           onLoad={handleLoad}

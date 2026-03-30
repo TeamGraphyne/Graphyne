@@ -1,15 +1,17 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = `http://${window.location.hostname}:3001`;
+const SOCKET_URL = `http://${window.location.hostname}:3002`;
 
 class SocketService {
     private socket: Socket | null = null;
+    private refCount = 0;
 
     connect() {
+        this.refCount++;
         if (this.socket) return;
 
         this.socket = io(SOCKET_URL, {
-            transports: ['websocket'], // Force websocket to avoid polling delay
+            transports: ['websocket'],
             reconnection: true,
         });
 
@@ -23,30 +25,39 @@ class SocketService {
     }
 
     disconnect() {
-        if (this.socket) {
+        this.refCount = Math.max(0, this.refCount - 1);
+        // Only truly disconnect when the last consumer unmounts
+        if (this.refCount === 0 && this.socket) {
             this.socket.disconnect();
             this.socket = null;
         }
     }
 
-    // Send a command (e.g., from Playout Page)
     emit<T = unknown>(event: string, data?: T) {
         if (this.socket) {
             this.socket.emit(event, data);
         }
     }
 
-    // Listen for events (e.g., in Renderer)
+    // Accept the specific callback so we can remove only that listener,
+    // not every listener registered for the event.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     on<T = unknown>(event: string, callback: (data: T) => void) {
         if (this.socket) {
-            this.socket.on(event, callback);
+            this.socket.on(event, callback as any);
         }
     }
 
-    // Clean up listeners
-    off(event: string) {
+    // Pass the callback to remove only that specific listener.
+    // Falls back to removing all listeners if no callback is given.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    off(event: string, callback?: (data: any) => void) {
         if (this.socket) {
-            this.socket.off(event);
+            if (callback) {
+                this.socket.off(event, callback);
+            } else {
+                this.socket.off(event);
+            }
         }
     }
 }

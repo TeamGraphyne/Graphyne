@@ -47,7 +47,7 @@ export default function AssetCard({ asset }: Props) {
         y: 100,
         width: img.width * scale,
         height: img.height * scale,
-        src: `http://localhost:3001/uploads/${asset.filePath}`,
+        src: `http://localhost:3002/uploads/${asset.filePath}`,
         opacity: 1,
         rotation: 0,
         scaleX: 1,
@@ -59,7 +59,7 @@ export default function AssetCard({ asset }: Props) {
         outAnimation: { type: "fade", duration: 0.5, delay: 0, ease: "power1.out" },
       }));
     };
-    img.src = `http://localhost:3001/uploads/${asset.filePath}`;
+    img.src = `http://localhost:3002/uploads/${asset.filePath}`;
   };
 
   return (
@@ -72,7 +72,7 @@ export default function AssetCard({ asset }: Props) {
       >
         {asset.type === "image" ? (
           <img
-            src={`http://localhost:3001/uploads/${asset.filePath}`}
+            src={`http://localhost:3002/uploads/${asset.filePath}`}
             alt={asset.altText ?? asset.name}
             className="w-full h-full object-cover"
           />

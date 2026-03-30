@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 
 import transLogo from "../assets/TransLogo.png";
 
-const SERVER_URL = `http://${window.location.hostname}:3001`;
+const SERVER_URL = `http://${window.location.hostname}:3002`;
 const OUTPUT_URL  = `${SERVER_URL}/output`;
 
 interface ScaledFrameProps {
@@ -290,7 +290,12 @@ export function PlayoutPage() {
     try {
       const projects = await api.getProjects();
       if (projects.length > 0) {
-        const activeProject = await api.getProjectById(projects[0].id);
+        // Prefer the project last active in the editor (synced via localStorage)
+        const savedProjectId = localStorage.getItem('graphyne:activeProjectId');
+        const targetProject = savedProjectId
+          ? projects.find(p => p.id === savedProjectId) ?? projects[0]
+          : projects[0];
+        const activeProject = await api.getProjectById(targetProject.id);
         setProjectName(activeProject.name);
         setActiveProjectId(activeProject.id);
         const items = activeProject.items || [];

@@ -10,8 +10,8 @@ import { graphicRoutes } from './routes/graphics';
 import { datasourceRoutes } from './routes/datasources';
 import { DataPollerService } from './services/dataPoller';
 import { aiRoutes } from './routes/ai';
-import { assetRoutes } from "./routes/assets"; 
-import {hotkeyRoutes} from  './routes/hotkeys';
+import { assetRoutes } from "./routes/assets";
+import { hotkeyRoutes } from './routes/hotkeys';
 
 // ── Detect pkg binary ──────────────────────────────────────────────────────────
 const isPkg = Object.prototype.hasOwnProperty.call(process, 'pkg');
@@ -225,11 +225,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('command:take', (data) => {
-    socket.broadcast.emit('render:take', data);
+    io.emit('render:take', data);
   });
 
   socket.on('command:clear', () => {
-    socket.broadcast.emit('render:clear');
+    io.emit('render:clear');
   });
 
   socket.on('data:start-polling', async (payload: { sourceId: string }) => {
@@ -297,8 +297,8 @@ const start = async () => {
     await runMigrations();
     console.log('✅ Database ready.');
 
-    await app.listen({ port: 3001, host: '0.0.0.0' });
-    console.log('🚀 Graphyne running at http://localhost:3001');
+    await app.listen({ port: 3002, host: '0.0.0.0' });
+    console.log('🚀 Graphyne running at http://localhost:3002');
   } catch (err) {
     console.error('💥 Server failed to start:', err);
     app.log.error(err);

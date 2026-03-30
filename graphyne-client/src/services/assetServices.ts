@@ -1,6 +1,6 @@
 import type { Asset, AssetUpdatePayload } from "../types/asset";
 
-const BASE = "http://localhost:3001/api/assets";
+const BASE = "http://localhost:3002/api/assets";
 
 export const assetService = {
 
